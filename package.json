@@ -1,0 +1,23 @@
+{
+  "name": "mor",
+  "version": "0.0.1",
+  "description": "Trollmor - a monolithic repository manager",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint ."
+  },
+  "bin": "cli.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "docopt": "^0.6.2",
+    "graphlib": "^1.0.7",
+    "graphlib-dot": "^0.6.2",
+    "meow": "^3.5.0",
+    "semver": "^5.0.3",
+    "shelljs": "^0.5.3"
+  },
+  "devDependencies": {
+    "eslint": "^1.8.0"
+  }
+}
