@@ -1,19 +1,22 @@
 {
   "name": "mor",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Trollmor - a monolithic repository manager",
   "main": "index.js",
   "scripts": {
     "test": "eslint ."
   },
+  "repository": "https://github.com/laat/mor.git",
   "bin": "cli.js",
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Sigurd Fosseng",
+    "emali": "sigurd@fosseng.net"
+  },
+  "license": "MIT",
   "dependencies": {
     "docopt": "^0.6.2",
     "graphlib": "^1.0.7",
     "graphlib-dot": "^0.6.2",
-    "meow": "^3.5.0",
     "semver": "^5.0.3",
     "shelljs": "^0.5.3"
   },
