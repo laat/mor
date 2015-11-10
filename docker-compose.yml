@@ -1,0 +1,5 @@
+mor:
+  image: node
+  volumes:
+    - .:/app
+  working_dir: /app

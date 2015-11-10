@@ -1,5 +1,6 @@
 'use strict';
-var semver = require('semver');
+const semver = require('semver');
+const chalk = require('chalk');
 
 module.exports = function (packages) {
 	// TODO: should not exit
@@ -13,7 +14,7 @@ module.exports = function (packages) {
 				var depVersion = deps[dep];
 				var isLatest = semver.satisfies(realVersion, depVersion);
 				if (!isLatest) {
-					console.error(`ERROR: ${dep} is old in ${pkg[1].name}: was ${depVersion}, expected ${realVersion} `);
+					console.error(`${chalk.red('ERROR')}: ${dep} is old in ${pkg[1].name}: was ${depVersion}, expected ${realVersion} `);
 					isOutdated = true;
 				}
 			}

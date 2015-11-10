@@ -14,9 +14,11 @@
   },
   "license": "MIT",
   "dependencies": {
+    "chalk": "^1.1.1",
     "docopt": "^0.6.2",
     "graphlib": "^1.0.7",
     "graphlib-dot": "^0.6.2",
+    "lodash": "^3.10.1",
     "semver": "^5.0.3",
     "shelljs": "^0.5.3"
   },
