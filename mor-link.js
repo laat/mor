@@ -1,6 +1,7 @@
 'use strict';
 const sh = require('shelljs');
 const path = require('path');
+const chalk = require('chalk');
 const core = require('./mor-core.js');
 
 module.exports = function (packages, graph) {
@@ -11,7 +12,7 @@ module.exports = function (packages, graph) {
 				return;
 			}
 			if (pkg.mor.pins.indexOf(successor) >= 0) {
-				console.log(`WARN: skipping ${successor} in ${pkg.name}, it was pinned`);
+				console.log(`${chalk.yellow('WARN')}: skipping ${successor} in ${pkg.name}, it was pinned`);
 				return;
 			}
 			if (successor[0] === '@') {
