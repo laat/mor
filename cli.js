@@ -5,7 +5,7 @@ const doc = `Trollmor. the monolithic repository manager
 Usage:
   mor ls [options] [<package>...]
   mor exec COMMAND [<package>...]
-  mor cycles
+  mor cycles [--dot]
   mor link
   mor pins
   mor outdated
@@ -27,7 +27,6 @@ const pjson = require('./package.json');
 const _ = require('lodash');
 const sh = require('shelljs');
 const dot = require('graphlib-dot');
-const alg = require('graphlib').alg;
 
 const core = require('./mor-core.js');
 const outdated = require('./mor-outdated.js');
@@ -71,15 +70,19 @@ if (args.exec) {
 }
 
 if (args.cycles) {
-	var keepNodes = [];
-	alg.findCycles(graph).forEach(cycle => cycle.forEach(node => keepNodes.push(node)));
-	console.log(dot.write(core.graph(packages, keepNodes)));
+	let cycles = core.cycles(graph);
+	if (args['--dot']) {
+		let keepNodes = [];
+		cycles.forEach(cycle => cycle.forEach(node => keepNodes.push(node)));
+		console.log(dot.write(core.graph(packages, keepNodes)));
+	} else {
+		logArray(cycles);
+	}
 }
 
 if (args.outdated) {
 	outdated(packages);
 }
-
 
 if (args.link) {
 	link(packages, graph);

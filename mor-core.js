@@ -58,3 +58,4 @@ exports.graph = packagesGraph;
 exports.order = graph => alg.topsort(graph).reverse();
 exports.predecessors = revDFS;
 exports.successors = DFS;
+exports.cycles = graph => alg.findCycles(graph);
