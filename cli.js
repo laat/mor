@@ -3,8 +3,7 @@
 const doc = `Trollmor. the monolithic repository manager
 
 Usage:
-  mor ls [<package> [--predecessors]] [--dot | --path]
-  mor path <package>...
+  mor ls [<package>... [--predecessors]] [--dot | --path]
   mor cycles
   mor link
   mor pins
@@ -21,6 +20,7 @@ Examples:
   mor ls --dot | graph-easy  # apt-get install libgraph-easy-perl
 `;
 const pjson = require('./package.json');
+const _ = require('lodash');
 const sh = require('shelljs');
 const dot = require('graphlib-dot');
 const alg = require('graphlib').alg;
@@ -35,12 +35,6 @@ const logArray = arr => arr.forEach(v => console.log(v));
 const packages = core.packages(sh.pwd());
 const graph = core.graph(packages);
 
-if (args.path) {
-	args['<package>'].forEach(pkg => {
-		console.log(packages.get(pkg)._path);
-	});
-}
-
 if (args.cycles) {
 	var keepNodes = [];
 	alg.findCycles(graph).forEach(cycle => cycle.forEach(node => keepNodes.push(node)));
@@ -52,14 +46,16 @@ if (args.outdated) {
 }
 
 if (args.ls) {
-	let list;
+	let list = [];
 	if (args['<package>'].length) {
-		let pkg = args['<package>'][0];
-		if (args['--predecessors']) {
-			list = core.predecessors(graph, pkg);
-		} else {
-			list = core.successors(graph, pkg);
-		}
+		args['<package>'].forEach(pkg => {
+			if (args['--predecessors']) {
+				list = list.concat(core.predecessors(graph, pkg));
+			} else {
+				list = list.concat(core.successors(graph, pkg));
+			}
+		});
+		list = _.uniq(list);
 	} else {
 		list = Array.from(packages.keys());
 	}
