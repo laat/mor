@@ -3,7 +3,8 @@
 const doc = `Trollmor. the monolithic repository manager
 
 Usage:
-  mor ls [<package>... [--predecessors]] [--dot | --path]
+  mor ls [options] [<package>...]
+  mor exec COMMAND [<package>...]
   mor cycles
   mor link
   mor pins
@@ -14,10 +15,13 @@ Usage:
 Options:
   --pre, --predecessors  All packages dependending on <package>
   --dot                  Output as graphviz-dot
+  --path                 Output as paths
+  -c COMMAND             Execute command with packages
 
 Examples:
   mor ls --path
   mor ls --dot | graph-easy  # apt-get install libgraph-easy-perl
+  mor exec "npm t"
 `;
 const pjson = require('./package.json');
 const _ = require('lodash');
@@ -28,12 +32,43 @@ const alg = require('graphlib').alg;
 const core = require('./mor-core.js');
 const outdated = require('./mor-outdated.js');
 const link = require('./mor-link.js');
+const exec = require('./mor-exec.js');
 
 const args = require('docopt').docopt(doc, {version: pjson.version});
 
 const logArray = arr => arr.forEach(v => console.log(v));
 const packages = core.packages(sh.pwd());
 const graph = core.graph(packages);
+
+let list = [];
+if (args['<package>'].length) {
+	args['<package>'].forEach(pkg => {
+		if (args['--predecessors']) {
+			list = list.concat(core.predecessors(graph, pkg));
+		} else {
+			list = list.concat(core.successors(graph, pkg));
+		}
+	});
+	list = _.uniq(list);
+} else {
+	list = Array.from(packages.keys());
+}
+
+if (args.ls) {
+	if (args['--dot']) {
+		console.log(dot.write(core.graph(packages, list)));
+	} else if (args['--path']) {
+		logArray(list.map(pkg => packages.get(pkg)._path));
+	}	else if (args['-c']){
+		exec(list.map(pkg => packages.get(pkg)), args['-c']);
+	} else {
+		logArray(list);
+	}
+}
+
+if (args.exec) {
+	exec(list.map(pkg => packages.get(pkg)), args['COMMAND']);
+}
 
 if (args.cycles) {
 	var keepNodes = [];
@@ -45,28 +80,6 @@ if (args.outdated) {
 	outdated(packages);
 }
 
-if (args.ls) {
-	let list = [];
-	if (args['<package>'].length) {
-		args['<package>'].forEach(pkg => {
-			if (args['--predecessors']) {
-				list = list.concat(core.predecessors(graph, pkg));
-			} else {
-				list = list.concat(core.successors(graph, pkg));
-			}
-		});
-		list = _.uniq(list);
-	} else {
-		list = Array.from(packages.keys());
-	}
-	if (args['--dot']) {
-		console.log(dot.write(core.graph(packages, list)));
-	} else if (args['--path']) {
-		logArray(list.map(k => packages.get(k)._path));
-	} else {
-		logArray(list);
-	}
-}
 
 if (args.link) {
 	link(packages, graph);
