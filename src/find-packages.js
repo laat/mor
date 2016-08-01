@@ -16,16 +16,16 @@ function getIgnored() {
   ];
 }
 
-const isIgnored = (wd, patterns) => {
-  const re = new RegExp(`^${reEscape(wd)}`);
+const isIgnored = (workdir, patterns) => {
+  const re = new RegExp(`^${reEscape(workdir)}`);
   return path => {
     return patterns.some(pattern => minimatch(path.replace(re, ''), pattern));
   }
 }
 
-async function getPackages(wd: string): Promise<Array<string>> {
+async function getPackages(workdir: string): Promise<Array<string>> {
   const projects = [];
-  const shouldSkip = isIgnored(wd, getIgnored());
+  const shouldSkip = isIgnored(workdir, getIgnored());
   async function _walk(dir) {
     try {
       const stats = await fs.stat(dir)
@@ -44,7 +44,7 @@ async function getPackages(wd: string): Promise<Array<string>> {
       return
     }
   }
-  await _walk(wd);
+  await _walk(workdir);
   return projects;
 }
 
