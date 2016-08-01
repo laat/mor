@@ -5,21 +5,20 @@ import nativeFs from 'fs';
 import path from 'path';
 import minimatch from 'minimatch';
 import reEscape from 'escape-string-regexp';
+import getConfig from './config';
 
 const fs = pify(nativeFs);
 const cwd = process.cwd();
 
-function getIgnored() {
-  return [
-    "**/node_modules/*",
-    "**/.git"
-  ];
+async function getIgnored() {
+  const config = await getConfig();
+  return config.ignore || [];
 }
 
 const isIgnored = (workdir, patterns) => {
   const re = new RegExp(`^${reEscape(workdir)}`);
-  return path => {
-    return patterns.some(pattern => minimatch(path.replace(re, ''), pattern));
+  return async path => {
+    return (await patterns).some(pattern => minimatch(path.replace(re, ''), pattern));
   }
 }
 
@@ -32,7 +31,7 @@ async function getPackages(workdir: string): Promise<Array<string>> {
       if (stats.isFile() && path.basename(dir) === 'package.json') {
         projects.push(dir)
       } else if (stats.isDirectory()) {
-        const visit = !shouldSkip(dir);
+        const visit = !await shouldSkip(dir);
         if (visit) {
           const dirs = await fs.readdir(dir)
           await Promise.all(dirs.map(async function (child) {

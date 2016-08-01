@@ -19,6 +19,7 @@
   "dependencies": {
     "babel-polyfill": "^6.9.1",
     "escape-string-regexp": "^1.0.5",
+    "find-up": "^1.1.2",
     "minimatch": "^3.0.2",
     "pify": "^2.3.0"
   },
