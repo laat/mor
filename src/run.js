@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 
 function run(cmd) {
     return new Promise((resolve, reject) => {
@@ -20,4 +20,9 @@ function run(cmd) {
     });
 }
 
+function runSync(cmd) {
+    execSync(cmd, {shell: true, stdio:[0,1,2]});
+}
+
+// runSync('npm installi')
 // run('npm installi').then(() => console.log('all done')).catch((err) => console.error(err));
