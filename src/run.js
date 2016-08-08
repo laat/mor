@@ -1,6 +1,6 @@
 import { spawn, execSync } from 'child_process';
 
-function run(cmd) {
+export function run(cmd) {
     return new Promise((resolve, reject) => {
         const child = spawn(cmd, {
             env: process.env,
@@ -20,8 +20,8 @@ function run(cmd) {
     });
 }
 
-function runSync(cmd) {
-    execSync(cmd, {shell: true, stdio:[0,1,2]});
+export function runSync(cmd, cwd) {
+    return execSync(cmd, {shell: true, stdio:[0,1,2], cwd});
 }
 
 // runSync('npm installi')
