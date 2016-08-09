@@ -9,7 +9,7 @@ export type Config = {
   ignore?: ?Array<string>,
 };
 
-async function getConfig(): Promise<Config>{
+async function getConfig(): Promise<Config> {
   try {
     const path = await findUp('.mor.json');
     const file = await fs.readFile(path);

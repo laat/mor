@@ -1,9 +1,9 @@
 // @flow
-import DAG from './dag';
 import test from 'tape';
+import createDAG from './dag';
 
-test('should be able to add nodes', function(assert) {
-  let dag = DAG();
+test('should be able to add nodes', (assert) => {
+  const dag = createDAG();
   dag.addNode('a');
   dag.addNode('b');
   assert.ok(dag.hasNode('a'), 'a should exist in the DAG');
@@ -11,8 +11,8 @@ test('should be able to add nodes', function(assert) {
   assert.end();
 });
 
-test('should be able to add edges', function(assert) {
-  let dag = DAG();
+test('should be able to add edges', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   assert.ok(dag.hasNode('a'), 'a should exist in the DAG');
   assert.ok(dag.hasNode('b'), 'b should exist in the DAG');
@@ -23,8 +23,8 @@ test('should be able to add edges', function(assert) {
   assert.end();
 });
 
-test('should be able to add multiple edges', function(assert) {
-  let dag = DAG();
+test('should be able to add multiple edges', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('b', 'c');
   assert.ok(dag.nodes().indexOf('a') >= 0, 'a should exist in the DAG');
@@ -39,8 +39,8 @@ test('should be able to add multiple edges', function(assert) {
   assert.end();
 });
 
-test('should be able to remove nodes', function(assert) {
-  let dag = DAG();
+test('should be able to remove nodes', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('b', 'c');
   assert.ok(dag.hasNode('a'), 'a should exist in the DAG');
@@ -56,8 +56,8 @@ test('should be able to remove nodes', function(assert) {
   assert.end();
 });
 
-test('should be able to get sinks', function(assert) {
-  let dag = DAG();
+test('should be able to get sinks', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('a', 'c');
   assert.ok(dag.sinks().length === 2, 'should have 2 sinks');
@@ -67,8 +67,8 @@ test('should be able to get sinks', function(assert) {
   assert.end();
 });
 
-test('should be able to get sources', function(assert) {
-  let dag = DAG();
+test('should be able to get sources', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('a', 'c');
   dag.addEdge('d', 'b');
@@ -80,24 +80,24 @@ test('should be able to get sources', function(assert) {
   assert.end();
 });
 
-test('should find depth first preorder', function(assert) {
-  let dag = DAG();
+test('should find depth first preorder', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('b', 'c');
 
-  let result = dag.dfs('a');
+  const result = dag.dfs('a');
 
   assert.equal(result[0], 'a', 'a is first');
   assert.equal(result[1], 'b', 'b is second');
   assert.equal(result[2], 'c', 'c is last');
   assert.end();
 });
-test('should find depth first for multiple nodes', function(assert) {
-  let dag = DAG();
+test('should find depth first for multiple nodes', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('c', 'd');
 
-  let result = dag.dfsNodes(['a', 'c']);
+  const result = dag.dfsNodes(['a', 'c']);
 
   assert.equal(result[0], 'a', 'a is first');
   assert.equal(result[1], 'b', 'b is second');
@@ -105,24 +105,24 @@ test('should find depth first for multiple nodes', function(assert) {
   assert.equal(result[3], 'd', 'd is last');
   assert.end();
 });
-test('should find reverse depth first preorder', function(assert) {
-  let dag = DAG();
+test('should find reverse depth first preorder', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('b', 'c');
 
-  let result = dag.dfs('c', true);
+  const result = dag.dfs('c', true);
 
   assert.equal(result[0], 'c', 'c is first');
   assert.equal(result[1], 'b', 'b is second');
   assert.equal(result[2], 'a', 'a is last');
   assert.end();
 });
-test('should find reverse depth first for multiple nodes', function(assert) {
-  let dag = DAG();
+test('should find reverse depth first for multiple nodes', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('c', 'd');
 
-  let result = dag.dfsNodes(['b', 'd'], true);
+  const result = dag.dfsNodes(['b', 'd'], true);
 
   assert.equal(result[0], 'b', 'b is first');
   assert.equal(result[1], 'a', 'a is second');
@@ -130,12 +130,12 @@ test('should find reverse depth first for multiple nodes', function(assert) {
   assert.equal(result[3], 'c', 'c is last');
   assert.end();
 });
-test('should find topological order', function(assert) {
-  let dag = DAG();
+test('should find topological order', (assert) => {
+  const dag = createDAG();
   dag.addEdge('a', 'b');
   dag.addEdge('b', 'c');
 
-  let result = dag.topsort();
+  const result = dag.topsort();
 
   assert.equal(result[0], 'a', 'a is first');
   assert.equal(result[1], 'b', 'b is second');

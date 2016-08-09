@@ -8,7 +8,7 @@ import reEscape from 'escape-string-regexp';
 import getConfig from './config';
 
 const fs = pify(nativeFs);
-const cwd = process.cwd();
+// const cwd = process.cwd();
 
 async function getIgnored() {
   const config = await getConfig();
@@ -17,30 +17,27 @@ async function getIgnored() {
 
 const isIgnored = (workdir, patterns) => {
   const re = new RegExp(`^${reEscape(workdir)}`);
-  return async path => {
-    return (await patterns).some(pattern => minimatch(path.replace(re, ''), pattern));
-  }
-}
+  return async file =>
+    (await patterns).some(pattern => minimatch(file.replace(re, ''), pattern));
+};
 
 async function getPackages(workdir: string): Promise<Array<string>> {
   const projects = [];
   const shouldSkip = isIgnored(workdir, getIgnored());
   async function _walk(dir) {
     try {
-      const stats = await fs.stat(dir)
+      const stats = await fs.stat(dir);
       if (stats.isFile() && path.basename(dir) === 'package.json') {
-        projects.push(dir)
+        projects.push(dir);
       } else if (stats.isDirectory()) {
         const visit = !await shouldSkip(dir);
         if (visit) {
-          const dirs = await fs.readdir(dir)
-          await Promise.all(dirs.map(async function (child) {
-            await _walk(path.join(dir, child))
-          }))
+          const dirs = await fs.readdir(dir);
+          await Promise.all(dirs.map(async (child) => await _walk(path.join(dir, child))));
         }
       }
     } catch (e) {
-      return
+      return;
     }
   }
   await _walk(workdir);
