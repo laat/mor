@@ -1,6 +1,6 @@
 // @flow
 
-export default function execLimit(tasks: Array<() => Promise<*>>, limit: number = 1) {
+export default function parallelLimit(tasks: Array<() => Promise<*>>, limit: number = 1) {
   if (tasks.length === 0) {
     return Promise.resolve([]);
   }
@@ -44,7 +44,7 @@ export default function execLimit(tasks: Array<() => Promise<*>>, limit: number 
 //   setTimeout(resolve, i, i);
 // });
 //
-// execLimit([
+// parallelLimit([
 //   delay(1000),
 //   delay(100),
 //   delay(200),
