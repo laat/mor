@@ -1,13 +1,7 @@
 {
   "build": [{
-    "patterns": ["package.json"],
-    "command": "npm install"
-  }, {
     "patterns": ["src/**/*.js"],
     "command": "npm run build -- --only",
     "appendFiles": true
-  }, {
-    "patterns": ["src/run.js"],
-    "command": "echo 'RUN #### '"
   }]
 }

@@ -1,5 +1,5 @@
 {
-  "presets": ["stage-3"],
+  "presets": ["stage-2"],
   "plugins": [
     "transform-es2015-modules-commonjs",
     "transform-flow-strip-types"

@@ -9,8 +9,15 @@ export default function parallelLimit(tasks: Array<() => Promise<*>>, limit: num
   return new Promise((resolve, reject) => {
     const results = [];
     let running = 0;
+    let rejectReason;
     function execNext() {
       if (running >= limit) {
+        return;
+      }
+      if (rejectReason) {
+        if (running === 0) {
+          reject(rejectReason);
+        }
         return;
       }
       const { value, done } = iterator.next();
@@ -29,8 +36,12 @@ export default function parallelLimit(tasks: Array<() => Promise<*>>, limit: num
             results[i] = result;
             running--;
             execNext();
-          })
-          .catch(reject);
+          }, (err) => {
+            rejectReason = err;
+            if(--running === 0) {
+              reject(rejectReason);
+            }
+          });
         if (running < limit) {
           execNext();
         }
