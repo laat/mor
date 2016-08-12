@@ -4,15 +4,31 @@ import type { DAG } from './utils/dag';
 import pify from 'pify';
 import path from 'path';
 import nativeFs from 'fs';
+import chalk from 'chalk';
 import findFiles from './utils/find-files';
 import createDAG from './utils/dag';
 import entries from './utils/entries';
 
 const fs = pify(nativeFs);
 
+const colors = (function* colorsGenerator() {
+  while(true) {
+    yield chalk.red;
+    yield chalk.green;
+    yield chalk.blue;
+    yield chalk.yellow;
+    yield chalk.magenta;
+    yield chalk.cyan;
+  }
+})();
+
 export type Package = {
   _root: string,
+  _color: Function,
+  log: Function,
+  error: Function,
   name?: string,
+  bin?: { [key: string]: string } | string,
   version?: string,
   dependencies?: { [key: string]: string },
   devDependencies?: { [key: string]: string },
@@ -24,10 +40,13 @@ async function getPackageFiles(config) {
   return packageFiles.filter(fileName => fileName !== `${config._root}/package.json`);
 }
 
-async function readPackage(packageFile: string) {
+export async function readPackage(packageFile: string) {
   const content = await fs.readFile(packageFile);
   const json: Package = JSON.parse(content);
   json._root = path.dirname(packageFile);
+  json._color = colors.next().value || (id => id);
+  json.log = (...args) => console.log(json._color(json.name), '>', ...args);
+  json.error = (...args) => console.error(json._color(json.name), '>', ...args);
   return json;
 }
 
@@ -36,7 +55,7 @@ async function getPackages(config): Promise<Array<Package>> {
   return Promise.all(packageFiles.map(readPackage));
 }
 
-const mergedDependencies = (pkg: Package) => ({
+export const mergedDependencies = (pkg: Package) => ({
   ...pkg.dependencies,
   ...pkg.devDependencies,
   ...pkg.optionalDependencies,

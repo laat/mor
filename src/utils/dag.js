@@ -1,5 +1,4 @@
 /* eslint-disable no-underscore-dangle, no-prototype-builtins */
-// @flow
 export default function create() {
   const _nodes = {};
   const _to = {};
