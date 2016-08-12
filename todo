@@ -1,0 +1,11 @@
+Usage:
+  mor [options] [PACKAGE...] bootstrap
+  mor [options] [PACKAGE...] install [--save-dev | --save] [<package>...]
+  mor [options] [PACKAGE...] run CMD
+  mor [options] [PACKAGE...] exec CMD
+
+Options:
+  --dependents, -t 			dependents
+  --transitive-dependendents, -T 	dependents, including transitive dependents
+  --dependencies, -d    		dependencies
+  --transitive-dependencies, -D    	dependencies, including transitive dependencies
