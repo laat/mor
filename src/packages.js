@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import findFiles from './utils/find-files';
 import createDAG from './utils/dag';
 import entries from './utils/entries';
+import logger from './logger';
 
 const fs = pify(nativeFs);
 
@@ -45,8 +46,8 @@ export async function readPackage(packageFile: string) {
   const json: Package = JSON.parse(content);
   json._root = path.dirname(packageFile);
   json._color = colors.next().value || (id => id);
-  json.log = (...args) => console.log(json._color(json.name), '>', ...args);
-  json.error = (...args) => console.error(json._color(json.name), '>', ...args);
+  json.log = (...args) => logger.info(json._color(json.name), '>', ...args);
+  json.error = (...args) => logger.error(json._color(json.name), '>', ...args);
   return json;
 }
 

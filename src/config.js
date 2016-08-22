@@ -10,7 +10,7 @@ const fs = pify(nativeFs);
 export type Config = {
   _root: string,
   package: Package,
-  ignore?: ?Array<string>,
+  ignore?: Array<string>,
 };
 
 async function getConfig(): Promise<Config> {
