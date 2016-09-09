@@ -38,7 +38,7 @@ export default function parallelLimit(tasks: Array<() => Promise<*>>, limit: num
             execNext();
           }, (err) => {
             rejectReason = err;
-            if(--running === 0) {
+            if (--running === 0) {
               reject(rejectReason);
             }
           });

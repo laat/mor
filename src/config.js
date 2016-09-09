@@ -1,9 +1,9 @@
 // @flow
-import type { Package } from './packages';
 import path from 'path';
 import findUp from 'find-up';
 import pify from 'pify';
 import nativeFs from 'fs';
+import type { Package } from './packages';
 
 const fs = pify(nativeFs);
 

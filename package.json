@@ -27,13 +27,15 @@
     "find-up": "^1.1.2",
     "fs-extra": "^0.30.0",
     "has-flag": "^2.0.0",
+    "loud-rejection": "^1.6.0",
     "minimatch": "^3.0.2",
     "pify": "^2.3.0",
     "rxjs": "^5.0.0-beta.11",
     "sane": "^1.4.0",
     "semver": "^5.3.0",
     "source-map-support": "^0.4.2",
-    "stream-to-observable": "^0.2.0"
+    "stream-to-observable": "^0.2.0",
+    "strip-ansi": "^3.0.1"
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",

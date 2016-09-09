@@ -1,4 +1,5 @@
 // @flow
+/* eslint-disable */
 export default function rightPad(string: string, length: number, char?: string) {
   let i = -1;
   length = length - string.length;

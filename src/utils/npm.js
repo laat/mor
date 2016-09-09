@@ -15,7 +15,7 @@ const fs = pify(nativeFs);
 
 async function exec(command: string, pkg: Package, padLength: number) {
   const child = execa.shell(command, { cwd: pkg._root });
-  if (isVerbose()) {
+  if (!isVerbose()) {
     try {
       const result = await child;
       logger.info({
@@ -28,6 +28,8 @@ async function exec(command: string, pkg: Package, padLength: number) {
         name: pkg.name,
         command,
         ...err,
+        stdout: err.stdout && err.stdout.split(/\r?\n/),
+        stderr: err.stderr && err.stderr.split(/\r?\n/),
       });
       throw err;
     }
@@ -46,20 +48,19 @@ function runSync(command: string, pkg: Package) {
   runS(`npm run ${command}`, pkg._root);
 }
 
-function getBinaries (pkg: Package) {
-  var name = pkg.name || '';
-  var bin = pkg.bin;
+function getBinaries(pkg: Package) {
+  const name = pkg.name || '';
+  const bin = pkg.bin;
   if (bin == null) {
     return [];
   } else if (typeof bin === 'string') {
     return [{ name, bin }];
-  } else {
-    const bins = [];
-    for (const [key, value] of entries(bin)) {
-      bins.push({name: key, bin: value});
-    }
-    return bins;
   }
+  const bins = [];
+  for (const [key, value] of entries(bin)) {
+    bins.push({ name: key, bin: value });
+  }
+  return bins;
 }
 
 async function ln(source: string, destination: string, parent: Package) {
@@ -73,7 +74,18 @@ async function ln(source: string, destination: string, parent: Package) {
   await fs.symlink(source, destination);
 }
 
-async function linkBin(parent: Package, dependency: Package) {
+async function exists(destination: string) {
+  try {
+    await fs.stat(destination);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+async function linkBin(parent: Package, dependency: Package,
+  options: { overwrite: boolean } = { overwrite: true }
+) {
   if (!dependency.name) {
     return;
   }
@@ -83,8 +95,13 @@ async function linkBin(parent: Package, dependency: Package) {
   const relativeBins = getBinaries(dependency)
     .map(({ name, bin }) => ({ name, bin: path.join(relativeDepencency, bin) }));
   for (const { name, bin } of relativeBins) {
-    await ln(bin, `${binPath}/${name}`, parent);
-    // TODO: chmod+x binpath/name
+    const destination = `${binPath}/${name}`;
+    if (!options.overwrite && exists(destination)) {
+      parent.log(`not overwriting ${destination}, destination exists`);
+    } else {
+      await ln(bin, destination, parent);
+      await fs.chmod(destination, 777);
+    }
   }
 }
 

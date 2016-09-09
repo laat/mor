@@ -1,8 +1,8 @@
 // @flow
 function* entriesGenerator(obj) {
-   for (let key of Object.keys(obj)) {
-     yield [key, obj[key]];
-   }
+  for (const key of Object.keys(obj)) {
+    yield [key, obj[key]];
+  }
 }
 export default function entries(obj: Object) {
   return Array.from(entriesGenerator(obj));

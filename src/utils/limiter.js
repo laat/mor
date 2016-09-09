@@ -43,8 +43,8 @@ function limiter(max: number = 1) {
     });
   }
 
-  function run(thunk: Function) {
-    const task = createTask(thunk);
+  function run(cb: Function) {
+    const task = createTask(cb);
     tasks.push(task);
     runNext();
     return task.promise;
