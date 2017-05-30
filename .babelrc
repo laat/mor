@@ -1,0 +1,9 @@
+{
+  "plugins": ["transform-flow-strip-types", "transform-object-rest-spread"],
+  "presets": [["env", {"targets": { "node": "7.9" } }]],
+  "env": {
+    "development": {
+      "sourceMaps": "inline"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "mor-repo",
+  "private": true,
+  "license": "MIT",
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "mor": {
+    "cli": "./scripts/tool"
+  },
+  "scripts": {
+    "linkbin:root": "cd packages/mor-command-root && BABEL_ENV=development npm link",
+    "linkbin:test": "cd packages/mor-command-test && BABEL_ENV=development npm link",
+    "linkbin:ls": "cd packages/mor-command-ls && BABEL_ENV=development npm link",
+    "bootstrap": "BABEL_ENV=development lerna bootstrap && npm-run-all linkbin:*",
+    "test": "./scripts/tool test",
+    "precoverage": "npm run bootstrap",
+    "coverage": "nyc report",
+    "coverage:DO_THIS_LATER": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-preset-env": "^1.5.1",
+    "flow-bin": "^0.47.0",
+    "has-flag": "^2.0.0",
+    "lerna": "^2.0.0-rc.5",
+    "npm-run-all": "^4.0.2",
+    "nurture": "^2.2.5",
+    "nyc": "^10.3.2",
+    "prettier": "^1.3.1"
+  }
+}

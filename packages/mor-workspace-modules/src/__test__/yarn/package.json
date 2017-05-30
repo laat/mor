@@ -1,0 +1,1 @@
+{ "name": "yarn-root", "workspaces": ["packages/*"] }

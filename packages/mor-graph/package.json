@@ -1,0 +1,33 @@
+{
+  "name": "mor-graph",
+  "version": "0.1.0",
+  "main": "lib/index.js",
+  "repository": "git@github.com:laat/mor.git",
+  "author": "Sigurd Fosseng <sigurd@fosseng.net>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=7.9"
+  },
+  "scripts": {
+    "prebuild:flow": "mkdirp lib",
+    "build:flow": "flow-copy-source -v -i '**/*.test.js' src lib",
+    "build:js": "babel src -d lib --ignore '*test.js'",
+    "build": "run-p build:*",
+    "test": "jest",
+    "prepublish": "npm run build"
+  },
+  "dependencies": {
+    "depth-first": "^2.0.1",
+    "p-queue": "^1.0.0",
+    "toposort": "^1.0.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-jest": "^20.0.3",
+    "flow-bin": "^0.47.0",
+    "flow-copy-source": "^1.1.0",
+    "jest": "^20.0.4",
+    "mkdirp": "^0.5.1",
+    "npm-run-all": "^4.0.2"
+  }
+}

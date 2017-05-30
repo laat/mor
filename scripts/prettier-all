@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+cd "$(mor-root)"
+jsfiles=$(git ls-files | grep '\.js$' | tr '\n' ' ')
+prettier --single-quote --trailing-comma es5 --write $jsfiles

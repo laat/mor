@@ -1,0 +1,17 @@
+{
+  "name": "mor-command-root",
+  "version": "0.1.0",
+  "main": "cli.js",
+  "repository": "git@github.com:laat/mor.git",
+  "author": "Sigurd Fosseng <sigurd@fosseng.net>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=7.9"
+  },
+  "bin": {
+    "mor-root": "cli.js"
+  },
+  "dependencies": {
+    "mor-core": "0.1.0"
+  }
+}
