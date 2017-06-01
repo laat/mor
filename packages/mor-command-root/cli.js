@@ -1,9 +1,25 @@
 #!/usr/bin/env node
+// @flow
+const path = require('path');
 const core = require('mor-core').default;
+const program = require('commander');
 
-core
-  .config()
-  .then(config => {
-    console.log(config.rootPath);
-  })
-  .catch(err => console.log(err));
+program
+.usage('[package]')
+.description('get the root folder [of a package]')
+.parse(process.argv);
+
+(async () => {
+  const pkgName = program.args[0];
+  const mor = await core();
+  if (pkgName == null) {
+    console.log(mor.config.rootPath);
+  } else {
+    const withName = mor.workspaces.filter(ws => ws.pkg.name == pkgName)
+    if (withName.length === 0) {
+      console.error(`Could not find ${pkgName}`);
+      return;
+    }
+    console.log(path.dirname(withName[0].path))
+  }
+})()

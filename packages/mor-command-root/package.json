@@ -12,6 +12,7 @@
     "mor-root": "cli.js"
   },
   "dependencies": {
+    "commander": "^2.9.0",
     "mor-core": "0.1.0"
   }
 }

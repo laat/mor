@@ -29,10 +29,11 @@ const core = async (providedOpts: ?Opts) => {
   const graphWithRoot = new ModuleGraph(allModules, opts.strictSemver);
   const graph = new ModuleGraph(modules, opts.strictSemver);
 
+  const cfg = opts.noConfig ? {} : await config(workspace.root.path);
   return {
     root: workspace.root,
     workspaces: modules || [],
-    config: opts.noConfig ? {} : await config(workspace.root.path),
+    config: (cfg: Object),
     graph,
     graphWithRoot,
   };
