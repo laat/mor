@@ -9,7 +9,7 @@
     "node": ">=7.9"
   },
   "bin": {
-    "mor-ls": "lib/cli.js"
+    "mor-ls": "./lib/cli.js"
   },
   "scripts": {
     "prebuild:flow": "mkdirp lib",

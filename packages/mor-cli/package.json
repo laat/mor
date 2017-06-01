@@ -7,7 +7,7 @@
     "node": ">=7.9"
   },
   "bin": {
-    "mor": "cli.js"
+    "mor": "./cli.js"
   },
   "dependencies": {
     "commander": "^2.9.0",
