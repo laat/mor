@@ -1,2 +1,2 @@
 #!/bin/bash
-mor-ls --format dot mor-core -dt | dot -Tsvg > ../doc/dependencies.svg
+mor-ls --format dot | dot -Tsvg > ../doc/dependencies.svg
