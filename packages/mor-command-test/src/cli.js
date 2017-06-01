@@ -13,12 +13,12 @@ import prettyMs from 'pretty-ms';
 
 program
   .usage('[packages...]')
-  .option('-g, --glob', 'match packages with glob')
+  .option('-g, --glob', 'match package names with glob')
   .option('-D, --dependencies', 'with dependencies')
   .option('-d, --dependents', 'with dependents')
   .option('-t, --transitive', 'with transitive')
-  .option('-c, --concurrency <n>', 'number of processes to use', parseInt)
-  .option('-o, --in-order', 'test modules in topological order')
+  .option('-c, --concurrency <n>', `number of processes to use [default: ${processingUnits()}]`, parseInt)
+  .option('-o, --in-order', 'test modules in reverse topological order')
   .option('-C, --handle-cycles', '')
   .parse(process.argv);
 
