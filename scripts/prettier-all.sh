@@ -3,4 +3,4 @@ set -e
 
 cd "$(mor-root)"
 jsfiles=$(git ls-files | grep '\.js$' | tr '\n' ' ')
-./tool prettier --write $jsfiles
+./scripts/tool prettier --write $jsfiles

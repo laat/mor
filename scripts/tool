@@ -15,7 +15,7 @@ core.config().then(config => {
   .command('test', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
   .command('watch' , 'nurture', { cwd: config.rootPath })
   .command('record-demo', './record-demo', { cwd: __dirname })
-  .command('prettier-all', './prettier-all', { cwd: __dirname }) // ./prettier-all
+  .command('prettier-all', './prettier-all.sh', { cwd: __dirname }) // ./prettier-all
   .command('prettier', 'prettier', ['--single-quote', '--trailing-comma', 'es5'], { cwd: config.rootPath })
   .parse(process.argv);
 });
