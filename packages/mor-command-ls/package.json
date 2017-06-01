@@ -1,6 +1,6 @@
 {
   "name": "mor-command-ls",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -11,6 +11,9 @@
   "bin": {
     "mor-ls": "./lib/cli.js"
   },
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "prebuild:flow": "mkdirp lib",
     "build:flow": "flow-copy-source -v -i '**/*.test.js' src lib",

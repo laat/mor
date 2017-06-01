@@ -11,6 +11,9 @@
   "bin": {
     "mor-test": "./lib/cli.js"
   },
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "prebuild:flow": "mkdirp lib",
     "build:flow": "flow-copy-source -v -i '**/*.test.js' src lib",
