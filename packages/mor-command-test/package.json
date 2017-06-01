@@ -1,6 +1,6 @@
 {
   "name": "mor-command-test",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -27,8 +27,8 @@
     "commander": "^2.9.0",
     "draftlog": "^1.0.12",
     "loud-rejection": "^1.6.0",
-    "mor-core": "^0.2.4",
-    "mor-helper-filter": "^0.2.4",
+    "mor-core": "^0.2.5",
+    "mor-helper-filter": "^0.2.5",
     "npm-run-path": "^2.0.2",
     "pretty-ms": "^2.1.0",
     "processing-units": "^1.0.1",

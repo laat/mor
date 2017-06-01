@@ -1,15 +1,15 @@
 {
   "name": "tool",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "main": "tool.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
     "commander": "^2.9.0",
-    "mor-command-ls": "^0.2.4",
-    "mor-command-root": "^0.2.4",
-    "mor-command-test": "^0.2.4",
-    "mor-core": "^0.2.4",
+    "mor-command-ls": "^0.2.5",
+    "mor-command-root": "^0.2.5",
+    "mor-command-test": "^0.2.5",
+    "mor-core": "^0.2.5",
     "mor-helper-cli": "0.1.0"
   },
   "devDependencies": {

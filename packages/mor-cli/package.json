@@ -1,6 +1,6 @@
 {
   "name": "mor-cli",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "main": "index.js",
   "license": "MIT",
   "engines": {
@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "commander": "^2.9.0",
-    "mor-command-ls": "^0.2.4",
-    "mor-command-test": "^0.2.4",
-    "mor-core": "^0.2.4",
+    "mor-command-ls": "^0.2.5",
+    "mor-command-test": "^0.2.5",
+    "mor-core": "^0.2.5",
     "npm-run-path": "^2.0.2"
   }
 }
