@@ -17,7 +17,7 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "mor-graph": "0.1.0"
+    "mor-graph": "^0.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
