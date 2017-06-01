@@ -15,6 +15,7 @@ core.config().then(config => {
   .command('ls', 'mor-ls', { cwd: __dirname }) // ./node_modules/.bin/mor-ls
   .command('npm', 'npm', { cwd: config.rootPath })
   .command('prettier-all', './prettier-all', { cwd: __dirname }) // ./prettier-all
+  .command('record', './record', { cwd: __dirname })
   .command('root', 'mor-root', { cwd: __dirname }) // ./node_modules/.bin/mor-root
   .command('t', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
   .command('test', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
