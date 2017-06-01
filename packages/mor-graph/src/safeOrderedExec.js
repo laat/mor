@@ -21,6 +21,7 @@ export default async function<T>(
   if (opts != null && opts.handleCycles != null) {
     handleCycles = opts.handleCycles;
   }
+  const visits = [];
   const queue = new PQueue({ concurrency });
   const visited: { [key: T]: boolean } = {};
   const finished: { [key: T]: boolean } = {};
@@ -46,26 +47,26 @@ export default async function<T>(
     finished[node] = true;
     for (const dep of nodeDependents) {
       if (--counts[dep] === 0) {
-        queue.add(() => visit(dep));
+        visits.push(queue.add(() => visit(dep)));
       }
     }
   };
   for (const node of nodes) {
     if (counts[node] === 0) {
-      queue.add(() => visit(node));
+      visits.push(queue.add(() => visit(node)));
     }
   }
   // eslint-disable-next-line no-constant-condition
   while (true) {
     // eslint-disable-next-line no-await-in-loop
-    await queue.onEmpty();
+    await Promise.all(visits);
     if (Object.keys(finished).length === nodes.length) {
       break;
     }
     if (Object.keys(finished).length === Object.keys(visited).length) {
       if (handleCycles) {
         const notVisited = nodes.filter(
-          node => !Object.keys(visited).includes(node)
+          node => !Object.keys(visited).includes(String(node))
         );
         const next = notVisited.reduce(
           (min, node) => {
@@ -77,7 +78,7 @@ export default async function<T>(
           { node: null, count: Number.POSITIVE_INFINITY }
         ).node;
         if (next != null) {
-          queue.add(() => visit(next));
+          visits.push(queue.add(() => visit(next)));
         }
       } else {
         throw new Error('Cycle detected');

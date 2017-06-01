@@ -18,10 +18,12 @@
     ]
   },
   "scripts": {
+    "linkbin:cli": "cd packages/mor-cli && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin:root": "cd packages/mor-command-root && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin:test": "cd packages/mor-command-test && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin:ls": "cd packages/mor-command-ls && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin": "npm-run-all linkbin:*",
+    "unlinkbin:cli": "cd packages/mor-cli && npm unlink",
     "unlinkbin:root": "cd packages/mor-command-root && npm unlink",
     "unlinkbin:test": "cd packages/mor-command-test && npm unlink",
     "unlinkbin:ls": "cd packages/mor-command-ls && npm unlink",

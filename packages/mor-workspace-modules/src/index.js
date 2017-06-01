@@ -61,7 +61,7 @@ const loadLernaModules = async (
     return null;
   }
   const lernaCfg = await loadJsonFile(lernafile);
-  return readModuleGlobs(lernaCfg.packages, rootFolder);
+  return readModuleGlobs(lernaCfg.packages || ['packages/*'], rootFolder);
 };
 
 const loadYarnModules = async (rootFolder: string): Promise<?Array<Module>> => {
