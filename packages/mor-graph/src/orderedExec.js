@@ -12,8 +12,5 @@ export default async function<T>(
 ) {
   const queue = new PQueue(opts);
   const ordered = toposort.array(nodes, edges);
-  ordered.forEach(node => {
-    queue.add(() => processor(node));
-  });
-  await queue.onEmpty();
+  return Promise.all(ordered.map(node => queue.add(() => processor(node))));
 }

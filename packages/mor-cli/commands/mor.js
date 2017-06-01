@@ -8,7 +8,6 @@ program.option('--no-config', 'run without configuration');
 // alias broken
 // https://github.com/tj/commander.js/issues/419
 program
-  .command('root', 'get root folders')
   .command('ls', 'list packages managed')
   .command('test', 'test all packages')
   .parse(process.argv);

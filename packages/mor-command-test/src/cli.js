@@ -51,7 +51,7 @@ process.on('exit', () => {
       process.exit(1);
     }
   } catch (err) {
-    console.log({ err });
+    console.log(err);
     process.exit(1);
   }
 })();

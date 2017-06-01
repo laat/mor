@@ -10,17 +10,11 @@ const program = new helpers.Program({
 core.config().then(config => {
   program
   .command('bootstrap', 'yarn', ['bootstrap'], { cwd: config.rootPath })
-  .command('build-doc', './build-doc.sh', { cwd: __dirname })
   .command('flow', 'flow', { cwd: config.rootPath }) // <rootPath>/node_modules/.bin/flow
-  .command('lerna', 'lerna', { cwd: config.rootPath }) // <rootPath>/node_modules/.bin/lerna
   .command('ls', 'mor-ls', { cwd: __dirname }) // ./node_modules/.bin/mor-ls
-  .command('npm', 'npm', { cwd: config.rootPath })
-  .command('prettier-all', './prettier-all', { cwd: __dirname }) // ./prettier-all
-  .command('record', './record', { cwd: __dirname })
-  .command('root', 'mor-root', { cwd: __dirname }) // ./node_modules/.bin/mor-root
-  .command('t', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
   .command('test', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
   .command('watch' , 'nurture', { cwd: config.rootPath })
-  .command('yarn', 'yarn', { cwd: config.rootPath })
+  .command('record-demo', './record-demo', { cwd: __dirname })
+  .command('prettier-all', './prettier-all', { cwd: __dirname }) // ./prettier-all
   .parse(process.argv);
 });

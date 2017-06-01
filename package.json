@@ -15,11 +15,10 @@
     "linkbin:test": "cd packages/mor-command-test && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin:ls": "cd packages/mor-command-ls && BABEL_ENV=development npm link --ignore-scripts",
     "bootstrap": "BABEL_ENV=development lerna bootstrap && npm-run-all linkbin:*",
-    "build:doc": "./scripts/tool build-doc",
+    "build:doc": "./scripts/tool ls --format dot | dot -Tpng > ./doc/dependencies.png",
     "test": "./scripts/tool test",
     "precoverage": "npm run bootstrap",
-    "coverage": "nyc report",
-    "coverage:DO_THIS_LATER": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+    "coverage": "nyc report"
   },
   "devDependencies": {
     "babel-plugin-transform-flow-strip-types": "^6.22.0",

@@ -36,7 +36,7 @@ const spawn = (exports.spawn = (
   }
 });
 
-exports.Program = class Program {
+exports.Program = class SimpleProgram {
   constructor({ name, prettyName }) {
     this.commands = {};
     this.name = name || path.basename(__filename);

@@ -14,7 +14,6 @@
     "mor-core": "0.1.0",
     "mor-command-ls": "0.1.0",
     "mor-command-test": "0.1.0",
-    "mor-command-root": "0.1.0",
     "npm-run-path": "^2.0.2"
   }
 }
