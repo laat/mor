@@ -5,14 +5,16 @@ import npmRunPath from 'npm-run-path';
 import supportsColor from 'supports-color';
 import processingUnits from 'processing-units';
 
-import type { Module } from 'mor-core';
+import type { ModuleGraphNode } from 'mor-core';
 import type { ProcessingError } from './types';
 
 require('draftlog').into(console, supportsColor);
 // $FlowIgnore
 const logger = console.draft.bind(console);
 
-export default (errors: Array<ProcessingError>) => async (ws: Module) => {
+export default (errors: Array<ProcessingError>) => async (
+  ws: ModuleGraphNode
+) => {
   const cwd = path.dirname(ws.path);
   const name = ws.name || cwd;
   const status = logger();

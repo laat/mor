@@ -1,7 +1,7 @@
 // @flow
-import type { Module } from 'mor-core';
+import type { ModuleGraphNode } from 'mor-core';
 
 export type ProcessingError = {
   err: any,
-  ws: Module,
+  ws: ModuleGraphNode,
 };

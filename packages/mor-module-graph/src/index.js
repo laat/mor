@@ -5,19 +5,7 @@ import Graph from 'mor-graph';
 import execAs from './execAs';
 import runScript from './runAs';
 
-export interface Module {
-  path: string,
-  pkg: Object,
-  +name: ?string,
-  +version: ?string,
-  +private: boolean,
-  exec(command: string, args?: Array<string>, opts?: Object): Promise<any>,
-  execSync(command: string, args?: Array<string>, opts?: Object): any,
-  run(script: string, opts?: Object): Promise<any>,
-  runSync(script: string, opts?: Object): void,
-}
-
-class ModuleGraphNode implements Module {
+export class ModuleGraphNode {
   path: string;
   pkg: Object;
   constructor({ path, pkg }: { path: string, pkg: Object }) {
@@ -107,15 +95,21 @@ export default class ModuleGraph {
     return new ModuleGraph(newNodes, this._strictSemver);
   }
 
-  dependencies(packageName: string, opts?: { transitive: boolean }) {
+  dependencies(
+    packageName: ModuleGraphNode | string,
+    opts?: { transitive: boolean }
+  ) {
     const { transitive } = Object.assign({}, { transitive: false }, opts);
-    const packageNode = this._nodesByName[packageName];
+    const packageNode = this.getPackage(packageName);
     return this._graph.dependencies(packageNode, { transitive });
   }
 
-  dependents(packageName: string, opts?: { transitive: boolean }) {
+  dependents(
+    packageName: ModuleGraphNode | string,
+    opts?: { transitive: boolean }
+  ) {
     const { transitive } = Object.assign({}, { transitive: false }, opts);
-    const packageNode = this._nodesByName[packageName];
+    const packageNode = this.getPackage(packageName);
     return this._graph.dependents(packageNode, { transitive });
   }
 
@@ -123,12 +117,19 @@ export default class ModuleGraph {
     return this._graph.nodes;
   }
 
+  /**
+   * @param  {ModuleGraphNode|string} packageName name, path or node
+   * @return {ModuleGraphNode|undefined} if it exists in the graph
+   */
   getPackage(packageName: ModuleGraphNode | string) {
     if (
       typeof packageName === 'string' &&
       this._nodesByName[packageName] != null
     ) {
       return this._nodesByName[packageName];
+    }
+    if (packageName instanceof ModuleGraphNode) {
+      return this._graph.nodes.filter(pkg => pkg === packageName)[0];
     }
     return this._graph.nodes.filter(({ path }) => path === packageName)[0];
   }

@@ -1,9 +1,10 @@
 // @flow
 'use strict';
 import morWorkspaceModules from 'mor-workspace-modules';
-import ModuleGraph from 'mor-module-graph';
+import ModuleGraphImpl from 'mor-module-graph';
 import config from './config';
-export type { Module } from 'mor-module-graph';
+export type { ModuleGraphNode } from 'mor-module-graph';
+export const ModuleGraph = ModuleGraphImpl;
 
 type Opts = {
   cwd?: string,
@@ -26,8 +27,8 @@ const core = async (providedOpts: ?Opts) => {
   if (workspace && workspace.root) {
     allModules.push(workspace.root);
   }
-  const graphWithRoot = new ModuleGraph(allModules, opts.strictSemver);
-  const graph = new ModuleGraph(modules, opts.strictSemver);
+  const graphWithRoot = new ModuleGraphImpl(allModules, opts.strictSemver);
+  const graph = new ModuleGraphImpl(modules, opts.strictSemver);
 
   const cfg = opts.noConfig ? {} : await config(workspace.root.path);
   return {

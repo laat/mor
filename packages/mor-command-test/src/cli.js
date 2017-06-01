@@ -5,12 +5,18 @@ import path from 'path';
 import program from 'commander';
 import processingUnits from 'processing-units';
 import core from 'mor-core';
+import morHelperFilter from 'mor-helper-filter';
 import testModule from './testModule';
 import printError from './printError';
 import timeSpan from 'time-span';
 import prettyMs from 'pretty-ms';
 
 program
+  .usage('[packages...]')
+  .option('-g, --glob', 'match packages with glob')
+  .option('-D, --dependencies', 'with dependencies')
+  .option('-d, --dependents', 'with dependents')
+  .option('-t, --transitive', 'with transitive')
   .option('-c, --concurrency <n>', 'number of processes to use', parseInt)
   .option('-o, --in-order', 'test modules in topological order')
   .option('-C, --handle-cycles', '')
@@ -23,16 +29,22 @@ process.on('exit', () => {
 
 (async function() {
   const mor = await core();
-  const runOpts = {
-    concurrency: program.concurrency || processingUnits(),
-    handleCycles: program.handleCycles === true,
-  };
+  const graph = morHelperFilter(program.args, mor.graph, {
+    transitive: program.transitive,
+    dependents: program.dependents,
+    dependencies: program.dependencies,
+    glob: program.glob,
+  });
   try {
     const errors = [];
+    const runOpts = {
+      concurrency: program.concurrency || processingUnits(),
+      handleCycles: program.handleCycles === true,
+    };
     if (program.inOrder === true) {
-      await mor.graph.processSafeOrder(testModule(errors), runOpts);
+      await graph.processSafeOrder(testModule(errors), runOpts);
     } else {
-      await mor.graph.processOrder(testModule(errors), runOpts);
+      await graph.processOrder(testModule(errors), runOpts);
     }
     errors.forEach(printError);
     if (errors.length > 0) {

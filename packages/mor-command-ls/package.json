@@ -24,7 +24,8 @@
     "columnify": "^1.5.4",
     "commander": "^2.9.0",
     "loud-rejection": "^1.6.0",
-    "mor-core": "0.1.0"
+    "mor-core": "0.1.0",
+    "mor-helper-filter": "0.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",

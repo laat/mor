@@ -8,39 +8,72 @@ import program from 'commander';
 import chalk from 'chalk';
 import columnify from 'columnify';
 import core from 'mor-core';
+import morHelperFilter from 'mor-helper-filter';
 
-function printPaths(mor) {
-  mor.workspaces.forEach(ws => {
-    console.log(path.dirname(ws.path));
-  });
-}
-
-function printColumns(mor) {
-  const formattedPackages = mor.workspaces.map(ws => ({
-    name: ws.pkg.name || '',
-    version: ws.pkg.version ? chalk.grey(ws.pkg.version) : '',
-    private: ws.pkg.private ? `(${chalk.red('private')})` : '',
-    path: path.dirname(ws.path),
-  }));
-  console.log(columnify(formattedPackages, { showHeaders: false }));
-}
-
-function printJson(mor) {
-  console.log(JSON.stringify({ root: mor.root, workspaces: mor.workspaces }));
-}
+import printNames from './printers/names';
+import printPaths from './printers/paths';
+import printColumns from './printers/column';
+import printJson from './printers/json';
+import printDot from './printers/dot';
 
 (async function main() {
   program
-    .option('-p, --paths', 'return paths')
-    .option('-j, --json', 'return json')
-    .parse(process.argv);
+    .usage('[packages...]')
+    .option('-g, --glob', 'match packages with glob')
+    .option('-D, --dependencies', 'with dependencies')
+    .option('-d, --dependents', 'with dependents')
+    .option('-t, --transitive', 'with transitive')
+    .option(
+      '-f, --format <format>',
+      'Output format',
+      /^(j|json|c|column|p|path|n|name|d|dot)$/i,
+      'column'
+    );
+
+  program.on('--help', () => {
+    console.log(`\
+  Formats:
+    c, column (default)
+    p, path
+    j, json
+    n, name
+    d, dot
+
+  Examples:
+    mor ls --format dot | dot -Tsvg > dependencies.svg
+`);
+  });
+
+  program.parse(process.argv);
 
   const mor = await core();
-  if (program.paths) {
-    printPaths(mor);
-  } else if (program.json) {
-    printJson(mor);
-  } else {
-    printColumns(mor);
+  const graph = morHelperFilter(program.args, mor.graph, {
+    transitive: program.transitive,
+    dependents: program.dependents,
+    dependencies: program.dependencies,
+    glob: program.glob,
+  });
+  switch (program.format) {
+    case 'p':
+    case 'path':
+      printPaths(graph.modules);
+      break;
+    case 'n':
+    case 'name':
+      printNames(graph.modules);
+      break;
+    case 'j':
+    case 'json':
+      printJson(mor.root, graph.modules);
+      break;
+    case 'd':
+    case 'dot':
+      printDot(graph);
+      break;
+    case 'c':
+    case 'column':
+    default:
+      printColumns(graph.modules);
+      break;
   }
 })();

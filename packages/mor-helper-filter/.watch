@@ -7,9 +7,5 @@
   }, {
     "patterns": ["src/**/*.js"],
     "command": "npm run build:flow"
-  }, {
-    "patterns": ["src/**/*.js"],
-    "settle": 500,
-    "command": "npm link --ignore-scripts"
   }]
 }

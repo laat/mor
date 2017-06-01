@@ -10,6 +10,7 @@ const program = new helpers.Program({
 core.config().then(config => {
   program
   .command('bootstrap', 'yarn', ['bootstrap'], { cwd: config.rootPath })
+  .command('build-doc', './build-doc.sh', { cwd: __dirname })
   .command('flow', 'flow', { cwd: config.rootPath }) // <rootPath>/node_modules/.bin/flow
   .command('lerna', 'lerna', { cwd: config.rootPath }) // <rootPath>/node_modules/.bin/lerna
   .command('ls', 'mor-ls', { cwd: __dirname }) // ./node_modules/.bin/mor-ls
