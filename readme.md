@@ -48,7 +48,8 @@ project root
 
 ### mor-cli
 ```
-mor --no-config run
+mor run
+mor run --in-order --reverse install
 ```
 ### mor-command-cycles
 ### mor-command-nsp
