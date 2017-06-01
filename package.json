@@ -10,6 +10,12 @@
   "mor": {
     "cli": "./scripts/tool"
   },
+  "lint-staged": {
+    "*.js": [
+      "prettier --write",
+      "git add"
+    ]
+  },
   "scripts": {
     "linkbin:root": "cd packages/mor-command-root && BABEL_ENV=development npm link --ignore-scripts",
     "linkbin:test": "cd packages/mor-command-test && BABEL_ENV=development npm link --ignore-scripts",
@@ -17,6 +23,7 @@
     "bootstrap": "BABEL_ENV=development lerna bootstrap && npm-run-all linkbin:*",
     "build:doc": "./scripts/tool ls --format dot | dot -Tpng > ./doc/dependencies.png",
     "test": "./scripts/tool test",
+    "precommit": "lint-staged",
     "precoverage": "npm run bootstrap",
     "coverage": "nyc report"
   },
@@ -26,7 +33,9 @@
     "babel-preset-env": "^1.5.1",
     "flow-bin": "^0.47.0",
     "has-flag": "^2.0.0",
+    "husky": "^0.13.4",
     "lerna": "^2.0.0-rc.5",
+    "lint-staged": "^3.6.0",
     "npm-run-all": "^4.0.2",
     "nurture": "^2.2.5",
     "nyc": "^10.3.2",
