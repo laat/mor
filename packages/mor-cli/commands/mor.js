@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 'use strict';
-const core = require('mor-core');
 const program = require('commander');
 
 program.option('--no-config', 'run without configuration');

@@ -3,7 +3,6 @@ import path from 'path';
 import chalk from 'chalk';
 import npmRunPath from 'npm-run-path';
 import supportsColor from 'supports-color';
-import processingUnits from 'processing-units';
 
 import type { ModuleGraphNode } from 'mor-core';
 import type { ProcessingError } from './types';

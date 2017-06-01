@@ -1,5 +1,5 @@
-/* eslint-env jest */
 // @flow
+/* eslint-env jest */
 'use strict';
 const path = require('path');
 const test = require('tape-promise/tape');

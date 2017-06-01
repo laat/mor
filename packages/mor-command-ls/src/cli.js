@@ -3,10 +3,7 @@
 /* eslint-disable no-console */
 'use strict';
 import 'loud-rejection/register';
-import path from 'path';
 import program from 'commander';
-import chalk from 'chalk';
-import columnify from 'columnify';
 import core from 'mor-core';
 import morHelperFilter from 'mor-helper-filter';
 

@@ -1,0 +1,12 @@
+**/node_modules/*
+/flow-typed/*
+/packages/mor-cli/lib
+/packages/mor-command-ls/lib
+/packages/mor-command-root/lib
+/packages/mor-command-test/lib
+/packages/mor-core/lib
+/packages/mor-graph/lib
+/packages/mor-helper-cli/lib
+/packages/mor-helper-filter/lib
+/packages/mor-module-graph/lib
+/packages/mor-workspace-modules/lib

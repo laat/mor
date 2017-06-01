@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // @flow
 import 'loud-rejection/register';
-import path from 'path';
 import program from 'commander';
 import processingUnits from 'processing-units';
 import core from 'mor-core';

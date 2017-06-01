@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
 // @flow
+/* eslint-disable no-console */
 import chalk from 'chalk';
 import type { ProcessingError } from './types';
 

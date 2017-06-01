@@ -16,7 +16,7 @@ function spawnCustomCli(rootPath, config, argv) {
       process.env,
       npmRunPath({ path: process.env.PATH || '', cwd: wd })
     );
-    const proc = spawn(cliPath, argv.slice(2), { stdio: 'inherit' });
+    const proc = spawn(cliPath, argv.slice(2), { env, stdio: 'inherit' });
     proc.on('close', process.exit.bind(process));
   } catch (err) {
     if (err.code == 'ENOENT') {
