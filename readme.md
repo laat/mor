@@ -1,6 +1,7 @@
 # locate workspace modules the same way as Yarn
 [issue 3294](https://github.com/yarnpkg/yarn/issues/3294)
 
+![](screenshot.gif)
 ```sh
 project root
 ├── package.json <-- root config with 'workspaces' property
