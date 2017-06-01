@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const core = require('mor-core').default;
-const helpers = require('mor-cli-helpers');
+const helpers = require('mor-helper-cli');
 
 const program = new helpers.Program({
   name: 'mor',

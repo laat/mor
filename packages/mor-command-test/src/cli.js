@@ -17,7 +17,11 @@ program
   .option('-D, --dependencies', 'with dependencies')
   .option('-d, --dependents', 'with dependents')
   .option('-t, --transitive', 'with transitive')
-  .option('-c, --concurrency <n>', `number of processes to use [default: ${processingUnits()}]`, parseInt)
+  .option(
+    '-c, --concurrency <n>',
+    `number of processes to use [default: ${processingUnits()}]`,
+    parseInt
+  )
   .option('-o, --in-order', 'test modules in reverse topological order')
   .option('-C, --handle-cycles', '')
   .parse(process.argv);
