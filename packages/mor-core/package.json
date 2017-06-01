@@ -1,6 +1,6 @@
 {
   "name": "mor-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "load-json-file": "^2.0.0",
-    "mor-module-graph": "^0.1.0",
+    "mor-module-graph": "^0.2.0",
     "mor-workspace-modules": "^0.1.0",
     "read-pkg": "^2.0.0"
   },

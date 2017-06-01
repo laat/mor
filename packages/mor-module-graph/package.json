@@ -1,6 +1,6 @@
 {
   "name": "mor-module-graph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "lib/index.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -17,7 +17,7 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "mor-graph": "^0.1.0"
+    "mor-graph": "^0.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
