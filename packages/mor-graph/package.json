@@ -1,5 +1,6 @@
 {
   "name": "mor-graph",
+  "description": "A simple graph",
   "version": "0.1.0",
   "main": "lib/index.js",
   "repository": "git@github.com:laat/mor.git",
