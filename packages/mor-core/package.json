@@ -18,9 +18,9 @@
   },
   "dependencies": {
     "load-json-file": "^2.0.0",
-    "read-pkg": "^2.0.0",
-    "mor-module-graph": "0.1.0",
-    "mor-workspace-modules": "0.1.0"
+    "mor-module-graph": "^0.1.0",
+    "mor-workspace-modules": "^0.1.0",
+    "read-pkg": "^2.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
