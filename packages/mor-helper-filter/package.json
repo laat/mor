@@ -22,7 +22,7 @@
     "flow-bin": "^0.47.0",
     "flow-copy-source": "^1.1.0",
     "mkdirp": "^0.5.1",
-    "mor-core": "^0.1.0",
+    "mor-core": "0.1.0",
     "npm-run-all": "^4.0.2",
     "tape": "^4.6.3",
     "tape-promise": "^2.0.1"

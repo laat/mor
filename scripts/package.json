@@ -6,11 +6,11 @@
   "private": true,
   "dependencies": {
     "commander": "^2.9.0",
-    "mor-command-ls": "^0.1.0",
-    "mor-command-root": "^0.1.0",
-    "mor-command-test": "^0.1.0",
-    "mor-core": "^0.1.0",
-    "mor-helper-cli": "^0.1.0"
+    "mor-core": "0.1.0",
+    "mor-command-ls": "0.1.0",
+    "mor-command-root": "0.1.0",
+    "mor-command-test": "0.1.0",
+    "mor-helper-cli": "0.1.0"
   },
   "devDependencies": {
     "ttystudio": "0.0.16"
