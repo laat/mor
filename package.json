@@ -13,6 +13,7 @@
   "lint-staged": {
     "*.js": [
       "./scripts/tool prettier --write",
+      "eslint --fix",
       "git add"
     ]
   },
@@ -22,6 +23,7 @@
     "linkbin:ls": "cd packages/mor-command-ls && BABEL_ENV=development npm link --ignore-scripts",
     "bootstrap": "BABEL_ENV=development lerna bootstrap && npm-run-all linkbin:*",
     "build:doc": "./scripts/tool ls --format dot | dot -Tpng > ./doc/dependencies.png",
+    "lint": "eslint '**/*.js'",
     "test": "./scripts/tool test",
     "precommit": "lint-staged",
     "precoverage": "npm run bootstrap",
