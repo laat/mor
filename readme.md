@@ -68,3 +68,9 @@ hasdep [--prod] [--dev] foobar@^2.0
 
 ### mor-helper-filter-hasdep
 > has external depenendency
+
+
+## Oppsett i det fri som funker bra med mor
+
+[turf](https://github.com/Turfjs/turf) funker strålende
+[conventional-changelog?](https://github.com/conventional-changelog/conventional-changelog) testene brekker for meg
