@@ -1,6 +1,6 @@
 {
   "name": "mor-command-test",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",

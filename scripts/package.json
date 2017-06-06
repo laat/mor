@@ -1,6 +1,6 @@
 {
   "name": "tool",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "main": "tool.js",
   "license": "MIT",
   "private": true,
@@ -8,7 +8,7 @@
     "commander": "^2.9.0",
     "mor-command-ls": "^0.2.5",
     "mor-command-root": "^0.2.5",
-    "mor-command-test": "^0.2.5",
+    "mor-command-test": "^0.2.6",
     "mor-core": "^0.2.5",
     "mor-helper-cli": "0.1.0"
   },
