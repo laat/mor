@@ -1,0 +1,7 @@
+{
+  "link": [{
+    "patterns": ["src/**/*.js"],
+    "settle": 500,
+    "command": "npm link --ignore-scripts"
+  }]
+}
