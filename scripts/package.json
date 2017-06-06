@@ -1,17 +1,17 @@
 {
   "name": "tool",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "main": "tool.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
     "commander": "^2.9.0",
-    "mor-command-ls": "^0.2.8",
+    "mor-command-ls": "^0.2.9",
     "mor-command-root": "^0.2.8",
     "mor-command-root-exec": "^0.2.8",
-    "mor-command-test": "^0.2.8",
+    "mor-command-test": "^0.2.9",
     "mor-core": "^0.2.7",
-    "mor-helper-cli": "^0.2.7"
+    "mor-helper-cli": "^0.2.9"
   },
   "devDependencies": {
     "ttystudio": "0.0.16"

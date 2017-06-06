@@ -1,6 +1,6 @@
 {
   "name": "mor-command-ls",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -28,7 +28,7 @@
     "commander": "^2.9.0",
     "loud-rejection": "^1.6.0",
     "mor-core": "^0.2.7",
-    "mor-helper-filter": "^0.2.8"
+    "mor-helper-filter": "^0.2.9"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
