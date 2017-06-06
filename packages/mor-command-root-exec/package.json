@@ -1,6 +1,6 @@
 {
   "name": "mor-command-root-exec",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
