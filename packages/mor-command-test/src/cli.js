@@ -25,8 +25,14 @@ program
     parseInt
   )
   .option('-o, --in-order', 'test modules in reverse topological order')
-  .option('-C, --handle-cycles', '')
-  .parse(process.argv);
+  .option('-C, --handle-cycles', '');
+
+program.on('--help', () => {
+  console.log(`\
+  The flag --staged does not work as a precommit hook, use --files`);
+});
+
+program.parse(process.argv);
 
 const end = timeSpan();
 process.on('exit', () => {
