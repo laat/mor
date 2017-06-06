@@ -50,6 +50,8 @@ project root
 ```
 mor run
 mor run --in-order --reverse install
+mor root-run install
+mor exec --in-order --reverse npm install
 ```
 ### mor-command-cycles
 ### mor-command-nsp

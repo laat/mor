@@ -16,6 +16,18 @@ const defaultOpts = {
   strictSemver: false,
   noConfig: false,
 };
+const getConfig = async (providedOpts: ?Opts) => {
+  const opts = Object.assign({}, defaultOpts, providedOpts);
+  const workspace = await morWorkspaceModules({ cwd: opts.cwd });
+  if (workspace == null) {
+    throw new Error('Could not find root');
+  }
+  const cfg = await config(workspace.root.path);
+  if (opts.noConfig) {
+    return { rootPath: cfg.rootPath };
+  }
+  return cfg;
+};
 const core = async (providedOpts: ?Opts) => {
   const opts = Object.assign({}, providedOpts, defaultOpts);
   const workspace = await morWorkspaceModules({ cwd: opts.cwd });
@@ -30,7 +42,7 @@ const core = async (providedOpts: ?Opts) => {
   const graphWithRoot = new ModuleGraphImpl(allModules, opts.strictSemver);
   const graph = new ModuleGraphImpl(modules, opts.strictSemver);
 
-  const cfg = opts.noConfig ? {} : await config(workspace.root.path);
+  const cfg = opts.noConfig ? {} : await getConfig(providedOpts);
   return {
     root: workspace.root,
     workspaces: modules || [],
@@ -39,16 +51,5 @@ const core = async (providedOpts: ?Opts) => {
     graphWithRoot,
   };
 };
-core.config = async (providedOpts: ?Opts) => {
-  const opts = Object.assign({}, defaultOpts, providedOpts);
-  const workspace = await morWorkspaceModules({ cwd: opts.cwd });
-  if (workspace == null) {
-    throw new Error('Could not find root');
-  }
-  const cfg = await config(workspace.root.path);
-  if (opts.noConfig) {
-    return { rootPath: cfg.rootPath };
-  }
-  return cfg;
-};
+core.config = getConfig;
 export default core;

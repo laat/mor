@@ -1,0 +1,36 @@
+{
+  "name": "mor-command-root-exec",
+  "version": "0.2.6",
+  "main": "lib/cli.js",
+  "repository": "git@github.com:laat/mor.git",
+  "author": "Sigurd Fosseng <sigurd@fosseng.net>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=7.9"
+  },
+  "bin": {
+    "mor-exec": "./lib/cli.js"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "prebuild:flow": "mkdirp lib",
+    "build:flow": "flow-copy-source -v -i '**/*.test.js' src lib",
+    "build:js": "babel src -d lib --ignore '*test.js'",
+    "build": "run-p build:*",
+    "prepublish": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^2.9.0",
+    "execa": "^0.6.3",
+    "mor-core": "^0.2.5"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "flow-bin": "^0.47.0",
+    "flow-copy-source": "^1.1.0",
+    "mkdirp": "^0.5.1",
+    "npm-run-all": "^4.0.2"
+  }
+}

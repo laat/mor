@@ -27,9 +27,7 @@ const spawn = (exports.spawn = (
     if (err.code == 'ENOENT') {
       console.error(`\n ${bin} does not exist \n`);
     } else if (err.code == 'EACCES') {
-      console.error(
-        `\n  ${cliPath} not executable. try chmod or run with root\n`
-      );
+      console.error(`\n  ${bin} not executable. try chmod or run with root\n`);
     }
     console.log('err', err);
     process.exit(1);

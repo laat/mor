@@ -5,7 +5,7 @@ import fs from 'fs';
 import loadJsonFile from 'load-json-file';
 import readPkg from 'read-pkg';
 
-const fileExist = async filename =>
+const fileExist = filename =>
   new Promise(resolve => {
     fs.lstat(filename, (err, stats) => {
       resolve(!err && stats.isFile());
