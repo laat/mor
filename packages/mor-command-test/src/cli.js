@@ -16,6 +16,7 @@ program
   .option('-D, --dependencies', 'with dependencies')
   .option('-d, --dependents', 'with dependents')
   .option('-t, --transitive', 'with transitive')
+  .option('-v, --verbose', 'verbose')
   .option(
     '-c, --concurrency <n>',
     `number of processes to use [default: ${processingUnits()}]`,
@@ -40,14 +41,15 @@ process.on('exit', () => {
   });
   try {
     const errors = [];
+    const verbose = program.verbose === true;
     const runOpts = {
       concurrency: program.concurrency || processingUnits(),
       handleCycles: program.handleCycles === true,
     };
     if (program.inOrder === true) {
-      await graph.processSafeOrder(testModule(errors), runOpts);
+      await graph.processSafeOrder(testModule(errors, verbose), runOpts);
     } else {
-      await graph.processOrder(testModule(errors), runOpts);
+      await graph.processOrder(testModule(errors, verbose), runOpts);
     }
     errors.forEach(printError);
     if (errors.length > 0) {

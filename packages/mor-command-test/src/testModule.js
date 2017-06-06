@@ -11,13 +11,17 @@ require('draftlog').into(console, supportsColor);
 // $FlowIgnore
 const logger = console.draft.bind(console);
 
-export default (errors: Array<ProcessingError>) => async (
+export default (errors: Array<ProcessingError>, verbose: boolean) => async (
   ws: ModuleGraphNode
 ) => {
   const cwd = path.dirname(ws.path);
   const name = ws.name || cwd;
-  const status = logger();
-  status(`${chalk.reset.inverse.yellow.bold(' RUNS ')} ${name} $ yarn test`);
+  let status;
+  if (verbose) {
+    status = console.log.bind(console);
+  } else {
+    status = logger();
+  }
   if (!ws.pkg.scripts || !ws.pkg.scripts.test) {
     status(
       `${chalk.reset.inverse.green.bold(' SKIP ')} ${name} ${chalk.yellow('no test script')}`
@@ -26,7 +30,7 @@ export default (errors: Array<ProcessingError>) => async (
   }
   try {
     status(`${chalk.reset.inverse.yellow.bold(' RUNS ')} ${name} $ yarn test`);
-    await ws.run('test', {
+    const result = await ws.run('test', {
       silent: true,
       preferLocal: true,
       exitOnError: false,
@@ -38,7 +42,13 @@ export default (errors: Array<ProcessingError>) => async (
       ),
       stdio: [],
     });
-    status(`${chalk.reset.inverse.green.bold(' PASS ')} ${name} $ yarn test`);
+    if (verbose) {
+      status(
+        `${chalk.reset.inverse.green.bold(' PASS ')} ${name} $ yarn test \n ${result.stdout}`
+      );
+    } else {
+      status(`${chalk.reset.inverse.green.bold(' PASS ')} ${name} $ yarn test`);
+    }
   } catch (err) {
     status(`${chalk.reset.inverse.red.bold(' FAIL ')} ${name} $ yarn test`);
     errors.push({ ws, err });
