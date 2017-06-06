@@ -9,6 +9,7 @@
     "mor-command-ls": "^0.2.9",
     "mor-command-root": "^0.2.8",
     "mor-command-root-exec": "^0.2.8",
+    "mor-command-root-run": "^0.2.8",
     "mor-command-test": "^0.2.9",
     "mor-core": "^0.2.7",
     "mor-helper-cli": "^0.2.9"

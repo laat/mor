@@ -1,5 +1,5 @@
 {
-  "name": "mor-command-root-exec",
+  "name": "mor-command-root-run",
   "version": "0.2.8",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
@@ -9,7 +9,7 @@
     "node": ">=7.9"
   },
   "bin": {
-    "mor-root-exec": "./lib/cli.js"
+    "mor-root-run": "./lib/cli.js"
   },
   "files": [
     "lib"

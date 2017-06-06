@@ -9,5 +9,6 @@ program.option('--no-config', 'run without configuration');
 program
   .command('ls', 'list packages managed')
   .command('test', 'test all packages')
-  .command('root-exec', 'execute command in workspaces root')
+  .command('root-exec', 'execute command in root')
+  .command('root-run', 'execute npm script in root')
   .parse(process.argv);

@@ -13,7 +13,8 @@ core.config().then(config => {
   .command('flow', 'flow', { cwd: config.rootPath }) // <rootPath>/node_modules/.bin/flow
   .command('ls', 'mor-ls', { cwd: __dirname }) // ./node_modules/.bin/mor-ls
   .command('test', 'mor-test', { cwd: __dirname }) // ./node_modules/.bin/mor-test
-  .command('root-exec', 'mor-exec', { cwd: __dirname }) // ./node_modules/.bin/mor-test
+  .command('root-exec', 'mor-root-exec', { cwd: __dirname })
+  .command('root-run', 'mor-root-run', { cwd: __dirname })
   .command('watch' , 'nurture', { cwd: config.rootPath })
   .command('record-demo', './record-demo', { cwd: __dirname })
   .command('prettier-all', './prettier-all.sh', { cwd: __dirname }) // ./prettier-all

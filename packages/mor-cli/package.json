@@ -13,6 +13,7 @@
     "commander": "^2.9.0",
     "mor-command-ls": "^0.2.9",
     "mor-command-root-exec": "^0.2.8",
+    "mor-command-root-run": "^0.2.8",
     "mor-command-test": "^0.2.9",
     "mor-core": "^0.2.7",
     "npm-run-path": "^2.0.2"
