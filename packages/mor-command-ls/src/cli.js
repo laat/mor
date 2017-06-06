@@ -17,6 +17,7 @@ import printDot from './printers/dot';
   program
     .usage('[packages...]')
     .option('-g, --glob', 'match packages with glob')
+    .option('-s, --staged', 'staged packages')
     .option('-D, --dependencies', 'with dependencies')
     .option('-d, --dependents', 'with dependents')
     .option('-t, --transitive', 'with transitive')
@@ -44,11 +45,12 @@ import printDot from './printers/dot';
   program.parse(process.argv);
 
   const mor = await core();
-  const graph = morHelperFilter(program.args, mor.graph, {
+  const graph = await morHelperFilter(program.args, mor.graph, {
     transitive: program.transitive,
     dependents: program.dependents,
     dependencies: program.dependencies,
     glob: program.glob,
+    staged: program.staged,
   });
   switch (program.format) {
     case 'p':

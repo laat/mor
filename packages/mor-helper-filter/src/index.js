@@ -1,20 +1,46 @@
 // @flow
 import type { ModuleGraph } from 'mor-core';
+import path from 'path';
 import minimatch from 'minimatch';
+import stagedGitFiles from 'staged-git-files';
+import gitRootpath from './git-rootpath';
 
-export default (
+const getStaged = () =>
+  new Promise((resolve, reject) => {
+    stagedGitFiles((err, results) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(results);
+      }
+    });
+  });
+
+const getStagedFullPath = async () => {
+  const staged = await getStaged();
+  const root = await gitRootpath();
+  return staged.map(stg =>
+    Object.assign({}, stg, {
+      filename: path.join(root, stg.filename),
+    })
+  );
+};
+
+export default async (
   packageNames: Array<string>,
   graph: ModuleGraph,
   opts: {
     transitive?: boolean,
     dependents?: boolean,
     dependencies?: boolean,
+    staged?: boolean,
     glob?: boolean,
   }
 ) => {
   const transitive = !!opts.transitive;
   const dependencies = !!opts.dependencies;
   const dependents = !!opts.dependents;
+  const staged = !!opts.staged;
   const glob = !!opts.glob;
 
   let packages;
@@ -22,8 +48,16 @@ export default (
     const matches = name =>
       !glob || packageNames.some(pn => minimatch(name, pn));
     packages = graph.modules.filter(ws => matches(ws.name));
-  } else {
+  } else if (packageNames.length > 0) {
     packages = packageNames.map(name => graph.getPackage(name));
+  } else {
+    packages = graph.modules;
+  }
+  if (staged) {
+    const staged = await getStagedFullPath();
+    packages = packages.filter(pkg =>
+      staged.some(stg => stg.filename.startsWith(path.dirname(pkg.path)))
+    );
   }
   const toTest = [];
   if (dependents) {
@@ -36,9 +70,6 @@ export default (
       toTest.push(...graph.dependencies(pkg, { transitive }));
     });
   }
-  if (packageNames.length > 0) {
-    toTest.push(...packages);
-    return graph.filter(n => toTest.includes(n));
-  }
-  return graph;
+  toTest.push(...packages);
+  return graph.filter(n => toTest.includes(n));
 };

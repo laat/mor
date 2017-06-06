@@ -31,6 +31,7 @@
     "tape-promise": "^2.0.1"
   },
   "dependencies": {
-    "minimatch": "^3.0.4"
+    "minimatch": "^3.0.4",
+    "staged-git-files": "0.0.4"
   }
 }
