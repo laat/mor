@@ -40,6 +40,8 @@ import printDot from './printers/dot';
 
   Examples:
     mor ls --format dot | dot -Tsvg > dependencies.svg
+
+  The flag --staged does not work as a precommit hook, use --files
 `);
   });
 
