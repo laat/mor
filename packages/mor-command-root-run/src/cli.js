@@ -6,8 +6,8 @@ import core from 'mor-core';
 import execa from 'execa';
 
 program
-  .usage('script [args...]')
-  .description('Execute command in the root workspace')
+  .usage('<script> [args...]')
+  .description('Run npm script in the root workspace')
   .parse(process.argv);
 
 (async () => {
