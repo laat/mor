@@ -1,6 +1,6 @@
 {
   "name": "mor-command-root-exec",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "main": "lib/cli.js",
   "repository": "git@github.com:laat/mor.git",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",
@@ -24,7 +24,7 @@
   "dependencies": {
     "commander": "^2.9.0",
     "execa": "^0.6.3",
-    "mor-core": "^0.2.5"
+    "mor-core": "^0.2.7"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
