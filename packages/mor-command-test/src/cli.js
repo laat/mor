@@ -13,6 +13,7 @@ import prettyMs from 'pretty-ms';
 program
   .usage('[packages...]')
   .option('-g, --glob', 'match package names with glob')
+  .option('-f, --files', 'packages containing files (absolute path)')
   .option('-s, --staged', 'staged packages')
   .option('-D, --dependencies', 'with dependencies')
   .option('-d, --dependents', 'with dependents')
@@ -40,6 +41,7 @@ process.on('exit', () => {
     dependencies: program.dependencies,
     glob: program.glob,
     staged: program.staged,
+    files: program.files,
   });
   try {
     const errors = [];

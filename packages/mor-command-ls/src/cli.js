@@ -18,6 +18,7 @@ import printDot from './printers/dot';
     .usage('[packages...]')
     .option('-g, --glob', 'match packages with glob')
     .option('-s, --staged', 'staged packages')
+    .option('-f, --files', 'packages with the given files (absolute paths)')
     .option('-D, --dependencies', 'with dependencies')
     .option('-d, --dependents', 'with dependents')
     .option('-t, --transitive', 'with transitive')
@@ -51,6 +52,7 @@ import printDot from './printers/dot';
     dependencies: program.dependencies,
     glob: program.glob,
     staged: program.staged,
+    files: program.files,
   });
   switch (program.format) {
     case 'p':

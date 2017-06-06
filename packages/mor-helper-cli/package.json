@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "execa": "^0.6.3",
     "npm-run-path": "^2.0.2"
   }
 }

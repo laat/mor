@@ -12,5 +12,9 @@ export default function printColumns(modules: Array<ModuleGraphNode>) {
     private: ws.pkg.private ? `(${chalk.red('private')})` : '',
     path: path.dirname(ws.path),
   }));
-  console.log(columnify(formattedPackages, { showHeaders: false }));
+  if (modules.length === 0) {
+    console.error('Found no workspaces');
+  } else {
+    console.log(columnify(formattedPackages, { showHeaders: false }));
+  }
 }

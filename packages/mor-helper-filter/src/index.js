@@ -34,6 +34,7 @@ export default async (
     dependents?: boolean,
     dependencies?: boolean,
     staged?: boolean,
+    files?: boolean,
     glob?: boolean,
   }
 ) => {
@@ -41,13 +42,17 @@ export default async (
   const dependencies = !!opts.dependencies;
   const dependents = !!opts.dependents;
   const staged = !!opts.staged;
+  const files = !!opts.files;
   const glob = !!opts.glob;
 
   let packages;
   if (glob) {
-    const matches = name =>
-      !glob || packageNames.some(pn => minimatch(name, pn));
+    const matches = name => packageNames.some(pn => minimatch(name, pn));
     packages = graph.modules.filter(ws => matches(ws.name));
+  } else if (files) {
+    const matches = pkgPath =>
+      packageNames.some(filename => filename.startsWith(pkgPath));
+    packages = graph.modules.filter(ws => matches(path.dirname(ws.path)));
   } else if (packageNames.length > 0) {
     packages = packageNames.map(name => graph.getPackage(name));
   } else {
