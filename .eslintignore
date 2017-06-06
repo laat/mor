@@ -3,6 +3,7 @@
 /packages/mor-cli/lib
 /packages/mor-command-ls/lib
 /packages/mor-command-root/lib
+/packages/mor-command-root-exec/lib
 /packages/mor-command-test/lib
 /packages/mor-core/lib
 /packages/mor-graph/lib
