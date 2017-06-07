@@ -14,7 +14,7 @@
     "*.js": [
       "./scripts/tool prettier --write",
       "eslint --fix",
-      "./scripts/tool test --files --dependents",
+      "./scripts/tool test --files --dependents --transitive",
       "git add"
     ]
   },
