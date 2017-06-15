@@ -24,7 +24,9 @@ export default (errors: Array<ProcessingError>, verbose: boolean) => async (
   }
   if (!ws.pkg.scripts || !ws.pkg.scripts.test) {
     status(
-      `${chalk.reset.inverse.green.bold(' SKIP ')} ${name} ${chalk.yellow('no test script')}`
+      `${chalk.reset.inverse.green.bold(' SKIP ')} ${name} ${chalk.yellow(
+        'no test script'
+      )}`
     );
     return;
   }
@@ -44,7 +46,9 @@ export default (errors: Array<ProcessingError>, verbose: boolean) => async (
     });
     if (verbose) {
       status(
-        `${chalk.reset.inverse.green.bold(' PASS ')} ${name} $ yarn test \n ${result.stdout}`
+        `${chalk.reset.inverse.green.bold(
+          ' PASS '
+        )} ${name} $ yarn test \n ${result.stdout}`
       );
     } else {
       status(`${chalk.reset.inverse.green.bold(' PASS ')} ${name} $ yarn test`);

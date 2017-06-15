@@ -45,11 +45,8 @@ exports.Program = class SimpleProgram {
       opts = argv || {};
       argv = [];
     }
-    const {
-      env = process.env,
-      cwd = process.cwd(),
-      opts: spawnOpts,
-    } = opts || {};
+    const { env = process.env, cwd = process.cwd(), opts: spawnOpts } =
+      opts || {};
     this.commands[name] = { bin, argv, env, cwd, opts: spawnOpts };
     return this;
   }

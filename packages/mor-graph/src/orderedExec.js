@@ -1,7 +1,7 @@
 // @flow
 'use strict';
 import PQueue from 'p-queue';
-import toposort from 'toposort';
+import toposort from './toposort';
 // TODO: toposort does not support cycles, reimplement with cyle breaking
 
 export default async function<T>(
@@ -11,6 +11,8 @@ export default async function<T>(
   opts?: { concurrency?: number }
 ) {
   const queue = new PQueue(opts);
-  const ordered = toposort.array(nodes, edges);
-  return Promise.all(ordered.map(node => queue.add(() => processor(node))));
+  const ordered = await toposort(nodes, edges);
+  return Promise.all(
+    ordered.map(node => queue.add(() => Promise.resolve(processor(node))))
+  );
 }
