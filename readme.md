@@ -1,4 +1,6 @@
-# Monorepo tools
+# Trollmor
+
+![](trollmor.jpg)
 
 ## Screenshot
 ![](doc/screenshot.gif)
