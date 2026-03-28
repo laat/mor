@@ -1,0 +1,116 @@
+
+A user-controlled memory bank for AI assistants. Store, search, and manage knowledge as markdown files - exposed as both an MCP server and a CLI.
+
+Memories are human-readable markdown files with YAML frontmatter, indexed by SQLite for fast full-text and semantic search.
+
+```
+code-memory find <query>
+code-memory add my_file.txt
+code-memory add [--title <title>] [--tags <a,b>] [--type <type>] <file>
+code-memory edit <query> # Opens in $EDITOR
+code-memory rm <query>
+code-memory cp <query> <dest>
+code-memory cat <query>
+code-memory reindex
+code-memory import <dir>
+``
+
+`query` can be either the filename, uuid, uuid-prefix (git like) or a search string.
+
+```
+# Store a helper file (auto-detects language tag and git repo)
+code-memory add src/lib/rxjs.fetch.ts --tags "rxjs,fetch,helper"
+
+# store a file 
+cat rxjs.fetch.ts | code-memory add --title rxjs.fetch.ts --tags "rxjs,fetch,helper"
+
+# find it later
+code-memory find "rxjs.fetch.ts"
+
+# copy it to a local file
+code-memory cp "rxjs.fetch.ts" src/lib/rxjs.fetch.ts
+
+# or pipe it
+code-memory cat "rxjs.fetch.ts"
+```
+
+The MCP server exposes tools for use by Claude Code, Claude Desktop, or any MCP-compatible client.
+
+Memory format
+
+Each memory is a markdown file in ~/.config/code-memory/memories/. Filenames are slugified from the title with a short hash suffix for uniqueness (e.g., typescript-patterns-40ad.md). The frontmatter id is a UUID. The repository field is auto-detected from the git remote when creating memories.
+
+```
+# typescript-patterns-40ad.md
+---
+id: 40ad73ae-c7e9-4b91-ac31-7086435149b2
+title: TypeScript patterns
+tags:
+  - typescript
+  - patterns
+type: knowledge
+repository: github.com/user/repo
+created: 2026-03-27T10:00:00.000Z
+updated: 2026-03-27T10:00:00.000Z
+---
+
+The actual memory content in markdown...
+```
+
+Configuration
+Config lives at ~/.config/code-memory/config.json. Created automatically on first run with sensible defaults.
+
+```
+{
+  "memoryDir": "~/.config/code-memory/memories",
+  "dbPath": "~/.config/code-memory/index.db",
+  "embedding": {
+    "provider": "none",
+    "model": "text-embedding-3-small",
+    "baseUrl": "https://api.openai.com/v1",
+    "dimensions": 1536
+  }
+}
+```
+
+Embedding providers
+By default, embedding is disabled ("none") and search uses full-text only. Enable semantic search by setting a provider:
+
+OpenAI / LiteLLM / any OpenAI-compatible API:
+
+```
+{
+  "embedding": {
+    "provider": "openai",
+    "baseUrl": "http://localhost:4000/v1",
+    "model": "text-embedding-3-small",
+    "apiKey": "optional-if-proxy-handles-auth"
+  }
+}
+```
+The API key can also be set via the OPENAI_API_KEY environment variable.
+
+
+```
+
+Ollama (local):
+
+```
+{
+  "embedding": {
+    "provider": "ollama",
+    "baseUrl": "http://localhost:11434",
+    "model": "nomic-embed-text",
+    "dimensions": 768
+  }
+}
+```
+
+After changing the provider, run memory reindex to compute embeddings for existing memories.
+
+
+How it works
+Memories are stored as markdown files - you can edit them directly, commit them to git, or sync them however you like.
+A SQLite database indexes the files for fast search (FTS5 full-text + optional vector embeddings).
+The index syncs automatically on every operation by comparing content hashes. If a file changed on disk, it gets re-indexed.
+The index is derived and disposable - memory reindex rebuilds it from scratch.
