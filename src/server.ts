@@ -1,5 +1,8 @@
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import crypto from 'node:crypto';
 import http from 'node:http';
+import { createMcpServer } from './mcp.js';
 import { LocalOperations } from './operations.js';
 import type { Config } from './types.js';
 
@@ -75,12 +78,18 @@ function router(
   };
 }
 
+function isLoopbackHost(host: string): boolean {
+  const hostname = host.split(':')[0];
+  return ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(hostname);
+}
+
 export function startServer(
   config: Config,
-  opts: { port: number; host: string; token?: string },
+  opts: { port: number; host: string; token?: string; mcp?: boolean },
 ): http.Server {
   const ops = new LocalOperations(config);
   const { token } = opts;
+  const mcpTransports = new Map<string, StreamableHTTPServerTransport>();
 
   const handle = router([
     [
@@ -246,6 +255,91 @@ export function startServer(
           return;
         }
       }
+      // DNS rebinding protection for loopback-bound servers
+      if (isLoopbackHost(opts.host)) {
+        const reqHost = req.headers.host;
+        if (!reqHost || !isLoopbackHost(reqHost)) {
+          json(res, 403, { error: 'Forbidden: DNS rebinding protection' });
+          return;
+        }
+      }
+
+      // MCP HTTP transport at /mcp
+      const pathname = new URL(
+        req.url ?? '/',
+        `http://${req.headers.host ?? 'localhost'}`,
+      ).pathname;
+      if (opts.mcp && pathname === '/mcp') {
+        const method = req.method ?? 'GET';
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+        if (method === 'POST') {
+          let body: unknown;
+          try {
+            body = JSON.parse(await readBody(req));
+          } catch {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                error: { code: -32700, message: 'Parse error' },
+                id: null,
+              }),
+            );
+            return;
+          }
+
+          if (sessionId && mcpTransports.has(sessionId)) {
+            await mcpTransports.get(sessionId)!.handleRequest(req, res, body);
+          } else if (!sessionId && isInitializeRequest(body)) {
+            const transport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: () => crypto.randomUUID(),
+              onsessioninitialized: (sid) => {
+                mcpTransports.set(sid, transport);
+              },
+            });
+            transport.onclose = () => {
+              if (transport.sessionId)
+                mcpTransports.delete(transport.sessionId);
+            };
+            const mcpServer = createMcpServer(new LocalOperations(config));
+            await mcpServer.connect(transport);
+            await transport.handleRequest(req, res, body);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                error: {
+                  code: -32000,
+                  message: 'Bad Request: invalid or missing session',
+                },
+                id: null,
+              }),
+            );
+          }
+        } else if (method === 'GET' || method === 'DELETE') {
+          if (sessionId && mcpTransports.has(sessionId)) {
+            await mcpTransports.get(sessionId)!.handleRequest(req, res);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                jsonrpc: '2.0',
+                error: {
+                  code: -32000,
+                  message: 'Invalid or missing session ID',
+                },
+                id: null,
+              }),
+            );
+          }
+        } else {
+          res.writeHead(405).end();
+        }
+        return;
+      }
+
       await handle(req, res);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -258,6 +352,10 @@ export function startServer(
 
   const shutdown = () => {
     log('Shutting down...');
+    for (const transport of mcpTransports.values()) {
+      transport.close().catch(() => {});
+    }
+    mcpTransports.clear();
     ops.close();
     server.close();
   };
@@ -277,6 +375,7 @@ export function startServer(
 
   server.listen(opts.port, opts.host, () => {
     log(`Listening on http://${opts.host}:${opts.port}`);
+    if (opts.mcp) log('MCP endpoint enabled at /mcp');
   });
 
   return server;

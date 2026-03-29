@@ -12,15 +12,13 @@ function createOps(): Operations {
   return new LocalOperations(config);
 }
 
-export async function startMcpServer(): Promise<void> {
+export function createMcpServer(ops: Operations): McpServer {
   const server = new McpServer({
     name: 'mor',
     version: '0.1.0',
     description:
       "The user's primary memory store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
   });
-
-  const ops = createOps();
 
   server.registerTool(
     'memory_search',
@@ -232,6 +230,12 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
+  return server;
+}
+
+export async function startMcpServer(): Promise<void> {
+  const ops = createOps();
+  const server = createMcpServer(ops);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

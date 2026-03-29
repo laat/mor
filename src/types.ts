@@ -7,6 +7,7 @@ export interface ServeConfig {
   port?: number;
   host?: string;
   token?: string;
+  mcp?: boolean;
 }
 
 export interface Config {
