@@ -1,7 +1,20 @@
+export interface ServerConfig {
+  url: string;
+  token?: string;
+}
+
+export interface ServeConfig {
+  port?: number;
+  host?: string;
+  token?: string;
+}
+
 export interface Config {
   memoryDir: string;
   dbPath: string;
   embedding: EmbeddingConfig;
+  server?: ServerConfig;
+  serve?: ServeConfig;
 }
 
 export interface EmbeddingConfig {

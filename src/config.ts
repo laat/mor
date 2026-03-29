@@ -36,7 +36,13 @@ export function loadConfig(): Config {
   let config: Config;
   if (fs.existsSync(configPath)) {
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    config = { ...DEFAULT_CONFIG, ...raw, embedding: { ...DEFAULT_CONFIG.embedding, ...raw.embedding } };
+    config = {
+      ...DEFAULT_CONFIG,
+      ...raw,
+      embedding: { ...DEFAULT_CONFIG.embedding, ...raw.embedding },
+      ...(raw.server ? { server: raw.server } : {}),
+      ...(raw.serve ? { serve: raw.serve } : {}),
+    };
   } else {
     config = { ...DEFAULT_CONFIG };
     if (process.env.CODE_MEMORY_HOME) {
@@ -54,4 +60,8 @@ export function loadConfig(): Config {
   fs.mkdirSync(config.memoryDir, { recursive: true });
 
   return config;
+}
+
+export function isRemote(config: Config): boolean {
+  return !!config.server?.url;
 }
