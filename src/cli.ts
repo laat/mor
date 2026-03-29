@@ -128,7 +128,7 @@ function getOps(config: ReturnType<typeof loadConfig>): Operations {
 const program = new Command();
 
 program
-  .name('code-memory')
+  .name(path.basename(process.argv[1]))
   .description('A user-controlled memory bank for AI assistants')
   .version('0.1.0');
 
@@ -173,7 +173,12 @@ program
     async (
       file: string | undefined,
       opts: { title?: string; tags?: string; type?: string },
+      cmd: Command,
     ) => {
+      if (!file && !opts.title && process.stdin.isTTY) {
+        cmd.help();
+        return;
+      }
       const config = loadConfig();
       const ops = getOps(config);
       try {
@@ -206,17 +211,31 @@ program
             path.basename(file),
           );
           if (!title) title = path.basename(file);
-        } else {
+        } else if (!process.stdin.isTTY) {
           content = fs.readFileSync(0, 'utf-8');
           if (!title) {
             console.error('Error: --title is required when reading from stdin');
             process.exit(1);
           }
+        } else {
+          // Interactive with --title: open $EDITOR
+          const tmpDir = fs.mkdtempSync(
+            path.join(os.tmpdir(), 'code-memory-'),
+          );
+          const tmpFile = path.join(tmpDir, 'new-memory.md');
+          fs.writeFileSync(tmpFile, '');
+          openInEditor(tmpFile);
+          content = fs.readFileSync(tmpFile, 'utf-8').trim();
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+          if (!content) {
+            console.log('Aborted: empty content.');
+            return;
+          }
         }
 
         const tags = opts.tags ? opts.tags.split(',').map((t) => t.trim()) : [];
         const mem = await ops.add({
-          title,
+          title: title!,
           content,
           tags,
           type: parseType(opts.type) ?? (isFile ? 'file' : 'knowledge'),
