@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mor": {
+      "command": "mor",
+      "args": ["mcp"]
+    }
+  }
+}
