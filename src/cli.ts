@@ -186,8 +186,9 @@ program
 
 program
   .command('cat <query>')
-  .description('Print memory content (without frontmatter)')
-  .action(async (query: string) => {
+  .description('Print memory content')
+  .option('--raw', 'Include frontmatter')
+  .action(async (query: string, opts: { raw?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -196,7 +197,11 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      console.log(mem.content);
+      if (opts.raw) {
+        process.stdout.write(fs.readFileSync(mem.filePath, 'utf-8'));
+      } else {
+        console.log(mem.content);
+      }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
@@ -208,7 +213,8 @@ program
 program
   .command('cp <query> <dest>')
   .description('Copy memory content to a file')
-  .action(async (query: string, dest: string) => {
+  .option('--raw', 'Include frontmatter')
+  .action(async (query: string, dest: string, opts: { raw?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -217,10 +223,14 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      fs.writeFileSync(
-        dest,
-        mem.content.endsWith('\n') ? mem.content : mem.content + '\n',
-      );
+      if (opts.raw) {
+        fs.copyFileSync(mem.filePath, dest);
+      } else {
+        fs.writeFileSync(
+          dest,
+          mem.content.endsWith('\n') ? mem.content : mem.content + '\n',
+        );
+      }
       console.log(`Copied "${mem.title}" to ${dest}`);
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
