@@ -5,6 +5,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { isRemote, loadConfig } from './config.js';
+import {
+  addFilterOptions,
+  filterMemories,
+  filterResults,
+  type MemoryFilter,
+} from './filter.js';
 import { openDb } from './db.js';
 import { reindex, syncIndex } from './index.js';
 import { startMcpServer } from './mcp.js';
@@ -132,28 +138,74 @@ program
   .description('A shared memory store for humans and AI')
   .version('0.1.0');
 
-program
-  .command('find <query>')
-  .description('Search memories by query')
-  .option('-l, --limit <n>', 'Max results', '20')
-  .action(async (query: string, opts: { limit: string }) => {
+addFilterOptions(
+  program
+    .command('find <query>')
+    .description('Search memories by query')
+    .option('-l, --limit <n>', 'Max results', '20'),
+).action(async (query: string, opts: { limit: string } & MemoryFilter) => {
+  const config = loadConfig();
+  const ops = getOps(config);
+  try {
+    const limitRaw = parseInt(opts.limit, 10);
+    let results = await ops.search(
+      query,
+      Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
+    );
+    results = filterResults(results, opts);
+    if (results.length === 0) {
+      console.log('No memories found.');
+      return;
+    }
+    for (const r of results) {
+      const tags =
+        r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
+      console.log(`${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}`);
+      console.log(`         ${path.basename(r.memory.filePath)}`);
+    }
+  } catch (e) {
+    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
+  } finally {
+    ops.close();
+  }
+});
+
+addFilterOptions(
+  program
+    .command('grep <pattern>')
+    .description('Search memories for literal substring matches')
+    .option('-n, --limit <n>', 'Max results', '20')
+    .option('-i, --ignore-case', 'Case-insensitive matching')
+    .option('-l, --long', 'Show file path or URL'),
+).action(
+  async (
+    pattern: string,
+    opts: {
+      limit: string;
+      ignoreCase?: boolean;
+      long?: boolean;
+    } & MemoryFilter,
+  ) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
       const limitRaw = parseInt(opts.limit, 10);
-      const results = await ops.search(
-        query,
-        Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
-      );
-      if (results.length === 0) {
+      const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
+      let memories = await ops.grep(pattern, limit, opts.ignoreCase);
+      memories = filterMemories(memories, opts);
+      if (memories.length === 0) {
         console.log('No memories found.');
         return;
       }
-      for (const r of results) {
-        const tags =
-          r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
-        console.log(`${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}`);
-        console.log(`         ${path.basename(r.memory.filePath)}`);
+      for (const mem of memories) {
+        if (opts.long) {
+          const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
+          console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
+          console.log(`         ${path.basename(mem.filePath)}`);
+        } else {
+          console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+        }
       }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
@@ -161,46 +213,8 @@ program
     } finally {
       ops.close();
     }
-  });
-
-program
-  .command('grep <pattern>')
-  .description('Search memories for literal substring matches')
-  .option('-n, --limit <n>', 'Max results', '20')
-  .option('-i, --ignore-case', 'Case-insensitive matching')
-  .option('-l, --long', 'Show file path or URL')
-  .action(
-    async (
-      pattern: string,
-      opts: { limit: string; ignoreCase?: boolean; long?: boolean },
-    ) => {
-      const config = loadConfig();
-      const ops = getOps(config);
-      try {
-        const limitRaw = parseInt(opts.limit, 10);
-        const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-        const memories = await ops.grep(pattern, limit, opts.ignoreCase);
-        if (memories.length === 0) {
-          console.log('No memories found.');
-          return;
-        }
-        for (const mem of memories) {
-          if (opts.long) {
-            const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
-            console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
-            console.log(`         ${path.basename(mem.filePath)}`);
-          } else {
-            console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
-          }
-        }
-      } catch (e) {
-        console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-        process.exit(1);
-      } finally {
-        ops.close();
-      }
-    },
-  );
+  },
+);
 
 program
   .command('add [file]')
@@ -539,48 +553,50 @@ program
     await startMcpServer();
   });
 
-program
-  .command('ls')
-  .description('List all memories')
-  .option('-n, --limit <n>', 'Max results')
-  .option('-l, --long', 'Show file path or URL')
-  .action(async (opts: { limit?: string; long?: boolean }) => {
-    const config = loadConfig();
-    const ops = getOps(config);
-    try {
-      let memories = await ops.list();
-      if (memories.length === 0) {
-        console.log('No memories stored.');
-        return;
-      }
-      if (opts.limit) {
-        const limitRaw = parseInt(opts.limit, 10);
-        const limit =
-          Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
-        memories = memories.slice(0, limit);
-      }
-      for (const mem of memories) {
-        if (opts.long) {
-          const date = mem.updated.slice(0, 10);
-          const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-          const loc = isRemote(config)
-            ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
-            : mem.filePath;
-          console.log(
-            `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
-          );
-          console.log(`         ${loc}`);
-        } else {
-          console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
-        }
-      }
-    } catch (e) {
-      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    } finally {
-      ops.close();
+addFilterOptions(
+  program
+    .command('ls')
+    .description('List all memories')
+    .option('-n, --limit <n>', 'Max results')
+    .option('-l, --long', 'Show file path or URL'),
+).action(async (opts: { limit?: string; long?: boolean } & MemoryFilter) => {
+  const config = loadConfig();
+  const ops = getOps(config);
+  try {
+    let memories = await ops.list();
+    memories = filterMemories(memories, opts);
+    if (memories.length === 0) {
+      console.log('No memories stored.');
+      return;
     }
-  });
+    if (opts.limit) {
+      const limitRaw = parseInt(opts.limit, 10);
+      const limit =
+        Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
+      memories = memories.slice(0, limit);
+    }
+    for (const mem of memories) {
+      if (opts.long) {
+        const date = mem.updated.slice(0, 10);
+        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+        const loc = isRemote(config)
+          ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
+          : mem.filePath;
+        console.log(
+          `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
+        );
+        console.log(`         ${loc}`);
+      } else {
+        console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+      }
+    }
+  } catch (e) {
+    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
+  } finally {
+    ops.close();
+  }
+});
 
 program
   .command('push')
