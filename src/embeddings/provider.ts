@@ -1,7 +1,7 @@
 import type { EmbeddingConfig } from '../types.js';
 import { NoneProvider } from './none.js';
-import { OpenAIProvider } from './openai.js';
 import { OllamaProvider } from './ollama.js';
+import { OpenAIProvider } from './openai.js';
 
 export interface EmbeddingProvider {
   name: string;

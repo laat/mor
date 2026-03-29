@@ -1,10 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import path from 'node:path';
 import { z } from 'zod';
-import { loadConfig, isRemote } from './config.js';
+import { isRemote, loadConfig } from './config.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
-import path from 'node:path';
 
 function createOps(): Operations {
   const config = loadConfig();

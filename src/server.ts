@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import http from 'node:http';
-import type { Config } from './types.js';
 import { LocalOperations } from './operations.js';
+import type { Config } from './types.js';
 
 function log(msg: string): void {
   process.stderr.write(`[code-memory] ${msg}\n`);

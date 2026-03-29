@@ -1,5 +1,5 @@
-import type { Config, Memory, SearchResult } from './types.js';
 import type { Operations } from './operations.js';
+import type { Config, Memory, SearchResult } from './types.js';
 
 class HttpError extends Error {
   constructor(

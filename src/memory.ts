@@ -1,8 +1,8 @@
+import matter from 'gray-matter';
+import { execSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
-import matter from 'gray-matter';
-import crypto from 'node:crypto';
 import type { Config, FrontMatter, Memory, MemoryType } from './types.js';
 
 export function detectRepository(): string | undefined {
@@ -101,7 +101,12 @@ export function serializeMemory(mem: Memory): string {
 
 export function updateMemory(
   filePath: string,
-  updates: { title?: string; content?: string; tags?: string[]; type?: MemoryType },
+  updates: {
+    title?: string;
+    content?: string;
+    tags?: string[];
+    type?: MemoryType;
+  },
 ): Memory {
   const mem = readMemory(filePath);
   const now = new Date().toISOString();

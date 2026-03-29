@@ -1,25 +1,25 @@
-import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import type { Config, Memory, MemoryType, SearchResult } from './types.js';
+import fs from 'node:fs';
 import {
+  deleteMemoryFromDb,
   openDb,
   upsertMemoryChecked,
-  deleteMemoryFromDb,
   type DB,
 } from './db.js';
-import { syncIndex, searchAsync, hashContent } from './index.js';
-import {
-  createMemory,
-  readMemory,
-  deleteMemory,
-  updateMemory,
-  listMemoryFiles,
-} from './memory.js';
-import { resolveQuery } from './query.js';
 import {
   createProvider,
   type EmbeddingProvider,
 } from './embeddings/provider.js';
+import { hashContent, searchAsync, syncIndex } from './index.js';
+import {
+  createMemory,
+  deleteMemory,
+  listMemoryFiles,
+  readMemory,
+  updateMemory,
+} from './memory.js';
+import { resolveQuery } from './query.js';
+import type { Config, Memory, MemoryType, SearchResult } from './types.js';
 
 export interface Operations {
   search(query: string, limit?: number): Promise<SearchResult[]>;

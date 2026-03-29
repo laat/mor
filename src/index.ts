@@ -1,20 +1,20 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { listMemoryFiles, readMemory } from './memory.js';
 import {
   clearDb,
-  upsertMemoryChecked,
   deleteMemoryFromDb,
   getAllMemoryIds,
   getContentHash,
   searchFts,
+  upsertMemoryChecked,
   type DB,
 } from './db.js';
-import type { Config, Memory, SearchResult } from './types.js';
 import {
   createProvider,
   type EmbeddingProvider,
 } from './embeddings/provider.js';
+import { listMemoryFiles, readMemory } from './memory.js';
+import type { Config, Memory, SearchResult } from './types.js';
 
 export function hashContent(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');

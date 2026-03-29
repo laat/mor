@@ -1,12 +1,12 @@
-import { readMemory } from './memory.js';
 import {
+  getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
-  getMemoryByFilename,
   searchFts,
   type DB,
 } from './db.js';
 import { syncIndexIfNeeded } from './index.js';
+import { readMemory } from './memory.js';
 import type { Config, Memory } from './types.js';
 
 const UUID_RE =

@@ -1,17 +1,16 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
-import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
-import { loadConfig, isRemote } from './config.js';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { isRemote, loadConfig } from './config.js';
 import { openDb } from './db.js';
-import { reindex } from './index.js';
+import { reindex, syncIndex } from './index.js';
+import { startMcpServer } from './mcp.js';
 import { createMemory, listMemoryFiles, serializeMemory } from './memory.js';
-import { syncIndex } from './index.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
-import { startMcpServer } from './mcp.js';
 import { startServer } from './server.js';
 import { MEMORY_TYPES, type MemoryType } from './types.js';
 
