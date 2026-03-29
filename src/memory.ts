@@ -2,14 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import matter from "gray-matter";
-import slugifyModule from "slugify";
-const slugify = slugifyModule as unknown as (str: string, opts?: { lower?: boolean; strict?: boolean }) => string;
-import { v4 as uuidv4 } from "uuid";
+import slugify from "slugify";
+import crypto from "node:crypto";
 import type { Config, FrontMatter, Memory } from "./types.js";
 
 export function detectRepository(): string | undefined {
   try {
-    const url = execSync("git remote get-url origin", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    const url = execSync("git remote get-url origin", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
     // Normalize git URLs to domain/path format
     return url
       .replace(/^https?:\/\//, "")
@@ -22,16 +24,22 @@ export function detectRepository(): string | undefined {
 }
 
 export function generateFilename(title: string, id: string): string {
-  const slug = slugify(title, { lower: true, strict: true });
+  const slug = slugify.default(title, { lower: true, strict: true });
   const hash = id.slice(0, 8).replace(/-/g, "").slice(0, 4);
   return `${slug}-${hash}.md`;
 }
 
 export function createMemory(
   config: Config,
-  opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string },
+  opts: {
+    title: string;
+    content: string;
+    tags?: string[];
+    type?: string;
+    repository?: string;
+  },
 ): Memory {
-  const id = uuidv4();
+  const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const repo = opts.repository ?? detectRepository();
   const frontmatter: FrontMatter = {
