@@ -270,12 +270,12 @@ program
   .command("serve")
   .description("Start HTTP server for remote access")
   .option("-p, --port <port>", "Port to listen on", "7677")
-  .option("-H, --host <host>", "Host to bind to", "0.0.0.0")
+  .option("-H, --host <host>", "Host to bind to", "127.0.0.1")
   .option("--token <token>", "Bearer token for authentication")
   .action((opts: { port: string; host: string; token?: string }) => {
     const config = loadConfig();
     const port = parseInt(opts.port) || config.serve?.port || 7677;
-    const host = opts.host !== "0.0.0.0" ? opts.host : config.serve?.host || "0.0.0.0";
+    const host = opts.host !== "127.0.0.1" ? opts.host : config.serve?.host || "127.0.0.1";
     const token = opts.token || config.serve?.token;
     startServer(config, { port, host, token });
   });
