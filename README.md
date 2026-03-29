@@ -78,6 +78,17 @@ Add to your Claude Code or Claude Desktop config:
 
 Tools: `memory_search`, `memory_read`, `memory_add`, `memory_update`, `memory_remove`, `memory_list`.
 
+To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
+
+```markdown
+## Memory
+
+When the user asks to recall, find, check, or reuse something they previously saved
+or remembered — use the `mor` MCP server tools (`memory_search`, `memory_read`,
+`memory_list`). This is the user's primary memory store containing code snippets,
+files, and reference notes. Always check mor before saying something wasn't found.
+```
+
 ## Remote access
 
 Run the server on one machine, access from anywhere:
