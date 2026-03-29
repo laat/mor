@@ -106,6 +106,12 @@ function stripCodeFence(
   return { code: match[2], lang: match[1] };
 }
 
+function openInEditor(file: string): void {
+  const editor = process.env.EDITOR ?? 'vi';
+  const quoted = `'${file.replace(/'/g, "'\\''")}'`;
+  spawnSync(`${editor} ${quoted}`, { stdio: 'inherit', shell: true });
+}
+
 function parseType(value: string | undefined): MemoryType | undefined {
   if (!value) return undefined;
   if (MEMORY_TYPES.includes(value as MemoryType)) return value as MemoryType;
@@ -351,14 +357,13 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      const editor = process.env.EDITOR ?? 'vi';
 
       if (opts.raw) {
         // Edit full file with frontmatter
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, serializeMemory(mem));
-        spawnSync(editor, [tmpFile], { stdio: 'inherit', shell: true });
+        openInEditor(tmpFile);
         const edited = fs.readFileSync(tmpFile, 'utf-8');
         if (edited !== serializeMemory(mem)) {
           const { data, content: newContent } = (
@@ -387,7 +392,7 @@ program
           path.basename(mem.title, path.extname(mem.title)) + ext,
         );
         fs.writeFileSync(tmpFile, code);
-        spawnSync(editor, [tmpFile], { stdio: 'inherit', shell: true });
+        openInEditor(tmpFile);
         const edited = fs.readFileSync(tmpFile, 'utf-8');
         if (edited !== code) {
           const newContent = fenced
@@ -403,7 +408,7 @@ program
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, mem.content);
-        spawnSync(editor, [tmpFile], { stdio: 'inherit', shell: true });
+        openInEditor(tmpFile);
         const newContent = fs.readFileSync(tmpFile, 'utf-8');
         if (newContent !== mem.content) {
           await ops.update(mem.id, { content: newContent });
@@ -413,7 +418,7 @@ program
         }
       } else {
         // Local non-file: open markdown file directly
-        spawnSync(editor, [mem.filePath], { stdio: 'inherit', shell: true });
+        openInEditor(mem.filePath);
       }
     } finally {
       if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
