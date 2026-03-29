@@ -291,12 +291,18 @@ program
         }
 
         const tags = opts.tags ? opts.tags.split(',').map((t) => t.trim()) : [];
+        const memType = parseType(opts.type) ?? (isFile ? 'file' : 'knowledge');
+        if (memType === 'file' && title) {
+          const ext = path.extname(title).toLowerCase();
+          const lang = EXT_TO_LANG[ext];
+          if (lang && !tags.includes(lang)) tags.push(lang);
+        }
         const mem = await ops.add({
           title: title!,
           description: opts.description,
           content,
           tags,
-          type: parseType(opts.type) ?? (isFile ? 'file' : 'knowledge'),
+          type: memType,
           repository,
         });
         console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);

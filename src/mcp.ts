@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import path from 'node:path';
 import { z } from 'zod';
 import { isRemote, loadConfig } from './config.js';
+import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 
@@ -24,27 +25,35 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_search',
     {
       description:
-        'Search memories by query. Returns titles and descriptions — use memory_read to get full content.',
+        'Search memories by query. Returns the top result with full content, and summaries for the rest. Use memory_read to get full content of other results.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
+        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
       },
     },
-    async ({ query, limit }) => {
-      const results = await ops.search(query, limit ?? 20);
-      const lines = results.map((r) => {
+    async ({ query, limit, tag }) => {
+      let results = await ops.search(query, limit ?? 20);
+      if (tag) results = filterResults(results, { tag });
+      if (results.length === 0) {
+        return {
+          content: [{ type: 'text' as const, text: 'No memories found.' }],
+        };
+      }
+      const lines = results.map((r, i) => {
         const tags =
           r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
         const desc = r.memory.description ? `\n  ${r.memory.description}` : '';
-        return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${desc}`;
+        const score = `  (${r.score.toFixed(2)})`;
+        const preview =
+          i > 0 && !r.memory.description
+            ? `\n  ${r.memory.content.split('\n')[0].slice(0, 100)}`
+            : '';
+        const body = i === 0 ? `\n\n${r.memory.content}` : '';
+        return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
       });
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: lines.length > 0 ? lines.join('\n') : 'No memories found.',
-          },
-        ],
+        content: [{ type: 'text' as const, text: lines.join('\n') }],
       };
     },
   );
@@ -70,9 +79,8 @@ export function createMcpServer(ops: Operations): McpServer {
           isError: true,
         };
       }
-      const tags = mem.tags.length > 0 ? `\nTags: ${mem.tags.join(', ')}` : '';
-      const desc = mem.description ? `\nDescription: ${mem.description}` : '';
-      const text = `## ${mem.title}\nID: ${mem.id}\nFile: ${path.basename(mem.filePath)}${tags}${desc}\nType: ${mem.type}\nCreated: ${mem.created}\nUpdated: ${mem.updated}\n\n${mem.content}`;
+      const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+      const text = `## ${mem.title}${tags}\n\n${mem.content}`;
       return { content: [{ type: 'text' as const, text }] };
     },
   );
@@ -154,9 +162,13 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_list',
     {
       description: 'List all stored memories with their titles, IDs, and tags.',
+      inputSchema: {
+        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+      },
     },
-    async () => {
-      const memories = await ops.list();
+    async ({ tag }) => {
+      let memories = await ops.list();
+      if (tag) memories = filterMemories(memories, { tag });
       if (memories.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories stored.' }],
