@@ -7,90 +7,117 @@
 <meta name="description" content="Plain markdown files. SQLite full-text search. MCP server. CLI. Because your AI deserves to remember things too.">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--text:#e0e0e8;--dim:#6e6e82;--accent:#7c5cff;--accent2:#ff5cf0;--accent3:#5cffe4;--glow:rgba(124,92,255,0.15)}
+:root{--bg:#060d08;--surface:#0b150e;--border:#1a2e1f;--text:#d4e8d9;--dim:#5e7d65;--accent:#3ddc84;--accent2:#00e5a0;--accent3:#a0ffc8;--glow:rgba(61,220,132,0.12);--ember:#ff6b35}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'SF Mono',SFMono-Regular,ui-monospace,'DejaVu Sans Mono','Cascadia Code',Menlo,Consolas,monospace;line-height:1.6;overflow-x:hidden}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
-/* Animated gradient background */
+/* Hero */
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(124,92,255,0.12),transparent),radial-gradient(ellipse 60% 50% at 20% 80%,rgba(255,92,240,0.06),transparent),radial-gradient(ellipse 60% 40% at 80% 20%,rgba(92,255,228,0.06),transparent);pointer-events:none}
+.hero::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 50% at 50% 30%,rgba(61,220,132,0.08),transparent),
+  radial-gradient(ellipse 50% 50% at 15% 70%,rgba(0,229,160,0.05),transparent),
+  radial-gradient(ellipse 50% 40% at 85% 60%,rgba(160,255,200,0.04),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg at 50% 50%,transparent 0deg,rgba(61,220,132,0.015) 60deg,transparent 120deg,rgba(0,229,160,0.01) 240deg,transparent 360deg);animation:heroSpin 40s linear infinite;pointer-events:none}
+@keyframes heroSpin{to{transform:rotate(360deg)}}
 
-/* Floating grid */
-.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(124,92,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(124,92,255,0.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black,transparent);pointer-events:none}
+/* Grid */
+.grid-bg{position:absolute;inset:0;background-image:
+  linear-gradient(rgba(61,220,132,0.025) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(61,220,132,0.025) 1px,transparent 1px);
+  background-size:50px 50px;mask-image:radial-gradient(ellipse 60% 55% at 50% 45%,black,transparent);pointer-events:none}
 
-/* Floating particles */
+/* Particles */
 .particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.particle{position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;animation:float linear infinite}
-@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float linear infinite}
+@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:0.8}90%{opacity:0.8}100%{transform:translateY(-10vh) scale(1);opacity:0}}
 
-.logo{font-size:clamp(5rem,15vw,12rem);font-weight:900;letter-spacing:-0.04em;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1;animation:logoIn 1s ease-out}
-@keyframes logoIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:none}}
+/* Scanline overlay */
+.scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:2}
 
-.tagline{font-size:clamp(1rem,2.5vw,1.5rem);color:var(--dim);margin-top:1rem;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.3s both}
-.tagline em{color:var(--text);font-style:normal}
+.logo{font-size:clamp(5rem,15vw,12rem);font-weight:900;letter-spacing:-0.04em;position:relative;z-index:3;animation:logoIn 1s ease-out}
+.logo span{background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 60px rgba(61,220,132,0.3))}
+@keyframes logoIn{from{opacity:0;transform:translateY(30px) scale(0.95);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+
+.tagline{font-size:clamp(1rem,2.5vw,1.5rem);color:var(--dim);margin-top:1rem;position:relative;z-index:3;animation:fadeIn 1s ease-out 0.3s both}
+.tagline em{color:var(--accent3);font-style:normal}
 @keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
 
-.hero-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.6s both}
-.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.5rem;border-radius:8px;font-size:0.95rem;font-family:inherit;font-weight:600;transition:all 0.2s}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 30px rgba(124,92,255,0.3)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(124,92,255,0.4);text-decoration:none}
+.hero-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:3;animation:fadeIn 1s ease-out 0.6s both}
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.5rem;border-radius:8px;font-size:0.95rem;font-family:inherit;font-weight:600;transition:all 0.25s}
+.btn-primary{background:linear-gradient(135deg,#2a9d5c,var(--accent));color:#000;box-shadow:0 0 30px rgba(61,220,132,0.25),inset 0 1px 0 rgba(255,255,255,0.15)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(61,220,132,0.4);text-decoration:none}
 .btn-secondary{border:1px solid var(--border);color:var(--text);background:var(--surface)}
-.btn-secondary:hover{border-color:var(--accent);text-decoration:none}
+.btn-secondary:hover{border-color:var(--accent);text-decoration:none;box-shadow:0 0 15px var(--glow)}
 
-.install-box{margin-top:2rem;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.9s both}
-.install-cmd{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1.5rem;font-family:inherit;font-size:1rem;color:var(--accent3);cursor:pointer;transition:all 0.2s;position:relative}
-.install-cmd:hover{border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
-.install-cmd .copied{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:7px;color:var(--accent3);opacity:0;transition:opacity 0.2s}
+.install-box{margin-top:2rem;position:relative;z-index:3;animation:fadeIn 1s ease-out 0.9s both}
+.install-cmd{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1.5rem;font-family:inherit;font-size:1rem;color:var(--accent);cursor:pointer;transition:all 0.2s;position:relative}
+.install-cmd:hover{border-color:var(--accent);box-shadow:0 0 25px var(--glow)}
+.install-cmd .copied{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:7px;color:var(--accent);opacity:0;transition:opacity 0.2s}
 .install-cmd .copied.show{opacity:1}
 
 /* Meme badge */
-.meme-badge{position:relative;z-index:1;margin-top:3rem;animation:fadeIn 1.2s ease-out 1.2s both}
-.meme-badge span{display:inline-block;padding:0.4rem 1rem;border-radius:20px;font-size:0.75rem;color:var(--dim);border:1px solid var(--border);background:var(--surface)}
+.meme-badge{position:relative;z-index:3;margin-top:3rem;animation:fadeIn 1.2s ease-out 1.2s both}
+.meme-badge span{display:inline-block;padding:0.5rem 1.2rem;border-radius:20px;font-size:0.8rem;color:var(--dim);border:1px solid var(--border);background:var(--surface);letter-spacing:0.02em}
+
+/* Divider */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);max-width:900px;margin:0 auto}
 
 /* Sections */
 section{padding:5rem 2rem;max-width:900px;margin:0 auto}
-.section-title{font-size:clamp(1.5rem,4vw,2.5rem);font-weight:800;margin-bottom:0.5rem;background:linear-gradient(135deg,var(--text),var(--dim));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-title{font-size:clamp(1.5rem,4vw,2.5rem);font-weight:800;margin-bottom:0.5rem}
+.section-title span{background:linear-gradient(135deg,var(--accent3),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-sub{color:var(--dim);margin-bottom:3rem;font-size:1.05rem}
 
 /* Feature cards */
 .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:all 0.3s}
-.card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 30px var(--glow)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:all 0.3s;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity 0.3s}
+.card:hover{border-color:rgba(61,220,132,0.3);transform:translateY(-3px);box-shadow:0 8px 30px var(--glow)}
+.card:hover::before{opacity:1}
 .card-icon{font-size:1.8rem;margin-bottom:0.75rem;display:block}
-.card h3{font-size:1.1rem;margin-bottom:0.5rem}
+.card h3{font-size:1.1rem;margin-bottom:0.5rem;color:var(--accent3)}
 .card p{color:var(--dim);font-size:0.9rem;line-height:1.5}
 
 /* Terminal demo */
-.terminal{background:#0d0d14;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:2rem 0;font-size:0.85rem}
-.terminal-header{display:flex;gap:6px;padding:12px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)}
+.terminal{background:#070e09;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:2rem 0;font-size:0.85rem;box-shadow:0 4px 40px rgba(0,0,0,0.4)}
+.terminal-header{display:flex;gap:6px;padding:12px 16px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)}
 .terminal-dot{width:10px;height:10px;border-radius:50%}
 .terminal-dot:nth-child(1){background:#ff5f57}
 .terminal-dot:nth-child(2){background:#febc2e}
 .terminal-dot:nth-child(3){background:#28c840}
-.terminal-body{padding:1rem 1.5rem;line-height:1.8;overflow-x:auto}
-.terminal-body .prompt{color:var(--accent3)}
+.terminal-body{padding:1.25rem 1.5rem;line-height:1.9;overflow-x:auto}
+.terminal-body .prompt{color:var(--accent)}
 .terminal-body .cmd{color:var(--text)}
 .terminal-body .output{color:var(--dim)}
-.terminal-body .highlight{color:var(--accent2)}
+.terminal-body .highlight{color:var(--accent3)}
 
 /* How it works */
 .how-it-works{display:flex;flex-direction:column;gap:2rem}
 .step{display:flex;gap:1.5rem;align-items:flex-start}
-.step-num{flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem}
-.step-content h3{font-size:1.05rem;margin-bottom:0.3rem}
+.step-num{flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;color:#000}
+.step-content h3{font-size:1.05rem;margin-bottom:0.3rem;color:var(--accent3)}
 .step-content p{color:var(--dim);font-size:0.9rem}
+.step-content code{color:var(--accent);background:var(--surface);padding:0.15rem 0.4rem;border-radius:4px;font-size:0.85rem;border:1px solid var(--border)}
 
 /* Architecture */
-.arch{display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;margin:2rem 0}
-.arch-node{padding:0.6rem 1.2rem;border-radius:8px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);position:relative}
-.arch-node.active{border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
-.arch-arrow{display:flex;align-items:center;color:var(--dim);font-size:1.2rem}
+.arch{display:flex;justify-content:center;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:2rem 0}
+.arch-node{padding:0.6rem 1.2rem;border-radius:8px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);transition:all 0.3s}
+.arch-node:hover{border-color:var(--accent);box-shadow:0 0 15px var(--glow)}
+.arch-node.active{border-color:var(--accent);box-shadow:0 0 25px var(--glow);color:var(--accent)}
+.arch-arrow{display:flex;align-items:center;color:var(--accent);font-size:1.2rem;opacity:0.5}
+
+/* Testimonial / meme section */
+.meme-section{text-align:center;padding:4rem 2rem}
+.meme-quote{font-size:clamp(1.1rem,3vw,1.6rem);color:var(--dim);font-style:italic;max-width:600px;margin:0 auto;line-height:1.7}
+.meme-quote em{color:var(--accent3);font-style:normal}
+.meme-attr{margin-top:1rem;font-size:0.85rem;color:rgba(94,125,101,0.6)}
 
 /* Footer */
-footer{text-align:center;padding:3rem 2rem;color:var(--dim);font-size:0.85rem;border-top:1px solid var(--border)}
+footer{text-align:center;padding:3rem 2rem;color:var(--dim);font-size:0.85rem;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent,rgba(61,220,132,0.02))}
 footer a{color:var(--accent)}
+footer .footer-sub{margin-top:0.75rem;font-size:0.75rem;opacity:0.6}
 
 /* Responsive */
 @media(max-width:600px){
@@ -105,7 +132,8 @@ footer a{color:var(--accent)}
 <div class="hero">
   <div class="grid-bg"></div>
   <div class="particles" id="particles"></div>
-  <div class="logo">mor</div>
+  <div class="scanlines"></div>
+  <div class="logo"><span>mor</span></div>
   <p class="tagline">A shared memory store for <em>humans</em> and <em>AI</em></p>
   <div class="hero-cta">
     <a href="https://github.com/laat/mor" class="btn btn-primary">GitHub</a>
@@ -122,8 +150,10 @@ footer a{color:var(--accent)}
   </div>
 </div>
 
+<div class="divider"></div>
+
 <section>
-  <h2 class="section-title">What is this?</h2>
+  <h2 class="section-title"><span>What is this?</span></h2>
   <p class="section-sub">
     Plain markdown files with YAML frontmatter. SQLite full-text search. An MCP server so your AI assistant can actually remember things. A CLI because you're a human who also likes to remember things.
   </p>
@@ -135,8 +165,8 @@ footer a{color:var(--accent)}
       <div class="terminal-dot"></div>
     </div>
     <div class="terminal-body">
-      <div><span class="prompt">$</span> <span class="cmd">mor add retryWithBackoff.ts -t "retryWithBackoff.ts" -d "RxJS retry with exponential backoff"</span></div>
-      <div class="output">Created: 405614a7  retryWithBackoff.ts</div>
+      <div><span class="prompt">$</span> <span class="cmd">mor add retryWithBackoff.ts -d "RxJS retry with exponential backoff"</span></div>
+      <div class="output">Created: 405614a7  retryWithBackoff.ts  [typescript]</div>
       <br>
       <div><span class="prompt">$</span> <span class="cmd">mor find "retry http"</span></div>
       <div class="output"><span class="highlight">405614a7</span>  retryWithBackoff.ts  [rxjs, fetch]  (1.00)</div>
@@ -146,12 +176,17 @@ footer a{color:var(--accent)}
       <div class="output">405614a7  retryWithBackoff.ts  &mdash; RxJS retry with exponential backoff</div>
       <div class="output">d8555419  rxjs.dom.ts  &mdash; Visibility and media query observables</div>
       <div class="output">010fb8f5  rxjs.subjects.ts  &mdash; LocalStorage-backed BehaviorSubject</div>
+      <br>
+      <div><span class="prompt">$</span> <span class="cmd">mor grep "Retry-After" -i</span></div>
+      <div class="output">405614a7  retryWithBackoff.ts</div>
     </div>
   </div>
 </section>
 
+<div class="divider"></div>
+
 <section>
-  <h2 class="section-title">Features</h2>
+  <h2 class="section-title"><span>Features</span></h2>
   <p class="section-sub">Everything you need. Nothing you don't.</p>
   <div class="features">
     <div class="card">
@@ -171,7 +206,7 @@ footer a{color:var(--accent)}
     </div>
     <div class="card">
       <span class="card-icon">&#x1F310;</span>
-      <h3>HTTP server</h3>
+      <h3>HTTP + remote MCP</h3>
       <p>Run on one machine, access from anywhere. REST API + streamable MCP transport. Bearer token auth. DNS rebinding protection.</p>
     </div>
     <div class="card">
@@ -187,8 +222,10 @@ footer a{color:var(--accent)}
   </div>
 </section>
 
+<div class="divider"></div>
+
 <section>
-  <h2 class="section-title">Architecture</h2>
+  <h2 class="section-title"><span>Architecture</span></h2>
   <p class="section-sub">Three interfaces, one abstraction, plain files.</p>
   <div class="arch">
     <div class="arch-node">CLI</div>
@@ -201,8 +238,17 @@ footer a{color:var(--accent)}
   </div>
 </section>
 
+<div class="divider"></div>
+
+<div class="meme-section">
+  <p class="meme-quote">&ldquo;I wrote that <em>exact helper function</em> six months ago. In a different repo. I think. Maybe it was a gist? Or a Slack message?&rdquo;</p>
+  <p class="meme-attr">&mdash; every developer, every week</p>
+</div>
+
+<div class="divider"></div>
+
 <section>
-  <h2 class="section-title">Get started</h2>
+  <h2 class="section-title"><span>Get started</span></h2>
   <p class="section-sub">Three commands to never forget again.</p>
   <div class="how-it-works">
     <div class="step">
@@ -223,7 +269,7 @@ footer a{color:var(--accent)}
       <div class="step-num">3</div>
       <div class="step-content">
         <h3>Find it later</h3>
-        <p><code>mor find "retry"</code> or let your AI do it via MCP.</p>
+        <p><code>mor find "retry"</code> &mdash; or let your AI do it via MCP</p>
       </div>
     </div>
   </div>
@@ -236,7 +282,7 @@ footer a{color:var(--accent)}
     MIT License &middot;
     Built by <a href="https://github.com/laat">Sigurd Fosseng</a>
   </p>
-  <p style="margin-top:0.75rem;font-size:0.75rem">
+  <p class="footer-sub">
     Made with mass prompting and mass vibes. The AI remembers so you don't have to.
   </p>
 </footer>
@@ -244,19 +290,22 @@ footer a{color:var(--accent)}
 <script>
 // Particles
 const container = document.getElementById('particles');
-const colors = ['#7c5cff','#ff5cf0','#5cffe4','#fff'];
-for (let i = 0; i < 40; i++) {
+const colors = ['#3ddc84','#00e5a0','#a0ffc8','#1a8a4a','#fff'];
+for (let i = 0; i < 50; i++) {
   const p = document.createElement('div');
   p.className = 'particle';
   p.style.left = Math.random() * 100 + '%';
   p.style.background = colors[Math.floor(Math.random() * colors.length)];
-  p.style.animationDuration = (8 + Math.random() * 12) + 's';
-  p.style.animationDelay = (Math.random() * 10) + 's';
-  p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+  p.style.animationDuration = (10 + Math.random() * 15) + 's';
+  p.style.animationDelay = (Math.random() * 12) + 's';
+  const size = 1.5 + Math.random() * 3;
+  p.style.width = size + 'px';
+  p.style.height = size + 'px';
+  p.style.boxShadow = `0 0 ${size * 3}px ${p.style.background}`;
   container.appendChild(p);
 }
 
-// Copy install command
+// Copy
 function copyInstall(el) {
   navigator.clipboard.writeText('npm install -g mor');
   const copied = el.querySelector('.copied');
