@@ -370,6 +370,23 @@ program
   });
 
 program
+  .command('push')
+  .description('Commit and push the memory folder if it is a git repo')
+  .action(async () => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      const result = await ops.push();
+      console.log(result.message);
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      ops.close();
+    }
+  });
+
+program
   .command('serve')
   .description('Start HTTP server for remote access')
   .option('-p, --port <port>', 'Port to listen on')

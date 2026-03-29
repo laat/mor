@@ -180,6 +180,19 @@ export function startServer(
     ],
 
     [
+      'POST',
+      '/push',
+      async ({ res }) => {
+        try {
+          json(res, 200, { data: await ops.push() });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          json(res, 500, { error: msg });
+        }
+      },
+    ],
+
+    [
       'DELETE',
       '/memories/:query',
       async ({ params, res }) => {

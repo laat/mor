@@ -98,6 +98,10 @@ export class RemoteOperations implements Operations {
     return this.request<Memory[]>('GET', '/memories');
   }
 
+  async push(): Promise<{ pushed: boolean; message: string }> {
+    return this.request<{ pushed: boolean; message: string }>('POST', '/push');
+  }
+
   close(): void {
     // no-op for remote
   }

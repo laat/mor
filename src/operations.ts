@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import type { Config, Memory, SearchResult } from './types.js';
 import {
   openDb,
@@ -41,6 +42,7 @@ export interface Operations {
   ): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
   list(): Promise<Memory[]>;
+  push(): Promise<{ pushed: boolean; message: string }>;
   close(): void;
 }
 
@@ -135,6 +137,38 @@ export class LocalOperations implements Operations {
       }
     }
     return memories;
+  }
+
+  async push(): Promise<{ pushed: boolean; message: string }> {
+    const dir = this.config.memoryDir;
+    const git = (args: string[]) =>
+      spawnSync('git', args, {
+        cwd: dir,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      });
+
+    const status = git(['status', '--porcelain']);
+    if (status.status !== 0) {
+      throw new Error('Memory folder is not a git repository');
+    }
+    if (!status.stdout.trim()) {
+      return { pushed: false, message: 'Nothing to push' };
+    }
+
+    const add = git(['add', '-A']);
+    if (add.status !== 0)
+      throw new Error(`git add failed: ${add.stderr.trim()}`);
+
+    const commit = git(['commit', '-m', 'update memory']);
+    if (commit.status !== 0)
+      throw new Error(`git commit failed: ${commit.stderr.trim()}`);
+
+    const push = git(['push']);
+    if (push.status !== 0)
+      throw new Error(`git push failed: ${push.stderr.trim()}`);
+
+    return { pushed: true, message: 'Pushed memory changes' };
   }
 
   close(): void {
