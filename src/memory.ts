@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import matter from "gray-matter";
-import slugify from "slugify";
 import crypto from "node:crypto";
 import type { Config, FrontMatter, Memory } from "./types.js";
 
@@ -24,7 +23,11 @@ export function detectRepository(): string | undefined {
 }
 
 export function generateFilename(title: string, id: string): string {
-  const slug = slugify.default(title, { lower: true, strict: true });
+  const slug = title
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
   const hash = id.slice(0, 8).replace(/-/g, "").slice(0, 4);
   return `${slug}-${hash}.md`;
 }
