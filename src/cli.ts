@@ -14,6 +14,18 @@ import { RemoteOperations } from "./remote.js";
 import { startMcpServer } from "./mcp.js";
 import { startServer } from "./server.js";
 
+function parseRawGitHubUrl(url: string): { filename: string; repository: string } | undefined {
+  // https://raw.githubusercontent.com/{owner}/{repo}/refs/heads/{branch}/{path}
+  // https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}
+  const m = url.match(/^https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/(.+)/);
+  if (!m) return undefined;
+  const [, owner, repo, rest] = m;
+  // Strip query params, then extract filename from the remaining path
+  const cleanPath = rest.split("?")[0];
+  const filename = path.basename(cleanPath);
+  return { filename, repository: `github.com/${owner}/${repo}` };
+}
+
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
   if (isRemote(config)) return new RemoteOperations(config);
   return new LocalOperations(config);
@@ -61,12 +73,26 @@ program
     try {
       let content: string;
       let title = opts.title;
+      let repository: string | undefined;
 
-      if (file && file !== "-") {
+      if (file && /^https?:\/\//.test(file)) {
+        const res = await fetch(file);
+        if (!res.ok) {
+          console.error(`Error: failed to fetch ${file} (${res.status})`);
+          process.exit(1);
+        }
+        content = await res.text();
+        const urlInfo = parseRawGitHubUrl(file);
+        if (urlInfo) {
+          if (!title) title = urlInfo.filename;
+          repository = urlInfo.repository;
+        } else {
+          if (!title) title = path.basename(new URL(file).pathname) || file;
+        }
+      } else if (file && file !== "-") {
         content = fs.readFileSync(file, "utf-8");
         if (!title) title = path.basename(file);
       } else {
-        // Read from stdin
         content = fs.readFileSync(0, "utf-8");
         if (!title) {
           console.error("Error: --title is required when reading from stdin");
@@ -75,7 +101,7 @@ program
       }
 
       const tags = opts.tags ? opts.tags.split(",").map((t) => t.trim()) : [];
-      const mem = await ops.add({ title, content, tags, type: opts.type });
+      const mem = await ops.add({ title, content, tags, type: opts.type, repository });
       console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);
       console.log(`    ${path.basename(mem.filePath)}`);
     } finally {

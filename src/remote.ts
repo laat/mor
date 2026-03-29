@@ -45,7 +45,7 @@ export class RemoteOperations implements Operations {
     }
   }
 
-  async add(opts: { title: string; content: string; tags?: string[]; type?: string }): Promise<Memory> {
+  async add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory> {
     return this.request<Memory>("POST", "/memories", opts);
   }
 

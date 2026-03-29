@@ -8,7 +8,7 @@ import { resolveQuery } from "./query.js";
 export interface Operations {
   search(query: string, limit?: number): Promise<SearchResult[]>;
   read(query: string): Promise<Memory | undefined>;
-  add(opts: { title: string; content: string; tags?: string[]; type?: string }): Promise<Memory>;
+  add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory>;
   update(query: string, updates: { title?: string; content?: string; tags?: string[]; type?: string }): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
   list(): Promise<Memory[]>;
@@ -32,7 +32,7 @@ export class LocalOperations implements Operations {
     return resolveQuery(this.config, this.db, query);
   }
 
-  async add(opts: { title: string; content: string; tags?: string[]; type?: string }): Promise<Memory> {
+  async add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory> {
     const mem = createMemory(this.config, opts);
     syncIndex(this.config, this.db);
     return mem;
