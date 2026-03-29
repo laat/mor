@@ -140,13 +140,13 @@ export function searchFts(
 }
 
 function escapeFtsQuery(query: string): string {
-  // Quote each token to prevent FTS5 operator interpretation
-  // e.g. "retry-after" → '"retry-after"', "foo bar" → '"foo" "bar"'
-  return query
+  // Quote each token and join with OR for union search ranked by relevance
+  // e.g. "retry-after" → '"retry-after"', "foo bar" → '"foo" OR "bar"'
+  const tokens = query
     .split(/\s+/)
     .filter(Boolean)
-    .map((token) => `"${token.replace(/"/g, '""')}"`)
-    .join(' ');
+    .map((token) => `"${token.replace(/"/g, '""')}"`);
+  return tokens.length > 1 ? tokens.join(' OR ') : tokens[0] ?? '';
 }
 
 function escapeLike(s: string): string {
