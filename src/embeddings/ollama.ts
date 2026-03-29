@@ -8,7 +8,10 @@ export class OllamaProvider implements EmbeddingProvider {
 
   constructor(config: EmbeddingConfig) {
     this.model = config.model;
-    this.baseUrl = config.baseUrl.replace(/\/$/, '');
+    this.baseUrl = (config.baseUrl ?? 'http://localhost:11434').replace(
+      /\/$/,
+      '',
+    );
   }
 
   async embed(text: string): Promise<number[]> {

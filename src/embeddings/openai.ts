@@ -9,7 +9,10 @@ export class OpenAIProvider implements EmbeddingProvider {
 
   constructor(config: EmbeddingConfig) {
     this.model = config.model;
-    this.baseUrl = config.baseUrl.replace(/\/$/, '');
+    this.baseUrl = (config.baseUrl ?? 'https://api.openai.com/v1').replace(
+      /\/$/,
+      '',
+    );
     this.apiKey = config.apiKey ?? process.env.OPENAI_API_KEY ?? '';
   }
 

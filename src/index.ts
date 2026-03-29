@@ -40,8 +40,11 @@ export function syncIndex(config: Config, db: DB): void {
     let mem: Memory;
     try {
       mem = readMemory(filePath);
-    } catch {
-      continue; // Skip unparseable files
+    } catch (e) {
+      process.stderr.write(
+        `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
+      );
+      continue;
     }
 
     seenIds.add(mem.id);
@@ -82,7 +85,10 @@ export async function reindex(config: Config, db: DB): Promise<void> {
     let mem: Memory;
     try {
       mem = readMemory(filePath);
-    } catch {
+    } catch (e) {
+      process.stderr.write(
+        `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
+      );
       continue;
     }
 

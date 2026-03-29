@@ -33,6 +33,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "prepublishOnly": "pnpm lint && pnpm test && pnpm build",
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",

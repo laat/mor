@@ -11,6 +11,8 @@ export class AzureOpenAIProvider implements EmbeddingProvider {
 
   constructor(config: EmbeddingConfig) {
     this.model = config.model;
+    if (!config.baseUrl)
+      throw new Error('Azure OpenAI requires baseUrl in embedding config');
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
     this.deployment = config.deployment ?? config.model;
     this.apiVersion = config.apiVersion ?? '2024-10-21';

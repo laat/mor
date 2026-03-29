@@ -49,11 +49,12 @@ export function createMcpServer(ops: Operations): McpServer {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        type: z.string().optional().describe('Filter by memory type'),
       },
     },
-    async ({ query, limit, tag }) => {
+    async ({ query, limit, tag, type }) => {
       let results = await ops.search(query, limit ?? 20);
-      if (tag) results = filterResults(results, { tag });
+      if (tag || type) results = filterResults(results, { tag, type });
       if (results.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
@@ -70,6 +71,45 @@ export function createMcpServer(ops: Operations): McpServer {
             : '';
         const body = i === 0 ? `\n\n${r.memory.content}` : '';
         return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
+      });
+      return {
+        content: [{ type: 'text' as const, text: lines.join('\n') }],
+      };
+    },
+  );
+
+  server.registerTool(
+    'memory_grep',
+    {
+      description:
+        'Literal substring search across memory content. Use for exact strings, code identifiers, URLs. Returns top result with full content.',
+      inputSchema: {
+        pattern: z.string().describe('Literal substring to search for'),
+        limit: z.number().optional().describe('Max results (default 20)'),
+        ignore_case: z
+          .boolean()
+          .optional()
+          .describe('Case-insensitive (default false)'),
+        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+      },
+    },
+    async ({ pattern, limit, ignore_case, tag }) => {
+      let memories = await ops.grep(pattern, limit ?? 20, ignore_case);
+      if (tag) memories = filterMemories(memories, { tag });
+      if (memories.length === 0) {
+        return {
+          content: [{ type: 'text' as const, text: 'No memories found.' }],
+        };
+      }
+      const lines = memories.map((mem, i) => {
+        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+        const desc = mem.description ? `\n  ${mem.description}` : '';
+        const preview =
+          i > 0 && !mem.description
+            ? `\n  ${mem.content.split('\n')[0].slice(0, 100)}`
+            : '';
+        const body = i === 0 ? `\n\n${mem.content}` : '';
+        return `- ${mem.id.slice(0, 8)}  ${mem.title}${tags}${desc}${preview}${body}`;
       });
       return {
         content: [{ type: 'text' as const, text: lines.join('\n') }],
@@ -175,11 +215,12 @@ export function createMcpServer(ops: Operations): McpServer {
       description: 'List all stored memories with their titles, IDs, and tags.',
       inputSchema: {
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        type: z.string().optional().describe('Filter by memory type'),
       },
     },
-    async ({ tag }) => {
+    async ({ tag, type }) => {
       let memories = await ops.list();
-      if (tag) memories = filterMemories(memories, { tag });
+      if (tag || type) memories = filterMemories(memories, { tag, type });
       if (memories.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories stored.' }],

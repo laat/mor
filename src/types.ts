@@ -21,7 +21,7 @@ export interface Config {
 export interface EmbeddingConfig {
   provider: 'none' | 'openai' | 'azure-openai' | 'ollama';
   model: string;
-  baseUrl: string;
+  baseUrl?: string;
   dimensions: number;
   apiKey?: string;
   deployment?: string;

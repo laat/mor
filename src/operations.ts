@@ -153,8 +153,10 @@ export class LocalOperations implements Operations {
     for (const row of rows) {
       try {
         memories.push(readMemory(row.file_path));
-      } catch {
-        // skip unparseable files
+      } catch (e) {
+        process.stderr.write(
+          `Warning: skipping unreadable memory ${row.file_path}: ${e instanceof Error ? e.message : e}\n`,
+        );
       }
     }
     return memories;
@@ -167,8 +169,10 @@ export class LocalOperations implements Operations {
     for (const filePath of files) {
       try {
         memories.push(readMemory(filePath));
-      } catch {
-        // skip unparseable files
+      } catch (e) {
+        process.stderr.write(
+          `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
+        );
       }
     }
     return memories;
