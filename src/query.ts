@@ -1,12 +1,23 @@
-import { readMemory } from "./memory.js";
-import { getMemoryById, getMemoryByPrefix, getMemoryByFilename, searchFts, type DB } from "./db.js";
-import { syncIndexIfNeeded } from "./index.js";
-import type { Config, Memory } from "./types.js";
+import { readMemory } from './memory.js';
+import {
+  getMemoryById,
+  getMemoryByPrefix,
+  getMemoryByFilename,
+  searchFts,
+  type DB,
+} from './db.js';
+import { syncIndexIfNeeded } from './index.js';
+import type { Config, Memory } from './types.js';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_PREFIX_RE = /^[0-9a-f]{4,}$/i;
 
-export function resolveQuery(config: Config, db: DB, query: string): Memory | undefined {
+export function resolveQuery(
+  config: Config,
+  db: DB,
+  query: string,
+): Memory | undefined {
   syncIndexIfNeeded(config, db);
 
   // 1. Full UUID match
@@ -26,8 +37,8 @@ export function resolveQuery(config: Config, db: DB, query: string): Memory | un
   if (byFilename) return readMemory(byFilename.file_path);
 
   // Also try with .md extension
-  if (!query.endsWith(".md")) {
-    const byFilenameMd = getMemoryByFilename(db, query + ".md");
+  if (!query.endsWith('.md')) {
+    const byFilenameMd = getMemoryByFilename(db, query + '.md');
     if (byFilenameMd) return readMemory(byFilenameMd.file_path);
   }
 

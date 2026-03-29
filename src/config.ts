@@ -1,10 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
-import type { Config } from "./types.js";
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Config } from './types.js';
 
 function expandHome(p: string): string {
-  if (p.startsWith("~/") || p === "~") {
-    return path.join(process.env.HOME ?? "", p.slice(1));
+  if (p.startsWith('~/') || p === '~') {
+    return path.join(process.env.HOME ?? '', p.slice(1));
   }
   return p;
 }
@@ -13,29 +13,29 @@ function getConfigDir(): string {
   if (process.env.CODE_MEMORY_HOME) {
     return expandHome(process.env.CODE_MEMORY_HOME);
   }
-  return path.join(process.env.HOME ?? "", ".config", "code-memory");
+  return path.join(process.env.HOME ?? '', '.config', 'code-memory');
 }
 
 const DEFAULT_CONFIG: Config = {
-  memoryDir: "~/.config/code-memory/memories",
-  dbPath: "~/.config/code-memory/index.db",
+  memoryDir: '~/.config/code-memory/memories',
+  dbPath: '~/.config/code-memory/index.db',
   embedding: {
-    provider: "none",
-    model: "text-embedding-3-small",
-    baseUrl: "https://api.openai.com/v1",
+    provider: 'none',
+    model: 'text-embedding-3-small',
+    baseUrl: 'https://api.openai.com/v1',
     dimensions: 1536,
   },
 };
 
 export function loadConfig(): Config {
   const configDir = getConfigDir();
-  const configPath = path.join(configDir, "config.json");
+  const configPath = path.join(configDir, 'config.json');
 
   fs.mkdirSync(configDir, { recursive: true });
 
   let config: Config;
   if (fs.existsSync(configPath)) {
-    const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     config = {
       ...DEFAULT_CONFIG,
       ...raw,
@@ -45,9 +45,9 @@ export function loadConfig(): Config {
     };
   } else {
     config = { ...DEFAULT_CONFIG };
-    config.memoryDir = path.join(configDir, "memories");
-    config.dbPath = path.join(configDir, "index.db");
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+    config.memoryDir = path.join(configDir, 'memories');
+    config.dbPath = path.join(configDir, 'index.db');
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }
 
   // Resolve paths relative to configDir when they use ~

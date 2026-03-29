@@ -1,5 +1,5 @@
-import Database from "better-sqlite3";
-import type { Config } from "./types.js";
+import Database from 'better-sqlite3';
+import type { Config } from './types.js';
 
 export type DB = Database.Database;
 
@@ -32,8 +32,8 @@ const SCHEMA = `
 
 export function openDb(config: Config): DB {
   const db = new Database(config.dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
   return db;
 }
@@ -54,20 +54,19 @@ export function upsertMemoryChecked(
   },
 ): void {
   db.transaction(() => {
-    const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(mem.id) as
+    const existing = db
+      .prepare('SELECT rowid, title, tags, content FROM memories WHERE id = ?')
+      .get(mem.id) as
       | { rowid: number; title: string; tags: string; content: string }
       | undefined;
 
     if (existing) {
-      db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
-        existing.rowid,
-        existing.title,
-        existing.tags,
-        existing.content,
-      );
+      db.prepare(
+        "INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)",
+      ).run(existing.rowid, existing.title, existing.tags, existing.content);
     }
 
-    const tagsStr = mem.tags.join(",");
+    const tagsStr = mem.tags.join(',');
     db.prepare(
       `INSERT INTO memories (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -76,37 +75,50 @@ export function upsertMemoryChecked(
          repository=excluded.repository, updated=excluded.updated,
          content=excluded.content, file_path=excluded.file_path,
          content_hash=excluded.content_hash`,
-    ).run(mem.id, mem.title, tagsStr, mem.type, mem.repository ?? null, mem.created, mem.updated, mem.content, mem.filePath, mem.contentHash);
-
-    const row = db.prepare("SELECT rowid FROM memories WHERE id = ?").get(mem.id) as { rowid: number };
-    db.prepare("INSERT INTO memories_fts(rowid, title, tags, content) VALUES(?, ?, ?, ?)").run(
-      row.rowid,
+    ).run(
+      mem.id,
       mem.title,
       tagsStr,
+      mem.type,
+      mem.repository ?? null,
+      mem.created,
+      mem.updated,
       mem.content,
+      mem.filePath,
+      mem.contentHash,
     );
+
+    const row = db
+      .prepare('SELECT rowid FROM memories WHERE id = ?')
+      .get(mem.id) as { rowid: number };
+    db.prepare(
+      'INSERT INTO memories_fts(rowid, title, tags, content) VALUES(?, ?, ?, ?)',
+    ).run(row.rowid, mem.title, tagsStr, mem.content);
   })();
 }
 
 export function deleteMemoryFromDb(db: DB, id: string): void {
   db.transaction(() => {
-    const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(id) as
+    const existing = db
+      .prepare('SELECT rowid, title, tags, content FROM memories WHERE id = ?')
+      .get(id) as
       | { rowid: number; title: string; tags: string; content: string }
       | undefined;
 
     if (existing) {
-      db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
-        existing.rowid,
-        existing.title,
-        existing.tags,
-        existing.content,
-      );
-      db.prepare("DELETE FROM memories WHERE id = ?").run(id);
+      db.prepare(
+        "INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)",
+      ).run(existing.rowid, existing.title, existing.tags, existing.content);
+      db.prepare('DELETE FROM memories WHERE id = ?').run(id);
     }
   })();
 }
 
-export function searchFts(db: DB, query: string, limit = 20): Array<{ id: string; score: number }> {
+export function searchFts(
+  db: DB,
+  query: string,
+  limit = 20,
+): Array<{ id: string; score: number }> {
   const rows = db
     .prepare(
       `SELECT m.id, rank
@@ -128,41 +140,60 @@ export function searchFts(db: DB, query: string, limit = 20): Array<{ id: string
 }
 
 function escapeLike(s: string): string {
-  return s.replace(/[%_\\]/g, "\\$&");
+  return s.replace(/[%_\\]/g, '\\$&');
 }
 
-export function getMemoryById(db: DB, id: string): { file_path: string } | undefined {
-  return db.prepare("SELECT file_path FROM memories WHERE id = ?").get(id) as { file_path: string } | undefined;
+export function getMemoryById(
+  db: DB,
+  id: string,
+): { file_path: string } | undefined {
+  return db.prepare('SELECT file_path FROM memories WHERE id = ?').get(id) as
+    | { file_path: string }
+    | undefined;
 }
 
-export function getMemoryByPrefix(db: DB, prefix: string): { file_path: string; id: string } | undefined {
-  const rows = db.prepare("SELECT id, file_path FROM memories WHERE id LIKE ? || '%' ESCAPE '\\'").all(escapeLike(prefix)) as Array<{
+export function getMemoryByPrefix(
+  db: DB,
+  prefix: string,
+): { file_path: string; id: string } | undefined {
+  const rows = db
+    .prepare(
+      "SELECT id, file_path FROM memories WHERE id LIKE ? || '%' ESCAPE '\\'",
+    )
+    .all(escapeLike(prefix)) as Array<{
     id: string;
     file_path: string;
   }>;
   return rows.length === 1 ? rows[0] : undefined;
 }
 
-export function getMemoryByFilename(db: DB, filename: string): { file_path: string } | undefined {
-  return db.prepare("SELECT file_path FROM memories WHERE file_path LIKE '%/' || ? ESCAPE '\\'").get(escapeLike(filename)) as
-    | { file_path: string }
-    | undefined;
+export function getMemoryByFilename(
+  db: DB,
+  filename: string,
+): { file_path: string } | undefined {
+  return db
+    .prepare(
+      "SELECT file_path FROM memories WHERE file_path LIKE '%/' || ? ESCAPE '\\'",
+    )
+    .get(escapeLike(filename)) as { file_path: string } | undefined;
 }
 
 export function getAllMemoryIds(db: DB): Set<string> {
-  const rows = db.prepare("SELECT id FROM memories").all() as Array<{ id: string }>;
+  const rows = db.prepare('SELECT id FROM memories').all() as Array<{
+    id: string;
+  }>;
   return new Set(rows.map((r) => r.id));
 }
 
 export function getContentHash(db: DB, id: string): string | undefined {
-  const row = db.prepare("SELECT content_hash FROM memories WHERE id = ?").get(id) as
-    | { content_hash: string }
-    | undefined;
+  const row = db
+    .prepare('SELECT content_hash FROM memories WHERE id = ?')
+    .get(id) as { content_hash: string } | undefined;
   return row?.content_hash;
 }
 
 export function clearDb(db: DB): void {
-  db.exec("DELETE FROM embeddings");
-  db.exec("DELETE FROM memories");
+  db.exec('DELETE FROM embeddings');
+  db.exec('DELETE FROM memories');
   db.exec("INSERT INTO memories_fts(memories_fts) VALUES('delete-all')");
 }

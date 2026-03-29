@@ -1,8 +1,11 @@
-import type { Config, Memory, SearchResult } from "./types.js";
-import type { Operations } from "./operations.js";
+import type { Config, Memory, SearchResult } from './types.js';
+import type { Operations } from './operations.js';
 
 class HttpError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -12,18 +15,22 @@ export class RemoteOperations implements Operations {
   private token?: string;
 
   constructor(config: Config) {
-    if (!config.server?.url) throw new Error("No server URL configured");
-    this.baseUrl = config.server.url.replace(/\/+$/, "");
+    if (!config.server?.url) throw new Error('No server URL configured');
+    this.baseUrl = config.server.url.replace(/\/+$/, '');
     this.token = config.server.token;
   }
 
   private headers(): Record<string, string> {
-    const h: Record<string, string> = { "Content-Type": "application/json" };
-    if (this.token) h["Authorization"] = `Bearer ${this.token}`;
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.token) h['Authorization'] = `Bearer ${this.token}`;
     return h;
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const res = await fetch(url, {
       method,
@@ -39,32 +46,56 @@ export class RemoteOperations implements Operations {
 
   async search(query: string, limit = 20): Promise<SearchResult[]> {
     const params = new URLSearchParams({ q: query, limit: String(limit) });
-    return this.request<SearchResult[]>("GET", `/memories/search?${params}`);
+    return this.request<SearchResult[]>('GET', `/memories/search?${params}`);
   }
 
   async read(query: string): Promise<Memory | undefined> {
     try {
-      return await this.request<Memory>("GET", `/memories/${encodeURIComponent(query)}`);
+      return await this.request<Memory>(
+        'GET',
+        `/memories/${encodeURIComponent(query)}`,
+      );
     } catch (e) {
       if (e instanceof HttpError && e.status === 404) return undefined;
       throw e;
     }
   }
 
-  async add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory> {
-    return this.request<Memory>("POST", "/memories", opts);
+  async add(opts: {
+    title: string;
+    content: string;
+    tags?: string[];
+    type?: string;
+    repository?: string;
+  }): Promise<Memory> {
+    return this.request<Memory>('POST', '/memories', opts);
   }
 
-  async update(query: string, updates: { title?: string; content?: string; tags?: string[]; type?: string }): Promise<Memory> {
-    return this.request<Memory>("PUT", `/memories/${encodeURIComponent(query)}`, updates);
+  async update(
+    query: string,
+    updates: {
+      title?: string;
+      content?: string;
+      tags?: string[];
+      type?: string;
+    },
+  ): Promise<Memory> {
+    return this.request<Memory>(
+      'PUT',
+      `/memories/${encodeURIComponent(query)}`,
+      updates,
+    );
   }
 
   async remove(query: string): Promise<{ title: string; id: string }> {
-    return this.request<{ title: string; id: string }>("DELETE", `/memories/${encodeURIComponent(query)}`);
+    return this.request<{ title: string; id: string }>(
+      'DELETE',
+      `/memories/${encodeURIComponent(query)}`,
+    );
   }
 
   async list(): Promise<Memory[]> {
-    return this.request<Memory[]>("GET", "/memories");
+    return this.request<Memory[]>('GET', '/memories');
   }
 
   close(): void {

@@ -1,16 +1,44 @@
-import fs from "node:fs";
-import type { Config, Memory, SearchResult } from "./types.js";
-import { openDb, upsertMemoryChecked, deleteMemoryFromDb, type DB } from "./db.js";
-import { syncIndex, searchAsync, hashContent } from "./index.js";
-import { createMemory, readMemory, deleteMemory, updateMemory, listMemoryFiles } from "./memory.js";
-import { resolveQuery } from "./query.js";
-import { createProvider, type EmbeddingProvider } from "./embeddings/provider.js";
+import fs from 'node:fs';
+import type { Config, Memory, SearchResult } from './types.js';
+import {
+  openDb,
+  upsertMemoryChecked,
+  deleteMemoryFromDb,
+  type DB,
+} from './db.js';
+import { syncIndex, searchAsync, hashContent } from './index.js';
+import {
+  createMemory,
+  readMemory,
+  deleteMemory,
+  updateMemory,
+  listMemoryFiles,
+} from './memory.js';
+import { resolveQuery } from './query.js';
+import {
+  createProvider,
+  type EmbeddingProvider,
+} from './embeddings/provider.js';
 
 export interface Operations {
   search(query: string, limit?: number): Promise<SearchResult[]>;
   read(query: string): Promise<Memory | undefined>;
-  add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory>;
-  update(query: string, updates: { title?: string; content?: string; tags?: string[]; type?: string }): Promise<Memory>;
+  add(opts: {
+    title: string;
+    content: string;
+    tags?: string[];
+    type?: string;
+    repository?: string;
+  }): Promise<Memory>;
+  update(
+    query: string,
+    updates: {
+      title?: string;
+      content?: string;
+      tags?: string[];
+      type?: string;
+    },
+  ): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
   list(): Promise<Memory[]>;
   close(): void;
@@ -35,9 +63,15 @@ export class LocalOperations implements Operations {
     return resolveQuery(this.config, this.db, query);
   }
 
-  async add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory> {
+  async add(opts: {
+    title: string;
+    content: string;
+    tags?: string[];
+    type?: string;
+    repository?: string;
+  }): Promise<Memory> {
     const mem = createMemory(this.config, opts);
-    const raw = fs.readFileSync(mem.filePath, "utf-8");
+    const raw = fs.readFileSync(mem.filePath, 'utf-8');
     upsertMemoryChecked(this.db, {
       id: mem.id,
       title: mem.title,
@@ -53,11 +87,19 @@ export class LocalOperations implements Operations {
     return mem;
   }
 
-  async update(query: string, updates: { title?: string; content?: string; tags?: string[]; type?: string }): Promise<Memory> {
+  async update(
+    query: string,
+    updates: {
+      title?: string;
+      content?: string;
+      tags?: string[];
+      type?: string;
+    },
+  ): Promise<Memory> {
     const mem = resolveQuery(this.config, this.db, query);
     if (!mem) throw new Error(`Memory not found: ${query}`);
     const updated = updateMemory(mem.filePath, updates);
-    const raw = fs.readFileSync(updated.filePath, "utf-8");
+    const raw = fs.readFileSync(updated.filePath, 'utf-8');
     upsertMemoryChecked(this.db, {
       id: updated.id,
       title: updated.title,

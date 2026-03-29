@@ -18,7 +18,7 @@ export interface Config {
 }
 
 export interface EmbeddingConfig {
-  provider: "none" | "openai" | "ollama";
+  provider: 'none' | 'openai' | 'ollama';
   model: string;
   baseUrl: string;
   dimensions: number;
@@ -50,5 +50,5 @@ export interface Memory {
 export interface SearchResult {
   memory: Memory;
   score: number;
-  matchType: "uuid" | "filename" | "fts" | "vector";
+  matchType: 'uuid' | 'filename' | 'fts' | 'vector';
 }

@@ -1,12 +1,23 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import { listMemoryFiles, readMemory } from "./memory.js";
-import { clearDb, upsertMemoryChecked, deleteMemoryFromDb, getAllMemoryIds, getContentHash, searchFts, type DB } from "./db.js";
-import type { Config, Memory, SearchResult } from "./types.js";
-import { createProvider, type EmbeddingProvider } from "./embeddings/provider.js";
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import { listMemoryFiles, readMemory } from './memory.js';
+import {
+  clearDb,
+  upsertMemoryChecked,
+  deleteMemoryFromDb,
+  getAllMemoryIds,
+  getContentHash,
+  searchFts,
+  type DB,
+} from './db.js';
+import type { Config, Memory, SearchResult } from './types.js';
+import {
+  createProvider,
+  type EmbeddingProvider,
+} from './embeddings/provider.js';
 
 export function hashContent(content: string): string {
-  return crypto.createHash("sha256").update(content).digest("hex");
+  return crypto.createHash('sha256').update(content).digest('hex');
 }
 
 const lastSyncMap = new WeakMap<DB, number>();
@@ -34,7 +45,7 @@ export function syncIndex(config: Config, db: DB): void {
     }
 
     seenIds.add(mem.id);
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const hash = hashContent(raw);
     const existingHash = getContentHash(db, mem.id);
 
@@ -75,7 +86,7 @@ export async function reindex(config: Config, db: DB): Promise<void> {
       continue;
     }
 
-    const raw = fs.readFileSync(filePath, "utf-8");
+    const raw = fs.readFileSync(filePath, 'utf-8');
     const hash = hashContent(raw);
 
     upsertMemoryChecked(db, {
@@ -95,10 +106,14 @@ export async function reindex(config: Config, db: DB): Promise<void> {
   }
 }
 
-async function computeAndStoreEmbedding(db: DB, provider: EmbeddingProvider, mem: Memory): Promise<void> {
-  if (provider.name === "none") return;
+async function computeAndStoreEmbedding(
+  db: DB,
+  provider: EmbeddingProvider,
+  mem: Memory,
+): Promise<void> {
+  if (provider.name === 'none') return;
 
-  const text = `${mem.title}\n${mem.tags.join(", ")}\n${mem.content}`;
+  const text = `${mem.title}\n${mem.tags.join(', ')}\n${mem.content}`;
   const embedding = await provider.embed(text);
 
   const buffer = Buffer.from(new Float32Array(embedding).buffer);
@@ -109,27 +124,41 @@ async function computeAndStoreEmbedding(db: DB, provider: EmbeddingProvider, mem
   ).run(mem.id, buffer, provider.model, embedding.length);
 }
 
-export async function searchAsync(config: Config, db: DB, query: string, limit = 20, provider?: EmbeddingProvider): Promise<SearchResult[]> {
+export async function searchAsync(
+  config: Config,
+  db: DB,
+  query: string,
+  limit = 20,
+  provider?: EmbeddingProvider,
+): Promise<SearchResult[]> {
   syncIndexIfNeeded(config, db);
 
   const ftsResults = searchFts(db, query, limit);
   const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));
 
   // Check for embeddings
-  const embeddingRows = db.prepare("SELECT COUNT(*) as count FROM embeddings").get() as { count: number };
+  const embeddingRows = db
+    .prepare('SELECT COUNT(*) as count FROM embeddings')
+    .get() as { count: number };
   const effectiveProvider = provider ?? createProvider(config.embedding);
 
-  if (embeddingRows.count > 0 && effectiveProvider.name !== "none") {
+  if (embeddingRows.count > 0 && effectiveProvider.name !== 'none') {
     const queryEmbedding = await effectiveProvider.embed(query);
 
-    const allEmbeddings = db.prepare("SELECT id, embedding FROM embeddings").all() as Array<{
+    const allEmbeddings = db
+      .prepare('SELECT id, embedding FROM embeddings')
+      .all() as Array<{
       id: string;
       embedding: Buffer;
     }>;
 
     const vectorScores: Array<{ id: string; score: number }> = [];
     for (const row of allEmbeddings) {
-      const stored = new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / 4);
+      const stored = new Float32Array(
+        row.embedding.buffer,
+        row.embedding.byteOffset,
+        row.embedding.byteLength / 4,
+      );
       if (queryEmbedding.length !== stored.length) continue;
       const sim = cosineSimilarity(queryEmbedding, Array.from(stored));
       vectorScores.push({ id: row.id, score: (sim + 1) / 2 }); // normalize to 0-1
@@ -150,16 +179,24 @@ export async function searchAsync(config: Config, db: DB, query: string, limit =
     merged.sort((a, b) => b.score - a.score);
 
     return merged.slice(0, limit).map((r) => {
-      const row = db.prepare("SELECT file_path FROM memories WHERE id = ?").get(r.id) as { file_path: string };
+      const row = db
+        .prepare('SELECT file_path FROM memories WHERE id = ?')
+        .get(r.id) as { file_path: string };
       const mem = readMemory(row.file_path);
-      return { memory: mem, score: r.score, matchType: (vectorMap.has(r.id) ? "vector" : "fts") as "vector" | "fts" };
+      return {
+        memory: mem,
+        score: r.score,
+        matchType: (vectorMap.has(r.id) ? 'vector' : 'fts') as 'vector' | 'fts',
+      };
     });
   }
 
   return ftsResults.map((r) => {
-    const row = db.prepare("SELECT file_path FROM memories WHERE id = ?").get(r.id) as { file_path: string };
+    const row = db
+      .prepare('SELECT file_path FROM memories WHERE id = ?')
+      .get(r.id) as { file_path: string };
     const mem = readMemory(row.file_path);
-    return { memory: mem, score: r.score, matchType: "fts" as const };
+    return { memory: mem, score: r.score, matchType: 'fts' as const };
   });
 }
 
