@@ -53,54 +53,57 @@ export function upsertMemoryChecked(
     contentHash: string;
   },
 ): void {
-  // Properly handle FTS update by reading old values before delete
-  const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(mem.id) as
-    | { rowid: number; title: string; tags: string; content: string }
-    | undefined;
+  db.transaction(() => {
+    const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(mem.id) as
+      | { rowid: number; title: string; tags: string; content: string }
+      | undefined;
 
-  if (existing) {
-    db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
-      existing.rowid,
-      existing.title,
-      existing.tags,
-      existing.content,
+    if (existing) {
+      db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
+        existing.rowid,
+        existing.title,
+        existing.tags,
+        existing.content,
+      );
+    }
+
+    const tagsStr = mem.tags.join(",");
+    db.prepare(
+      `INSERT INTO memories (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         title=excluded.title, tags=excluded.tags, type=excluded.type,
+         repository=excluded.repository, updated=excluded.updated,
+         content=excluded.content, file_path=excluded.file_path,
+         content_hash=excluded.content_hash`,
+    ).run(mem.id, mem.title, tagsStr, mem.type, mem.repository ?? null, mem.created, mem.updated, mem.content, mem.filePath, mem.contentHash);
+
+    const row = db.prepare("SELECT rowid FROM memories WHERE id = ?").get(mem.id) as { rowid: number };
+    db.prepare("INSERT INTO memories_fts(rowid, title, tags, content) VALUES(?, ?, ?, ?)").run(
+      row.rowid,
+      mem.title,
+      tagsStr,
+      mem.content,
     );
-  }
-
-  const tagsStr = mem.tags.join(",");
-  db.prepare(
-    `INSERT INTO memories (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-       title=excluded.title, tags=excluded.tags, type=excluded.type,
-       repository=excluded.repository, updated=excluded.updated,
-       content=excluded.content, file_path=excluded.file_path,
-       content_hash=excluded.content_hash`,
-  ).run(mem.id, mem.title, tagsStr, mem.type, mem.repository ?? null, mem.created, mem.updated, mem.content, mem.filePath, mem.contentHash);
-
-  const row = db.prepare("SELECT rowid FROM memories WHERE id = ?").get(mem.id) as { rowid: number };
-  db.prepare("INSERT INTO memories_fts(rowid, title, tags, content) VALUES(?, ?, ?, ?)").run(
-    row.rowid,
-    mem.title,
-    tagsStr,
-    mem.content,
-  );
+  })();
 }
 
 export function deleteMemoryFromDb(db: DB, id: string): void {
-  const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(id) as
-    | { rowid: number; title: string; tags: string; content: string }
-    | undefined;
+  db.transaction(() => {
+    const existing = db.prepare("SELECT rowid, title, tags, content FROM memories WHERE id = ?").get(id) as
+      | { rowid: number; title: string; tags: string; content: string }
+      | undefined;
 
-  if (existing) {
-    db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
-      existing.rowid,
-      existing.title,
-      existing.tags,
-      existing.content,
-    );
-    db.prepare("DELETE FROM memories WHERE id = ?").run(id);
-  }
+    if (existing) {
+      db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
+        existing.rowid,
+        existing.title,
+        existing.tags,
+        existing.content,
+      );
+      db.prepare("DELETE FROM memories WHERE id = ?").run(id);
+    }
+  })();
 }
 
 export function searchFts(db: DB, query: string, limit = 20): Array<{ id: string; score: number }> {
@@ -115,12 +118,12 @@ export function searchFts(db: DB, query: string, limit = 20): Array<{ id: string
     )
     .all(query, limit) as Array<{ id: string; rank: number }>;
 
-  // rank is negative (lower = better), normalize to 0-1 score
+  // rank is negative (more negative = better match), normalize to relative 0-1 score
   if (rows.length === 0) return [];
-  const maxRank = Math.abs(rows[rows.length - 1].rank) || 1;
+  const best = Math.abs(rows[0].rank) || 1;
   return rows.map((r) => ({
     id: r.id,
-    score: 1 - Math.abs(r.rank) / (maxRank + 1),
+    score: Math.abs(r.rank) / best,
   }));
 }
 
@@ -141,7 +144,7 @@ export function getMemoryByPrefix(db: DB, prefix: string): { file_path: string; 
 }
 
 export function getMemoryByFilename(db: DB, filename: string): { file_path: string } | undefined {
-  return db.prepare("SELECT file_path FROM memories WHERE file_path LIKE '%' || ? ESCAPE '\\'").get(escapeLike(filename)) as
+  return db.prepare("SELECT file_path FROM memories WHERE file_path LIKE '%/' || ? ESCAPE '\\'").get(escapeLike(filename)) as
     | { file_path: string }
     | undefined;
 }

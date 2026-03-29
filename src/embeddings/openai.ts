@@ -31,6 +31,9 @@ export class OpenAIProvider implements EmbeddingProvider {
     }
 
     const json = (await res.json()) as { data: Array<{ embedding: number[] }> };
+    if (!json.data?.[0]?.embedding) {
+      throw new Error("OpenAI returned unexpected embedding response");
+    }
     return json.data[0].embedding;
   }
 }

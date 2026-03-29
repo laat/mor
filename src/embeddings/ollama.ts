@@ -26,6 +26,9 @@ export class OllamaProvider implements EmbeddingProvider {
     }
 
     const json = (await res.json()) as { embedding: number[] };
+    if (!json.embedding) {
+      throw new Error("Ollama returned unexpected embedding response");
+    }
     return json.embedding;
   }
 }

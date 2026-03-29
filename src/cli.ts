@@ -41,12 +41,13 @@ program
 program
   .command("find <query>")
   .description("Search memories by query")
-  .option("-l, --limit <n>", "Max results", "10")
+  .option("-l, --limit <n>", "Max results", "20")
   .action(async (query: string, opts: { limit: string }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      const results = await ops.search(query, parseInt(opts.limit));
+      const limitRaw = parseInt(opts.limit, 10);
+      const results = await ops.search(query, Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw);
       if (results.length === 0) {
         console.log("No memories found.");
         return;
@@ -56,6 +57,9 @@ program
         console.log(`${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}`);
         console.log(`         ${path.basename(r.memory.filePath)}`);
       }
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
     } finally {
       ops.close();
     }
@@ -103,7 +107,7 @@ program
       const tags = opts.tags ? opts.tags.split(",").map((t) => t.trim()) : [];
       const mem = await ops.add({ title, content, tags, type: opts.type, repository });
       console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);
-      console.log(`    ${path.basename(mem.filePath)}`);
+      console.log(`         ${path.basename(mem.filePath)}`);
     } finally {
       ops.close();
     }
@@ -117,9 +121,37 @@ program
     const ops = getOps(config);
     try {
       const result = await ops.remove(query);
-      console.log(`Removed: ${result.title}`);
+      console.log(`Removed: ${result.id.slice(0, 8)}  ${result.title}`);
     } catch (e) {
-      console.error(e instanceof Error ? e.message : String(e));
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      ops.close();
+    }
+  });
+
+program
+  .command("update <query>")
+  .description("Update a memory's metadata or content")
+  .option("-t, --title <title>", "New title")
+  .option("--tags <tags>", "Comma-separated tags")
+  .option("--type <type>", "Memory type")
+  .action(async (query: string, opts: { title?: string; tags?: string; type?: string }) => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      const updates: { title?: string; tags?: string[]; type?: string } = {};
+      if (opts.title) updates.title = opts.title;
+      if (opts.tags) updates.tags = opts.tags.split(",").map((t) => t.trim());
+      if (opts.type) updates.type = opts.type;
+      if (Object.keys(updates).length === 0) {
+        console.error("Error: no updates provided. Use --title, --tags, or --type.");
+        process.exit(1);
+      }
+      const mem = await ops.update(query, updates);
+      console.log(`Updated: ${mem.id.slice(0, 8)}  ${mem.title}`);
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
       ops.close();
@@ -135,10 +167,13 @@ program
     try {
       const mem = await ops.read(query);
       if (!mem) {
-        console.error(`Memory not found: ${query}`);
+        console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
       console.log(mem.content);
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
     } finally {
       ops.close();
     }
@@ -153,11 +188,14 @@ program
     try {
       const mem = await ops.read(query);
       if (!mem) {
-        console.error(`Memory not found: ${query}`);
+        console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      fs.writeFileSync(dest, mem.content + "\n");
+      fs.writeFileSync(dest, mem.content.endsWith("\n") ? mem.content : mem.content + "\n");
       console.log(`Copied "${mem.title}" to ${dest}`);
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
     } finally {
       ops.close();
     }
@@ -168,19 +206,20 @@ program
   .description("Open memory in $EDITOR")
   .action(async (query: string) => {
     const config = loadConfig();
-    if (isRemote(config)) {
-      // Remote edit: fetch → temp file → $EDITOR → update via API
-      const ops = new RemoteOperations(config);
-      try {
-        const mem = await ops.read(query);
-        if (!mem) {
-          console.error(`Memory not found: ${query}`);
-          process.exit(1);
-        }
-        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "code-memory-"));
+    const ops = getOps(config);
+    let tmpDir: string | undefined;
+    try {
+      const mem = await ops.read(query);
+      if (!mem) {
+        console.error(`Error: memory not found: ${query}`);
+        process.exit(1);
+      }
+      const editor = process.env.EDITOR ?? "vi";
+      if (isRemote(config)) {
+        // Remote: fetch → temp file → $EDITOR → update via API
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "code-memory-"));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, mem.content);
-        const editor = process.env.EDITOR ?? "vi";
         spawnSync(editor, [tmpFile], { stdio: "inherit", shell: true });
         const newContent = fs.readFileSync(tmpFile, "utf-8");
         if (newContent !== mem.content) {
@@ -189,31 +228,13 @@ program
         } else {
           console.log("No changes.");
         }
-        fs.rmSync(tmpDir, { recursive: true });
-      } finally {
-        ops.close();
-      }
-    } else {
-      // Local edit: open file directly
-      const ops = new LocalOperations(config);
-      try {
-        const mem = await ops.read(query);
-        if (!mem) {
-          console.error(`Memory not found: ${query}`);
-          process.exit(1);
-        }
-        const editor = process.env.EDITOR ?? "vi";
+      } else {
+        // Local: open file directly
         spawnSync(editor, [mem.filePath], { stdio: "inherit", shell: true });
-        // Re-sync after edit
-        const db = openDb(config);
-        try {
-          syncIndex(config, db);
-        } finally {
-          db.close();
-        }
-      } finally {
-        ops.close();
       }
+    } finally {
+      if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+      ops.close();
     }
   });
 
@@ -251,11 +272,15 @@ program
       const files = fs.readdirSync(absDir).filter((f) => f.endsWith(".md"));
       let count = 0;
       for (const file of files) {
-        const filePath = path.join(absDir, file);
-        const content = fs.readFileSync(filePath, "utf-8");
-        const title = path.basename(file, ".md");
-        createMemory(config, { title, content });
-        count++;
+        try {
+          const filePath = path.join(absDir, file);
+          const content = fs.readFileSync(filePath, "utf-8");
+          const title = path.basename(file, ".md");
+          createMemory(config, { title, content });
+          count++;
+        } catch (e) {
+          console.error(`Error: failed to import ${file}: ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
       syncIndex(config, db);
       console.log(`Imported ${count} memories.`);
@@ -274,19 +299,29 @@ program
 program
   .command("list")
   .description("List all memories")
-  .action(async () => {
+  .option("-l, --limit <n>", "Max results")
+  .action(async (opts: { limit?: string }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      const memories = await ops.list();
+      let memories = await ops.list();
       if (memories.length === 0) {
         console.log("No memories stored.");
         return;
       }
+      if (opts.limit) {
+        const limitRaw = parseInt(opts.limit, 10);
+        const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
+        memories = memories.slice(0, limit);
+      }
       for (const mem of memories) {
         const tags = mem.tags.length > 0 ? ` [${mem.tags.join(", ")}]` : "";
         console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
+        console.log(`         ${path.basename(mem.filePath)}`);
       }
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
     } finally {
       ops.close();
     }

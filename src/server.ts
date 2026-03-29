@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import http from "node:http";
 import type { Config } from "./types.js";
 import { LocalOperations } from "./operations.js";
@@ -6,13 +7,19 @@ function log(msg: string): void {
   process.stderr.write(`[code-memory] ${msg}\n`);
 }
 
-async function readBody(req: http.IncomingMessage): Promise<string> {
+async function readBody(req: http.IncomingMessage, maxBytes = 10 * 1024 * 1024): Promise<string> {
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
+  let total = 0;
+  for await (const chunk of req) {
+    total += (chunk as Buffer).byteLength;
+    if (total > maxBytes) throw new Error("Request body too large");
+    chunks.push(chunk as Buffer);
+  }
   return Buffer.concat(chunks).toString("utf-8");
 }
 
 function json(res: http.ServerResponse, status: number, data: unknown): void {
+  if (res.headersSent) return;
   const body = JSON.stringify(data);
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(body);
@@ -58,7 +65,8 @@ export function startServer(config: Config, opts: { port: number; host: string; 
     ["GET", "/memories/search", async ({ url, res }) => {
       const q = url.searchParams.get("q");
       if (!q) { json(res, 400, { error: "Missing query parameter: q" }); return; }
-      const limit = parseInt(url.searchParams.get("limit") ?? "20");
+      const limitRaw = parseInt(url.searchParams.get("limit") ?? "20", 10);
+      const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
       json(res, 200, { data: await ops.search(q, limit) });
     }],
 
@@ -67,7 +75,8 @@ export function startServer(config: Config, opts: { port: number; host: string; 
     }],
 
     ["POST", "/memories", async ({ req, res }) => {
-      const body = JSON.parse(await readBody(req));
+      let body: any;
+      try { body = JSON.parse(await readBody(req)); } catch { json(res, 400, { error: "Invalid JSON" }); return; }
       if (!body.title || !body.content) { json(res, 400, { error: "Missing required fields: title, content" }); return; }
       const { title, content, tags, type, repository } = body;
       json(res, 201, { data: await ops.add({ title, content, tags, type, repository }) });
@@ -80,8 +89,9 @@ export function startServer(config: Config, opts: { port: number; host: string; 
     }],
 
     ["PUT", "/memories/:query", async ({ params, req, res }) => {
+      let body: any;
+      try { body = JSON.parse(await readBody(req)); } catch { json(res, 400, { error: "Invalid JSON" }); return; }
       try {
-        const body = JSON.parse(await readBody(req));
         const { title, content, tags, type } = body;
         json(res, 200, { data: await ops.update(params.query, { title, content, tags, type }) });
       } catch (e) {
@@ -103,9 +113,13 @@ export function startServer(config: Config, opts: { port: number; host: string; 
   const server = http.createServer(async (req, res) => {
     const start = Date.now();
     try {
-      if (token && req.headers.authorization !== `Bearer ${token}`) {
-        json(res, 401, { error: "Unauthorized" });
-        return;
+      if (token) {
+        const expectedBuf = Buffer.from(`Bearer ${token}`);
+        const providedBuf = Buffer.from(req.headers.authorization ?? "");
+        if (expectedBuf.byteLength !== providedBuf.byteLength || !crypto.timingSafeEqual(providedBuf, expectedBuf)) {
+          json(res, 401, { error: "Unauthorized" });
+          return;
+        }
       }
       await handle(req, res);
     } catch (e) {

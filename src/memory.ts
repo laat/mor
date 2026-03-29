@@ -16,7 +16,7 @@ export function detectRepository(): string | undefined {
       .replace(/^https?:\/\//, "")
       .replace(/^git@/, "")
       .replace(/\.git$/, "")
-      .replace(/:/, "/");
+      .replace(/:(\d+:)?/, "/");
   } catch {
     return undefined;
   }
@@ -27,7 +27,7 @@ export function generateFilename(title: string, id: string): string {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/^-|-$/g, "") || "memory";
   const hash = id.slice(0, 8).replace(/-/g, "").slice(0, 4);
   return `${slug}-${hash}.md`;
 }
@@ -104,15 +104,15 @@ export function updateMemory(
   const content = updates.content ?? mem.content;
   const fileContent = matter.stringify(content, frontmatter);
 
-  // If title changed, rename file
+  // If title changed, rename file (write new before deleting old to prevent data loss)
   let newPath = filePath;
   if (updates.title && updates.title !== mem.title) {
     const newFilename = generateFilename(updates.title, mem.id);
     newPath = path.join(path.dirname(filePath), newFilename);
-    fs.unlinkSync(filePath);
   }
 
   fs.writeFileSync(newPath, fileContent);
+  if (newPath !== filePath) fs.unlinkSync(filePath);
 
   return {
     ...frontmatter,

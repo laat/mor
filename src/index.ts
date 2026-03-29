@@ -9,6 +9,17 @@ export function hashContent(content: string): string {
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
+const lastSyncMap = new WeakMap<DB, number>();
+
+/** Debounced syncIndex for read paths — skips if synced within 200ms */
+export function syncIndexIfNeeded(config: Config, db: DB): void {
+  const now = Date.now();
+  const last = lastSyncMap.get(db) ?? 0;
+  if (now - last < 200) return;
+  lastSyncMap.set(db, now);
+  syncIndex(config, db);
+}
+
 export function syncIndex(config: Config, db: DB): void {
   const files = listMemoryFiles(config);
   const dbIds = getAllMemoryIds(db);
@@ -99,7 +110,7 @@ async function computeAndStoreEmbedding(db: DB, provider: EmbeddingProvider, mem
 }
 
 export async function searchAsync(config: Config, db: DB, query: string, limit = 20, provider?: EmbeddingProvider): Promise<SearchResult[]> {
-  syncIndex(config, db);
+  syncIndexIfNeeded(config, db);
 
   const ftsResults = searchFts(db, query, limit);
   const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));

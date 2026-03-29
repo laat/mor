@@ -1,13 +1,13 @@
 import { readMemory } from "./memory.js";
 import { getMemoryById, getMemoryByPrefix, getMemoryByFilename, searchFts, type DB } from "./db.js";
-import { syncIndex } from "./index.js";
+import { syncIndexIfNeeded } from "./index.js";
 import type { Config, Memory } from "./types.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_PREFIX_RE = /^[0-9a-f]{4,}$/i;
 
 export function resolveQuery(config: Config, db: DB, query: string): Memory | undefined {
-  syncIndex(config, db);
+  syncIndexIfNeeded(config, db);
 
   // 1. Full UUID match
   if (UUID_RE.test(query)) {
