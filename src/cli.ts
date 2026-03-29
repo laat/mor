@@ -220,12 +220,18 @@ program
   .command('add [file]')
   .description('Add a new memory from file or stdin')
   .option('-t, --title <title>', 'Memory title')
+  .option('-d, --description <text>', 'Short description')
   .option('--tags <tags>', 'Comma-separated tags')
   .option('--type <type>', 'Memory type')
   .action(
     async (
       file: string | undefined,
-      opts: { title?: string; tags?: string; type?: string },
+      opts: {
+        title?: string;
+        description?: string;
+        tags?: string;
+        type?: string;
+      },
       cmd: Command,
     ) => {
       if (!file && !opts.title && process.stdin.isTTY) {
@@ -287,6 +293,7 @@ program
         const tags = opts.tags ? opts.tags.split(',').map((t) => t.trim()) : [];
         const mem = await ops.add({
           title: title!,
+          description: opts.description,
           content,
           tags,
           type: parseType(opts.type) ?? (isFile ? 'file' : 'knowledge'),
@@ -321,27 +328,35 @@ program
   .command('update <query>')
   .description("Update a memory's metadata or content")
   .option('-t, --title <title>', 'New title')
+  .option('-d, --description <text>', 'Short description')
   .option('--tags <tags>', 'Comma-separated tags')
   .option('--type <type>', 'Memory type')
   .action(
     async (
       query: string,
-      opts: { title?: string; tags?: string; type?: string },
+      opts: {
+        title?: string;
+        description?: string;
+        tags?: string;
+        type?: string;
+      },
     ) => {
       const config = loadConfig();
       const ops = getOps(config);
       try {
         const updates: {
           title?: string;
+          description?: string;
           tags?: string[];
           type?: MemoryType;
         } = {};
         if (opts.title) updates.title = opts.title;
+        if (opts.description) updates.description = opts.description;
         if (opts.tags) updates.tags = opts.tags.split(',').map((t) => t.trim());
         if (opts.type) updates.type = parseType(opts.type);
         if (Object.keys(updates).length === 0) {
           console.error(
-            'Error: no updates provided. Use --title, --tags, or --type.',
+            'Error: no updates provided. Use --title, --description, --tags, or --type.',
           );
           process.exit(1);
         }

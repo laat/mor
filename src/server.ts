@@ -129,9 +129,16 @@ export function startServer(
           json(res, 400, { error: 'Missing required fields: title, content' });
           return;
         }
-        const { title, content, tags, type, repository } = body;
+        const { title, description, content, tags, type, repository } = body;
         json(res, 201, {
-          data: await ops.add({ title, content, tags, type, repository }),
+          data: await ops.add({
+            title,
+            description,
+            content,
+            tags,
+            type,
+            repository,
+          }),
         });
       },
     ],
@@ -177,10 +184,11 @@ export function startServer(
           return;
         }
         try {
-          const { title, content, tags, type } = body;
+          const { title, description, content, tags, type } = body;
           json(res, 200, {
             data: await ops.update(params.query, {
               title,
+              description,
               content,
               tags,
               type,

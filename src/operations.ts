@@ -27,6 +27,7 @@ export interface Operations {
   read(query: string): Promise<Memory | undefined>;
   add(opts: {
     title: string;
+    description?: string;
     content: string;
     tags?: string[];
     type?: MemoryType;
@@ -36,6 +37,7 @@ export interface Operations {
     query: string,
     updates: {
       title?: string;
+      description?: string;
       content?: string;
       tags?: string[];
       type?: MemoryType;
@@ -73,6 +75,7 @@ export class LocalOperations implements Operations {
 
   async add(opts: {
     title: string;
+    description?: string;
     content: string;
     tags?: string[];
     type?: MemoryType;
@@ -99,6 +102,7 @@ export class LocalOperations implements Operations {
     query: string,
     updates: {
       title?: string;
+      description?: string;
       content?: string;
       tags?: string[];
       type?: MemoryType;

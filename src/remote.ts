@@ -63,6 +63,7 @@ export class RemoteOperations implements Operations {
 
   async add(opts: {
     title: string;
+    description?: string;
     content: string;
     tags?: string[];
     type?: string;
@@ -75,6 +76,7 @@ export class RemoteOperations implements Operations {
     query: string,
     updates: {
       title?: string;
+      description?: string;
       content?: string;
       tags?: string[];
       type?: string;

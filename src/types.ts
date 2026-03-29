@@ -41,6 +41,7 @@ export type MemoryType = (typeof MEMORY_TYPES)[number];
 export interface FrontMatter {
   id: string;
   title: string;
+  description?: string;
   tags: string[];
   type: MemoryType;
   repository?: string;
@@ -51,6 +52,7 @@ export interface FrontMatter {
 export interface Memory {
   id: string;
   title: string;
+  description?: string;
   tags: string[];
   type: MemoryType;
   repository?: string;

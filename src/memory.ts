@@ -38,6 +38,7 @@ export function createMemory(
   config: Config,
   opts: {
     title: string;
+    description?: string;
     content: string;
     tags?: string[];
     type?: MemoryType;
@@ -50,6 +51,7 @@ export function createMemory(
   const frontmatter: FrontMatter = {
     id,
     title: opts.title,
+    ...(opts.description ? { description: opts.description } : {}),
     tags: opts.tags ?? [],
     type: opts.type ?? 'knowledge',
     ...(repo ? { repository: repo } : {}),
@@ -76,6 +78,7 @@ export function readMemory(filePath: string): Memory {
   return {
     id: fm.id,
     title: fm.title,
+    description: fm.description,
     tags: fm.tags ?? [],
     type: fm.type ?? 'knowledge',
     repository: fm.repository,
@@ -90,6 +93,7 @@ export function serializeMemory(mem: Memory): string {
   const frontmatter: FrontMatter = {
     id: mem.id,
     title: mem.title,
+    ...(mem.description ? { description: mem.description } : {}),
     tags: mem.tags,
     type: mem.type,
     ...(mem.repository ? { repository: mem.repository } : {}),
@@ -103,6 +107,7 @@ export function updateMemory(
   filePath: string,
   updates: {
     title?: string;
+    description?: string;
     content?: string;
     tags?: string[];
     type?: MemoryType;
@@ -110,10 +115,13 @@ export function updateMemory(
 ): Memory {
   const mem = readMemory(filePath);
   const now = new Date().toISOString();
+  const description =
+    updates.description !== undefined ? updates.description : mem.description;
 
   const frontmatter: FrontMatter = {
     id: mem.id,
     title: updates.title ?? mem.title,
+    ...(description ? { description } : {}),
     tags: updates.tags ?? mem.tags,
     type: updates.type ?? mem.type,
     ...(mem.repository ? { repository: mem.repository } : {}),

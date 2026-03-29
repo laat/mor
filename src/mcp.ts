@@ -83,6 +83,7 @@ export async function startMcpServer(): Promise<void> {
         'Create a new memory with title, content, optional tags and type.',
       inputSchema: {
         title: z.string().describe('Memory title'),
+        description: z.string().optional().describe('Short description'),
         content: z.string().describe('Memory content (markdown)'),
         tags: z.array(z.string()).optional().describe('Tags'),
         type: z
@@ -99,8 +100,8 @@ export async function startMcpServer(): Promise<void> {
           .describe('Memory type (default: knowledge)'),
       },
     },
-    async ({ title, content, tags, type }) => {
-      const mem = await ops.add({ title, content, tags, type });
+    async ({ title, description, content, tags, type }) => {
+      const mem = await ops.add({ title, description, content, tags, type });
       return {
         content: [
           {
@@ -179,6 +180,7 @@ export async function startMcpServer(): Promise<void> {
             'UUID, UUID prefix, filename, or search query to find the memory',
           ),
         title: z.string().optional().describe('New title'),
+        description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
         tags: z.array(z.string()).optional().describe('New tags'),
         type: z
@@ -195,9 +197,15 @@ export async function startMcpServer(): Promise<void> {
           .describe('New type'),
       },
     },
-    async ({ query, title, content, tags, type }) => {
+    async ({ query, title, description, content, tags, type }) => {
       try {
-        const updated = await ops.update(query, { title, content, tags, type });
+        const updated = await ops.update(query, {
+          title,
+          description,
+          content,
+          tags,
+          type,
+        });
         return {
           content: [
             {
