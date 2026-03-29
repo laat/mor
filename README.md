@@ -1,6 +1,6 @@
 # mor
 
-A memory bank for AI assistants. Plain markdown files, SQLite full-text search, optional embeddings.
+A shared memory store for humans and AI. Plain markdown files, SQLite full-text search, optional embeddings.
 
 Use it as a **CLI**, an **MCP server** (Claude Code, Claude Desktop, Cursor, etc.), or an **HTTP server** for accessing memories across machines.
 

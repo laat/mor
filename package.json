@@ -1,7 +1,7 @@
 {
   "name": "mor",
   "version": "0.1.0",
-  "description": "A user-controlled memory bank for AI assistants",
+  "description": "A shared memory store for humans and AI",
   "type": "module",
   "bin": {
     "mor": "dist/cli.js"

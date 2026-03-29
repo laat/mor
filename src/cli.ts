@@ -129,7 +129,7 @@ const program = new Command();
 
 program
   .name(path.basename(process.argv[1]))
-  .description('A user-controlled memory bank for AI assistants')
+  .description('A shared memory store for humans and AI')
   .version('0.1.0');
 
 program
