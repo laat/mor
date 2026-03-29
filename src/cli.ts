@@ -5,16 +5,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { isRemote, loadConfig } from './config.js';
+import { openDb } from './db.js';
 import {
   addFilterOptions,
   filterMemories,
   filterResults,
   type MemoryFilter,
 } from './filter.js';
-import { openDb } from './db.js';
 import { syncIndex } from './index.js';
 import { startMcpServer } from './mcp.js';
-import { createMemory, listMemoryFiles, serializeMemory } from './memory.js';
+import { createMemory, serializeMemory } from './memory.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 import { startServer } from './server.js';
