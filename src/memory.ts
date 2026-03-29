@@ -3,7 +3,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import matter from 'gray-matter';
 import crypto from 'node:crypto';
-import type { Config, FrontMatter, Memory } from './types.js';
+import type { Config, FrontMatter, Memory, MemoryType } from './types.js';
 
 export function detectRepository(): string | undefined {
   try {
@@ -40,7 +40,7 @@ export function createMemory(
     title: string;
     content: string;
     tags?: string[];
-    type?: string;
+    type?: MemoryType;
     repository?: string;
   },
 ): Memory {
@@ -101,7 +101,7 @@ export function serializeMemory(mem: Memory): string {
 
 export function updateMemory(
   filePath: string,
-  updates: { title?: string; content?: string; tags?: string[]; type?: string },
+  updates: { title?: string; content?: string; tags?: string[]; type?: MemoryType },
 ): Memory {
   const mem = readMemory(filePath);
   const now = new Date().toISOString();

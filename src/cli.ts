@@ -13,6 +13,7 @@ import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 import { startMcpServer } from './mcp.js';
 import { startServer } from './server.js';
+import { MEMORY_TYPES, type MemoryType } from './types.js';
 
 function parseRawGitHubUrl(
   url: string,
@@ -103,6 +104,15 @@ function stripCodeFence(
   const match = content.match(/^```(\w*)\n([\s\S]*?)\n```\s*$/);
   if (!match) return null;
   return { code: match[2], lang: match[1] };
+}
+
+function parseType(value: string | undefined): MemoryType | undefined {
+  if (!value) return undefined;
+  if (MEMORY_TYPES.includes(value as MemoryType)) return value as MemoryType;
+  console.error(
+    `Error: invalid type '${value}'. Must be one of: ${MEMORY_TYPES.join(', ')}`,
+  );
+  process.exit(1);
 }
 
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
@@ -204,7 +214,7 @@ program
           title,
           content,
           tags,
-          type: opts.type ?? (isFile ? 'file' : 'knowledge'),
+          type: parseType(opts.type) ?? (isFile ? 'file' : 'knowledge'),
           repository,
         });
         console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);
@@ -246,10 +256,14 @@ program
       const config = loadConfig();
       const ops = getOps(config);
       try {
-        const updates: { title?: string; tags?: string[]; type?: string } = {};
+        const updates: {
+          title?: string;
+          tags?: string[];
+          type?: MemoryType;
+        } = {};
         if (opts.title) updates.title = opts.title;
         if (opts.tags) updates.tags = opts.tags.split(',').map((t) => t.trim());
-        if (opts.type) updates.type = opts.type;
+        if (opts.type) updates.type = parseType(opts.type);
         if (Object.keys(updates).length === 0) {
           console.error(
             'Error: no updates provided. Use --title, --tags, or --type.',
@@ -353,7 +367,7 @@ program
           await ops.update(mem.id, {
             title: data.title,
             tags: data.tags,
-            type: data.type,
+            type: parseType(data.type),
             content: newContent.trim(),
           });
           console.log(`Updated: ${mem.title}`);

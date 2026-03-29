@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import type { Config, Memory, SearchResult } from './types.js';
+import type { Config, Memory, MemoryType, SearchResult } from './types.js';
 import {
   openDb,
   upsertMemoryChecked,
@@ -28,7 +28,7 @@ export interface Operations {
     title: string;
     content: string;
     tags?: string[];
-    type?: string;
+    type?: MemoryType;
     repository?: string;
   }): Promise<Memory>;
   update(
@@ -37,7 +37,7 @@ export interface Operations {
       title?: string;
       content?: string;
       tags?: string[];
-      type?: string;
+      type?: MemoryType;
     },
   ): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
@@ -69,7 +69,7 @@ export class LocalOperations implements Operations {
     title: string;
     content: string;
     tags?: string[];
-    type?: string;
+    type?: MemoryType;
     repository?: string;
   }): Promise<Memory> {
     const mem = createMemory(this.config, opts);
@@ -95,7 +95,7 @@ export class LocalOperations implements Operations {
       title?: string;
       content?: string;
       tags?: string[];
-      type?: string;
+      type?: MemoryType;
     },
   ): Promise<Memory> {
     const mem = resolveQuery(this.config, this.db, query);

@@ -86,7 +86,15 @@ export async function startMcpServer(): Promise<void> {
         content: z.string().describe('Memory content (markdown)'),
         tags: z.array(z.string()).optional().describe('Tags'),
         type: z
-          .string()
+          .enum([
+            'user',
+            'feedback',
+            'project',
+            'reference',
+            'knowledge',
+            'snippet',
+            'file',
+          ])
           .optional()
           .describe('Memory type (default: knowledge)'),
       },
@@ -173,7 +181,18 @@ export async function startMcpServer(): Promise<void> {
         title: z.string().optional().describe('New title'),
         content: z.string().optional().describe('New content'),
         tags: z.array(z.string()).optional().describe('New tags'),
-        type: z.string().optional().describe('New type'),
+        type: z
+          .enum([
+            'user',
+            'feedback',
+            'project',
+            'reference',
+            'knowledge',
+            'snippet',
+            'file',
+          ])
+          .optional()
+          .describe('New type'),
       },
     },
     async ({ query, title, content, tags, type }) => {
