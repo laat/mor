@@ -302,6 +302,9 @@ program
       }
       if (opts.raw) {
         process.stdout.write(serializeMemory(mem));
+      } else if (mem.type === 'file') {
+        const fenced = stripCodeFence(mem.content);
+        console.log(fenced ? fenced.code : mem.content);
       } else {
         console.log(mem.content);
       }
