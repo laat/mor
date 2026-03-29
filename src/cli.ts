@@ -12,7 +12,7 @@ import { createMemory, listMemoryFiles, serializeMemory } from './memory.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 import { startServer } from './server.js';
-import { MEMORY_TYPES, type MemoryType } from './types.js';
+import { MEMORY_TYPES, type Memory, type MemoryType } from './types.js';
 
 function parseRawGitHubUrl(
   url: string,
@@ -286,6 +286,12 @@ program
     },
   );
 
+function exportMemory(mem: Memory, raw?: boolean): string {
+  if (raw) return serializeMemory(mem);
+  if (mem.type === 'file') return stripCodeFence(mem.content)?.code ?? mem.content;
+  return mem.content;
+}
+
 program
   .command('cat <query>')
   .description('Print memory content')
@@ -299,14 +305,8 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      if (opts.raw) {
-        process.stdout.write(serializeMemory(mem));
-      } else if (mem.type === 'file') {
-        const fenced = stripCodeFence(mem.content);
-        console.log(fenced ? fenced.code : mem.content);
-      } else {
-        console.log(mem.content);
-      }
+      process.stdout.write(exportMemory(mem, opts.raw));
+      if (!opts.raw) process.stdout.write('\n');
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
@@ -328,14 +328,8 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      if (opts.raw) {
-        fs.writeFileSync(dest, serializeMemory(mem));
-      } else {
-        fs.writeFileSync(
-          dest,
-          mem.content.endsWith('\n') ? mem.content : mem.content + '\n',
-        );
-      }
+      const output = exportMemory(mem, opts.raw);
+      fs.writeFileSync(dest, output.endsWith('\n') ? output : output + '\n');
       console.log(`Copied "${mem.title}" to ${dest}`);
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
