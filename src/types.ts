@@ -12,7 +12,7 @@ export interface ServeConfig {
 export interface Config {
   memoryDir: string;
   dbPath: string;
-  embedding: EmbeddingConfig;
+  embedding?: EmbeddingConfig;
   server?: ServerConfig;
   serve?: ServeConfig;
 }

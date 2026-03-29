@@ -1,6 +1,6 @@
 # mor
 
-A shared memory store for humans and AI. Plain markdown files, SQLite full-text search, optional embeddings.
+A shared memory store for humans and AI. Plain markdown files with SQLite full-text search.
 
 Use it as a **CLI**, an **MCP server** (Claude Code, Claude Desktop, Cursor, etc.), or an **HTTP server** for accessing memories across machines.
 
@@ -44,11 +44,11 @@ mor ls -l
 |---------|-------------|
 | `find <query>` | Full-text search (`-n` limit, `-l` long) |
 | `grep <pattern>` | Literal substring search (`-n` limit, `-i` case-insensitive, `-l` long) |
-| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `--tags`, `--type`) |
+| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`) |
 | `cat <query>` | Print content (`--raw` for frontmatter) |
 | `cp <query> <dest>` | Copy content to file |
 | `edit <query>` | Open in `$EDITOR` (`--raw` to edit frontmatter) |
-| `update <query>` | Update metadata (`-t` title, `--tags`, `--type`) |
+| `update <query>` | Update metadata (`-t` title, `-d` description, `--tags`, `--type`) |
 | `rm <query>` | Remove a memory |
 | `ls` | List all (`-n` limit, `-l` long) |
 | `push` | Git commit and push the memory folder |
@@ -58,6 +58,8 @@ mor ls -l
 | `serve` | Start HTTP server (`-p` port, `-H` host, `--token`) |
 
 Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
+
+`find`, `grep`, and `ls` support shared filters: `--type`, `--tag`, `--repo`, `--ext` (all support glob patterns).
 
 ## MCP server
 

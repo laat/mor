@@ -19,12 +19,6 @@ function getConfigDir(): string {
 const DEFAULT_CONFIG: Config = {
   memoryDir: '~/.config/mor/memories',
   dbPath: '~/.config/mor/index.db',
-  embedding: {
-    provider: 'none',
-    model: 'text-embedding-3-small',
-    baseUrl: 'https://api.openai.com/v1',
-    dimensions: 1536,
-  },
 };
 
 export function loadConfig(): Config {
@@ -39,7 +33,7 @@ export function loadConfig(): Config {
     config = {
       ...DEFAULT_CONFIG,
       ...raw,
-      embedding: { ...DEFAULT_CONFIG.embedding, ...raw.embedding },
+      ...(raw.embedding ? { embedding: raw.embedding } : {}),
       ...(raw.server ? { server: raw.server } : {}),
       ...(raw.serve ? { serve: raw.serve } : {}),
     };

@@ -11,7 +11,12 @@ import {
   createProvider,
   type EmbeddingProvider,
 } from './embeddings/provider.js';
-import { hashContent, searchAsync, syncIndex } from './index.js';
+import {
+  computeAndStoreEmbedding,
+  hashContent,
+  searchAsync,
+  syncIndex,
+} from './index.js';
 import {
   createMemory,
   deleteMemory,
@@ -95,6 +100,7 @@ export class LocalOperations implements Operations {
       filePath: mem.filePath,
       contentHash: hashContent(raw),
     });
+    await computeAndStoreEmbedding(this.db, this.provider, mem);
     return mem;
   }
 
@@ -124,6 +130,7 @@ export class LocalOperations implements Operations {
       filePath: updated.filePath,
       contentHash: hashContent(raw),
     });
+    await computeAndStoreEmbedding(this.db, this.provider, updated);
     return updated;
   }
 

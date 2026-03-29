@@ -600,9 +600,11 @@ addFilterOptions(
         console.log(
           `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
         );
+        if (mem.description) console.log(`         ${mem.description}`);
         console.log(`         ${loc}`);
       } else {
-        console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+        const desc = mem.description ? `  — ${mem.description}` : '';
+        console.log(`${mem.id.slice(0, 8)}  ${mem.title}${desc}`);
       }
     }
   } catch (e) {

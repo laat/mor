@@ -106,7 +106,7 @@ export async function reindex(config: Config, db: DB): Promise<void> {
   }
 }
 
-async function computeAndStoreEmbedding(
+export async function computeAndStoreEmbedding(
   db: DB,
   provider: EmbeddingProvider,
   mem: Memory,
