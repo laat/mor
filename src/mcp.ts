@@ -37,9 +37,7 @@ export async function startMcpServer(): Promise<void> {
       const lines = results.map((r) => {
         const tags =
           r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
-        const desc = r.memory.description
-          ? `\n  ${r.memory.description}`
-          : '';
+        const desc = r.memory.description ? `\n  ${r.memory.description}` : '';
         return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${desc}`;
       });
       return {

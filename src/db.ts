@@ -146,7 +146,7 @@ function escapeFtsQuery(query: string): string {
     .split(/\s+/)
     .filter(Boolean)
     .map((token) => `"${token.replace(/"/g, '""')}"`);
-  return tokens.length > 1 ? tokens.join(' OR ') : tokens[0] ?? '';
+  return tokens.length > 1 ? tokens.join(' OR ') : (tokens[0] ?? '');
 }
 
 function escapeLike(s: string): string {
