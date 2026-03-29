@@ -482,7 +482,7 @@ program
   });
 
 program
-  .command('list')
+  .command('ls')
   .description('List all memories')
   .option('-l, --limit <n>', 'Max results')
   .action(async (opts: { limit?: string }) => {
