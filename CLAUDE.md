@@ -39,7 +39,7 @@ All three access surfaces use this interface:
 
 ### Storage Format
 
-Memories are markdown files in `~/.config/code-memory/memories/` (overridable via `CODE_MEMORY_HOME`). Frontmatter: id (UUID), title, tags, type, repository, created, updated. Filenames are slugified title + 4-char hash suffix.
+Memories are markdown files in `~/.config/mor/memories/` (overridable via `MOR_HOME`). Frontmatter: id (UUID), title, tags, type, repository, created, updated. Filenames are slugified title + 4-char hash suffix.
 
 ### Database
 
@@ -53,4 +53,4 @@ Memories are markdown files in `~/.config/code-memory/memories/` (overridable vi
 
 ## Testing
 
-Tests use Vitest with temp directories (`CODE_MEMORY_HOME` pointed at `mkdtempSync` dirs). Server tests use `port: 0` for automatic port assignment. Each test gets an isolated config and database.
+Tests use Vitest with temp directories (`MOR_HOME` pointed at `mkdtempSync` dirs). Server tests use `port: 0` for automatic port assignment. Each test gets an isolated config and database.

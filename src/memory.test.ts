@@ -21,8 +21,8 @@ let config: Config;
 let db: DB;
 
 beforeEach(() => {
-  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-test-'));
-  process.env.CODE_MEMORY_HOME = testDir;
+  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-test-'));
+  process.env.MOR_HOME = testDir;
   config = loadConfig();
   db = openDb(config);
 });
@@ -30,7 +30,7 @@ beforeEach(() => {
 afterEach(() => {
   db.close();
   fs.rmSync(testDir, { recursive: true, force: true });
-  delete process.env.CODE_MEMORY_HOME;
+  delete process.env.MOR_HOME;
 });
 
 describe('createMemory', () => {

@@ -258,7 +258,7 @@ program
           }
         } else {
           // Interactive with --title: open $EDITOR
-          const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+          const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
           const tmpFile = path.join(tmpDir, 'new-memory.md');
           fs.writeFileSync(tmpFile, '');
           openInEditor(tmpFile);
@@ -413,7 +413,7 @@ program
 
       if (opts.raw) {
         // Edit full file with frontmatter
-        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, serializeMemory(mem));
         openInEditor(tmpFile);
@@ -439,7 +439,7 @@ program
         const lang = fenced?.lang ?? '';
         const ext = LANG_TO_EXT[lang] ?? (lang ? `.${lang}` : '.txt');
 
-        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
         const tmpFile = path.join(
           tmpDir,
           path.basename(mem.title, path.extname(mem.title)) + ext,
@@ -458,7 +458,7 @@ program
         }
       } else if (isRemote(config)) {
         // Remote non-file: edit content in temp file
-        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, mem.content);
         openInEditor(tmpFile);

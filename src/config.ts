@@ -10,15 +10,15 @@ function expandHome(p: string): string {
 }
 
 function getConfigDir(): string {
-  if (process.env.CODE_MEMORY_HOME) {
-    return expandHome(process.env.CODE_MEMORY_HOME);
+  if (process.env.MOR_HOME) {
+    return expandHome(process.env.MOR_HOME);
   }
-  return path.join(process.env.HOME ?? '', '.config', 'code-memory');
+  return path.join(process.env.HOME ?? '', '.config', 'mor');
 }
 
 const DEFAULT_CONFIG: Config = {
-  memoryDir: '~/.config/code-memory/memories',
-  dbPath: '~/.config/code-memory/index.db',
+  memoryDir: '~/.config/mor/memories',
+  dbPath: '~/.config/mor/index.db',
   embedding: {
     provider: 'none',
     model: 'text-embedding-3-small',

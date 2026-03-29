@@ -27,8 +27,8 @@ async function req(
 }
 
 beforeEach(async () => {
-  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-server-test-'));
-  process.env.CODE_MEMORY_HOME = testDir;
+  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-server-test-'));
+  process.env.MOR_HOME = testDir;
   config = loadConfig();
 
   server = startServer(config, { port: 0, host: '127.0.0.1' });
@@ -40,7 +40,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   fs.rmSync(testDir, { recursive: true });
-  delete process.env.CODE_MEMORY_HOME;
+  delete process.env.MOR_HOME;
 });
 
 describe('HTTP Server', () => {

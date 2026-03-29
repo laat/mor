@@ -14,7 +14,7 @@ function createOps(): Operations {
 
 export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
-    name: 'code-memory',
+    name: 'mor',
     version: '0.1.0',
   });
 

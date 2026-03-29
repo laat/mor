@@ -1,4 +1,4 @@
-# code-memory
+# mor
 
 A user-controlled memory bank for AI assistants. Stores knowledge as human-readable markdown files with YAML frontmatter, indexed by SQLite for fast full-text and semantic search.
 
@@ -7,7 +7,7 @@ Works as a **CLI tool**, an **MCP server** (for Claude Code / Claude Desktop), a
 ## Install
 
 ```sh
-npm install -g code-memory
+npm install -g mor
 ```
 
 Requires Node.js 20+.
@@ -16,25 +16,25 @@ Requires Node.js 20+.
 
 ```sh
 # Add a memory
-echo "Always use snake_case in Python" | code-memory add --title "Python naming"
+echo "Always use snake_case in Python" | mor add --title "Python naming"
 
 # Add from a file
-code-memory add notes.md --title "Meeting notes" --tags "meeting,project-x"
+mor add notes.md --title "Meeting notes" --tags "meeting,project-x"
 
 # Search
-code-memory find "python naming"
+mor find "python naming"
 
 # Read
-code-memory cat "python naming"
+mor cat "python naming"
 
 # Edit in $EDITOR
-code-memory edit "python naming"
+mor edit "python naming"
 
 # List all
-code-memory list
+mor list
 
 # Remove
-code-memory rm "python naming"
+mor rm "python naming"
 ```
 
 ## CLI commands
@@ -63,7 +63,7 @@ Add to your Claude Code or Claude Desktop config:
 {
   "mcpServers": {
     "memory": {
-      "command": "code-memory",
+      "command": "mor",
       "args": ["mcp"]
     }
   }
@@ -79,10 +79,10 @@ Run a central memory server on one machine and access it from any other.
 **Server machine** — start the HTTP server:
 
 ```sh
-code-memory serve --port 7677
+mor serve --port 7677
 ```
 
-Or configure in `~/.config/code-memory/config.json`:
+Or configure in `~/.config/mor/config.json`:
 
 ```json
 {
@@ -116,7 +116,7 @@ Optional bearer token auth via `Authorization: Bearer <token>` header.
 
 ## Embeddings (optional)
 
-Enable semantic search by configuring an embedding provider in `~/.config/code-memory/config.json`:
+Enable semantic search by configuring an embedding provider in `~/.config/mor/config.json`:
 
 ```json
 {
@@ -129,14 +129,14 @@ Enable semantic search by configuring an embedding provider in `~/.config/code-m
 }
 ```
 
-Supports `openai` (or any compatible API) and `ollama`. Set `OPENAI_API_KEY` for OpenAI. After configuring, run `code-memory reindex`.
+Supports `openai` (or any compatible API) and `ollama`. Set `OPENAI_API_KEY` for OpenAI. After configuring, run `mor reindex`.
 
 ## Storage
 
-Memories live as `.md` files in `~/.config/code-memory/memories/` with a SQLite index at `~/.config/code-memory/index.db`. Override the base directory with `CODE_MEMORY_HOME`.
+Memories live as `.md` files in `~/.config/mor/memories/` with a SQLite index at `~/.config/mor/index.db`. Override the base directory with `MOR_HOME`.
 
 ```
-~/.config/code-memory/
+~/.config/mor/
   config.json
   index.db
   memories/

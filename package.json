@@ -1,10 +1,10 @@
 {
-  "name": "code-memory",
+  "name": "mor",
   "version": "0.1.0",
   "description": "A user-controlled memory bank for AI assistants",
   "type": "module",
   "bin": {
-    "code-memory": "dist/cli.js"
+    "mor": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",

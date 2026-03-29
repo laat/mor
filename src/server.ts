@@ -4,7 +4,7 @@ import { LocalOperations } from './operations.js';
 import type { Config } from './types.js';
 
 function log(msg: string): void {
-  process.stderr.write(`[code-memory] ${msg}\n`);
+  process.stderr.write(`[mor] ${msg}\n`);
 }
 
 async function readBody(
