@@ -20,10 +20,12 @@ export async function startMcpServer(): Promise<void> {
 
   const ops = createOps();
 
-  server.tool(
+  server.registerTool(
     "memory_search",
-    "Search memories by query string. Returns matching memories with scores.",
-    { query: z.string().describe("Search query"), limit: z.number().optional().describe("Max results (default 20)") },
+    {
+      description: "Search memories by query string. Returns matching memories with scores.",
+      inputSchema: { query: z.string().describe("Search query"), limit: z.number().optional().describe("Max results (default 20)") },
+    },
     async ({ query, limit }) => {
       const results = await ops.search(query, limit ?? 20);
       const text = results
@@ -36,10 +38,12 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_read",
-    "Read a specific memory by UUID, UUID prefix, filename, or search query.",
-    { query: z.string().describe("UUID, UUID prefix, filename, or search query") },
+    {
+      description: "Read a specific memory by UUID, UUID prefix, filename, or search query.",
+      inputSchema: { query: z.string().describe("UUID, UUID prefix, filename, or search query") },
+    },
     async ({ query }) => {
       const mem = await ops.read(query);
       if (!mem) {
@@ -51,14 +55,16 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_add",
-    "Create a new memory with title, content, optional tags and type.",
     {
-      title: z.string().describe("Memory title"),
-      content: z.string().describe("Memory content (markdown)"),
-      tags: z.array(z.string()).optional().describe("Tags"),
-      type: z.string().optional().describe("Memory type (default: knowledge)"),
+      description: "Create a new memory with title, content, optional tags and type.",
+      inputSchema: {
+        title: z.string().describe("Memory title"),
+        content: z.string().describe("Memory content (markdown)"),
+        tags: z.array(z.string()).optional().describe("Tags"),
+        type: z.string().optional().describe("Memory type (default: knowledge)"),
+      },
     },
     async ({ title, content, tags, type }) => {
       const mem = await ops.add({ title, content, tags, type });
@@ -73,10 +79,12 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_remove",
-    "Delete a memory by UUID, UUID prefix, filename, or search query.",
-    { query: z.string().describe("UUID, UUID prefix, filename, or search query") },
+    {
+      description: "Delete a memory by UUID, UUID prefix, filename, or search query.",
+      inputSchema: { query: z.string().describe("UUID, UUID prefix, filename, or search query") },
+    },
     async ({ query }) => {
       try {
         const result = await ops.remove(query);
@@ -87,10 +95,11 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_list",
-    "List all stored memories with their titles, IDs, and tags.",
-    {},
+    {
+      description: "List all stored memories with their titles, IDs, and tags.",
+    },
     async () => {
       const memories = await ops.list();
       if (memories.length === 0) {
@@ -104,15 +113,17 @@ export async function startMcpServer(): Promise<void> {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "memory_update",
-    "Update an existing memory's title, content, tags, or type.",
     {
-      query: z.string().describe("UUID, UUID prefix, filename, or search query to find the memory"),
-      title: z.string().optional().describe("New title"),
-      content: z.string().optional().describe("New content"),
-      tags: z.array(z.string()).optional().describe("New tags"),
-      type: z.string().optional().describe("New type"),
+      description: "Update an existing memory's title, content, tags, or type.",
+      inputSchema: {
+        query: z.string().describe("UUID, UUID prefix, filename, or search query to find the memory"),
+        title: z.string().optional().describe("New title"),
+        content: z.string().optional().describe("New content"),
+        tags: z.array(z.string()).optional().describe("New tags"),
+        type: z.string().optional().describe("New type"),
+      },
     },
     async ({ query, title, content, tags, type }) => {
       try {
