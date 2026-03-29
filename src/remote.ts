@@ -113,6 +113,10 @@ export class RemoteOperations implements Operations {
     return this.request<Memory[]>('GET', '/memories');
   }
 
+  async reindex(): Promise<{ count: number }> {
+    return this.request<{ count: number }>('POST', '/reindex');
+  }
+
   async push(): Promise<{ pushed: boolean; message: string }> {
     return this.request<{ pushed: boolean; message: string }>('POST', '/push');
   }

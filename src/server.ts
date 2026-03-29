@@ -214,6 +214,19 @@ export function startServer(
 
     [
       'POST',
+      '/reindex',
+      async ({ res }) => {
+        try {
+          json(res, 200, { data: await ops.reindex() });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          json(res, 500, { error: msg });
+        }
+      },
+    ],
+
+    [
+      'POST',
       '/push',
       async ({ res }) => {
         try {

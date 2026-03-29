@@ -12,7 +12,7 @@ import {
   type MemoryFilter,
 } from './filter.js';
 import { openDb } from './db.js';
-import { reindex, syncIndex } from './index.js';
+import { syncIndex } from './index.js';
 import { startMcpServer } from './mcp.js';
 import { createMemory, listMemoryFiles, serializeMemory } from './memory.js';
 import { LocalOperations, type Operations } from './operations.js';
@@ -524,17 +524,15 @@ program
   .description('Rebuild the search index from memory files')
   .action(async () => {
     const config = loadConfig();
-    if (isRemote(config)) {
-      console.error('Error: reindex is only available in local mode');
-      process.exit(1);
-    }
-    const db = openDb(config);
+    const ops = getOps(config);
     try {
-      await reindex(config, db);
-      const files = listMemoryFiles(config);
-      console.log(`Reindexed ${files.length} memories.`);
+      const result = await ops.reindex();
+      console.log(`Reindexed ${result.count} memories.`);
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
     } finally {
-      db.close();
+      ops.close();
     }
   });
 

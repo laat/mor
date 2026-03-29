@@ -76,7 +76,7 @@ export function syncIndex(config: Config, db: DB): void {
   }
 }
 
-export async function reindex(config: Config, db: DB): Promise<void> {
+export async function reindex(config: Config, db: DB): Promise<number> {
   clearDb(db);
   const files = listMemoryFiles(config);
   const provider = createProvider(config.embedding);
@@ -110,6 +110,7 @@ export async function reindex(config: Config, db: DB): Promise<void> {
 
     await computeAndStoreEmbedding(db, provider, mem);
   }
+  return files.length;
 }
 
 export async function computeAndStoreEmbedding(

@@ -14,6 +14,7 @@ import {
 import {
   computeAndStoreEmbedding,
   hashContent,
+  reindex as rebuildIndex,
   searchAsync,
   syncIndex,
 } from './index.js';
@@ -55,6 +56,7 @@ export interface Operations {
     ignoreCase?: boolean,
   ): Promise<Memory[]>;
   list(): Promise<Memory[]>;
+  reindex(): Promise<{ count: number }>;
   push(): Promise<{ pushed: boolean; message: string }>;
   close(): void;
 }
@@ -176,6 +178,11 @@ export class LocalOperations implements Operations {
       }
     }
     return memories;
+  }
+
+  async reindex(): Promise<{ count: number }> {
+    const count = await rebuildIndex(this.config, this.db);
+    return { count };
   }
 
   async push(): Promise<{ pushed: boolean; message: string }> {
