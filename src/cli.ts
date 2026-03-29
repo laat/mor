@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import { loadConfig, isRemote } from './config.js';
 import { openDb } from './db.js';
 import { reindex } from './index.js';
-import { createMemory, listMemoryFiles } from './memory.js';
+import { createMemory, listMemoryFiles, serializeMemory } from './memory.js';
 import { syncIndex } from './index.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
@@ -198,7 +198,7 @@ program
         process.exit(1);
       }
       if (opts.raw) {
-        process.stdout.write(fs.readFileSync(mem.filePath, 'utf-8'));
+        process.stdout.write(serializeMemory(mem));
       } else {
         console.log(mem.content);
       }
@@ -224,7 +224,7 @@ program
         process.exit(1);
       }
       if (opts.raw) {
-        fs.copyFileSync(mem.filePath, dest);
+        fs.writeFileSync(dest, serializeMemory(mem));
       } else {
         fs.writeFileSync(
           dest,

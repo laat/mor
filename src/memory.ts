@@ -86,6 +86,19 @@ export function readMemory(filePath: string): Memory {
   };
 }
 
+export function serializeMemory(mem: Memory): string {
+  const frontmatter: FrontMatter = {
+    id: mem.id,
+    title: mem.title,
+    tags: mem.tags,
+    type: mem.type,
+    ...(mem.repository ? { repository: mem.repository } : {}),
+    created: mem.created,
+    updated: mem.updated,
+  };
+  return matter.stringify(mem.content, frontmatter);
+}
+
 export function updateMemory(
   filePath: string,
   updates: { title?: string; content?: string; tags?: string[]; type?: string },
