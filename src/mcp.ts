@@ -38,7 +38,10 @@ export async function startMcpServer(): Promise<void> {
             r.memory.tags.length > 0
               ? `\nTags: ${r.memory.tags.join(', ')}`
               : '';
-          return `## ${r.memory.title}\nID: ${r.memory.id}\nFile: ${path.basename(r.memory.filePath)}${tags}\nScore: ${r.score.toFixed(3)}\n\n${r.memory.content}`;
+          const desc = r.memory.description
+            ? `\nDescription: ${r.memory.description}`
+            : '';
+          return `## ${r.memory.title}\nID: ${r.memory.id}\nFile: ${path.basename(r.memory.filePath)}${tags}${desc}\nScore: ${r.score.toFixed(3)}\n\n${r.memory.content}`;
         })
         .join('\n\n---\n\n');
       return {
@@ -71,7 +74,8 @@ export async function startMcpServer(): Promise<void> {
         };
       }
       const tags = mem.tags.length > 0 ? `\nTags: ${mem.tags.join(', ')}` : '';
-      const text = `## ${mem.title}\nID: ${mem.id}\nFile: ${path.basename(mem.filePath)}${tags}\nType: ${mem.type}\nCreated: ${mem.created}\nUpdated: ${mem.updated}\n\n${mem.content}`;
+      const desc = mem.description ? `\nDescription: ${mem.description}` : '';
+      const text = `## ${mem.title}\nID: ${mem.id}\nFile: ${path.basename(mem.filePath)}${tags}${desc}\nType: ${mem.type}\nCreated: ${mem.created}\nUpdated: ${mem.updated}\n\n${mem.content}`;
       return { content: [{ type: 'text' as const, text }] };
     },
   );
@@ -162,8 +166,9 @@ export async function startMcpServer(): Promise<void> {
         };
       }
       const lines = memories.map((mem) => {
-        const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
-        return `- ${mem.id.slice(0, 8)}  ${mem.title}${tags}`;
+        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+        const desc = mem.description ? `\n  ${mem.description}` : '';
+        return `- ${mem.id.slice(0, 8)}  ${mem.title}${tags}${desc}`;
       });
       return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
     },
