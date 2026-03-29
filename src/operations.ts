@@ -177,6 +177,7 @@ export class LocalOperations implements Operations {
         );
       }
     }
+    memories.sort((a, b) => b.updated.localeCompare(a.updated));
     return memories;
   }
 
