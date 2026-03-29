@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import path from 'node:path';
 import { z } from 'zod';
+import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
 import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations, type Operations } from './operations.js';
@@ -32,10 +33,13 @@ function createOps(): Operations {
   return new LocalOperations(config);
 }
 
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
+
 export function createMcpServer(ops: Operations): McpServer {
   const server = new McpServer({
     name: 'mor',
-    version: '0.1.0',
+    version,
     description:
       "The user's primary memory store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
   });

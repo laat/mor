@@ -19,6 +19,9 @@ import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 import { startServer } from './server.js';
 import { MEMORY_TYPES, type Memory, type MemoryType } from './types.js';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 function parseRawGitHubUrl(
   url: string,
@@ -136,7 +139,7 @@ const program = new Command();
 program
   .name(path.basename(process.argv[1]))
   .description('A shared memory store for humans and AI')
-  .version('0.1.0');
+  .version(version);
 
 addFilterOptions(
   program
