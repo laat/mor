@@ -18,11 +18,13 @@ export interface Config {
 }
 
 export interface EmbeddingConfig {
-  provider: 'none' | 'openai' | 'ollama';
+  provider: 'none' | 'openai' | 'azure-openai' | 'ollama';
   model: string;
   baseUrl: string;
   dimensions: number;
   apiKey?: string;
+  deployment?: string;
+  apiVersion?: string;
 }
 
 export const MEMORY_TYPES = [

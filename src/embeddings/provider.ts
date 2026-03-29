@@ -1,4 +1,5 @@
 import type { EmbeddingConfig } from '../types.js';
+import { AzureOpenAIProvider } from './azure-openai.js';
 import { NoneProvider } from './none.js';
 import { OllamaProvider } from './ollama.js';
 import { OpenAIProvider } from './openai.js';
@@ -13,6 +14,8 @@ export function createProvider(config: EmbeddingConfig): EmbeddingProvider {
   switch (config.provider) {
     case 'openai':
       return new OpenAIProvider(config);
+    case 'azure-openai':
+      return new AzureOpenAIProvider(config);
     case 'ollama':
       return new OllamaProvider(config);
     case 'none':

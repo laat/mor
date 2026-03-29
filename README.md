@@ -112,9 +112,9 @@ All CLI commands and MCP tools transparently proxy over HTTP when `server` is co
 
 Auth: `Authorization: Bearer <token>` header when token is configured.
 
-## Embeddings (optional)
+## Embeddings (experimental)
 
-Add semantic search by configuring an embedding provider in `~/.config/mor/config.json`:
+Optionally augment FTS search with vector similarity. Configure in `~/.config/mor/config.json`:
 
 ```json
 {
@@ -126,7 +126,9 @@ Add semantic search by configuring an embedding provider in `~/.config/mor/confi
 }
 ```
 
-Supports `openai` (or any compatible API via `baseUrl`) and `ollama`. Set `OPENAI_API_KEY` for OpenAI. Run `mor reindex` after configuring.
+Providers: `openai` (or compatible API via `baseUrl`), `azure-openai`, `ollama`. Run `mor reindex` after configuring.
+
+Azure OpenAI uses `AZURE_OPENAI_API_KEY` (or `apiKey` in config) and requires a `deployment` name (defaults to model name).
 
 ## Storage
 

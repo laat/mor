@@ -152,6 +152,7 @@ export async function searchAsync(
       embedding: Buffer;
     }>;
 
+    const MIN_COSINE_SIMILARITY = 0.15;
     const vectorScores: Array<{ id: string; score: number }> = [];
     for (const row of allEmbeddings) {
       const stored = new Float32Array(
@@ -161,7 +162,9 @@ export async function searchAsync(
       );
       if (queryEmbedding.length !== stored.length) continue;
       const sim = cosineSimilarity(queryEmbedding, Array.from(stored));
-      vectorScores.push({ id: row.id, score: (sim + 1) / 2 }); // normalize to 0-1
+      if (sim >= MIN_COSINE_SIMILARITY) {
+        vectorScores.push({ id: row.id, score: (sim + 1) / 2 });
+      }
     }
 
     vectorScores.sort((a, b) => b.score - a.score);
