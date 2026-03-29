@@ -4,7 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { loadConfig } from "./config.js";
 import { openDb } from "./db.js";
-import { syncIndex, search } from "./index.js";
+import { syncIndex, searchAsync } from "./index.js";
 import { createMemory, readMemory, updateMemory, deleteMemory, listMemoryFiles } from "./memory.js";
 import { resolveQuery } from "./query.js";
 import type { Config } from "./types.js";
@@ -128,12 +128,12 @@ describe("syncIndex", () => {
 });
 
 describe("search", () => {
-  it("finds memories by FTS", () => {
+  it("finds memories by FTS", async () => {
     createMemory(config, { title: "JavaScript Guide", content: "Learn JavaScript basics", tags: ["javascript"] });
     createMemory(config, { title: "Python Guide", content: "Learn Python basics", tags: ["python"] });
     syncIndex(config, db);
 
-    const results = search(config, db, "JavaScript");
+    const results = await searchAsync(config, db, "JavaScript");
     expect(results.length).toBeGreaterThanOrEqual(1);
     expect(results[0].memory.title).toBe("JavaScript Guide");
   });

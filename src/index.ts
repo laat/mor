@@ -98,41 +98,6 @@ async function computeAndStoreEmbedding(db: DB, provider: EmbeddingProvider, mem
   ).run(mem.id, buffer, provider.model, embedding.length);
 }
 
-export function search(config: Config, db: DB, query: string, limit = 20): SearchResult[] {
-  syncIndex(config, db);
-
-  const ftsResults = searchFts(db, query, limit);
-
-  // If embeddings are available, merge with vector search
-  const embeddingRows = db.prepare("SELECT COUNT(*) as count FROM embeddings").get() as { count: number };
-
-  if (embeddingRows.count === 0) {
-    // FTS only
-    return ftsResults.map((r) => {
-      const row = db.prepare("SELECT file_path FROM memories WHERE id = ?").get(r.id) as { file_path: string };
-      const mem = readMemory(row.file_path);
-      return { memory: mem, score: r.score, matchType: "fts" as const };
-    });
-  }
-
-  // Vector search - brute force cosine similarity
-  const provider = createProvider(config.embedding);
-  if (provider.name === "none") {
-    return ftsResults.map((r) => {
-      const row = db.prepare("SELECT file_path FROM memories WHERE id = ?").get(r.id) as { file_path: string };
-      const mem = readMemory(row.file_path);
-      return { memory: mem, score: r.score, matchType: "fts" as const };
-    });
-  }
-
-  // Async vector search not supported in sync CLI path - return FTS only
-  return ftsResults.map((r) => {
-    const row = db.prepare("SELECT file_path FROM memories WHERE id = ?").get(r.id) as { file_path: string };
-    const mem = readMemory(row.file_path);
-    return { memory: mem, score: r.score, matchType: "fts" as const };
-  });
-}
-
 export async function searchAsync(config: Config, db: DB, query: string, limit = 20): Promise<SearchResult[]> {
   syncIndex(config, db);
 

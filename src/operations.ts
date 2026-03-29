@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Config, Memory, SearchResult } from "./types.js";
 import { openDb, type DB } from "./db.js";
-import { syncIndex, search as searchIndex, searchAsync } from "./index.js";
+import { syncIndex, searchAsync } from "./index.js";
 import { createMemory, readMemory, deleteMemory, updateMemory, listMemoryFiles } from "./memory.js";
 import { resolveQuery } from "./query.js";
 
