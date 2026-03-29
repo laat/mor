@@ -491,8 +491,9 @@ program
 program
   .command('ls')
   .description('List all memories')
-  .option('-l, --limit <n>', 'Max results')
-  .action(async (opts: { limit?: string }) => {
+  .option('-n, --limit <n>', 'Max results')
+  .option('-l, --long', 'Show file path or URL')
+  .action(async (opts: { limit?: string; long?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -508,9 +509,19 @@ program
         memories = memories.slice(0, limit);
       }
       for (const mem of memories) {
-        const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
-        console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
-        console.log(`         ${path.basename(mem.filePath)}`);
+        if (opts.long) {
+          const date = mem.updated.slice(0, 10);
+          const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+          const loc = isRemote(config)
+            ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
+            : mem.filePath;
+          console.log(
+            `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
+          );
+          console.log(`         ${loc}`);
+        } else {
+          console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+        }
       }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
