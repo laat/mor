@@ -94,6 +94,19 @@ export class RemoteOperations implements Operations {
     );
   }
 
+  async grep(
+    pattern: string,
+    limit = 20,
+    ignoreCase = false,
+  ): Promise<Memory[]> {
+    const params = new URLSearchParams({
+      q: pattern,
+      limit: String(limit),
+      ...(ignoreCase ? { ignoreCase: '1' } : {}),
+    });
+    return this.request<Memory[]>('GET', `/memories/grep?${params}`);
+  }
+
   async list(): Promise<Memory[]> {
     return this.request<Memory[]>('GET', '/memories');
   }

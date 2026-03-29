@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import {
   deleteMemoryFromDb,
+  grepMemories,
   openDb,
   upsertMemoryChecked,
   type DB,
@@ -41,6 +42,11 @@ export interface Operations {
     },
   ): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
+  grep(
+    pattern: string,
+    limit?: number,
+    ignoreCase?: boolean,
+  ): Promise<Memory[]>;
   list(): Promise<Memory[]>;
   push(): Promise<{ pushed: boolean; message: string }>;
   close(): void;
@@ -123,6 +129,21 @@ export class LocalOperations implements Operations {
     deleteMemory(mem.filePath);
     deleteMemoryFromDb(this.db, mem.id);
     return { title: mem.title, id: mem.id };
+  }
+
+  async grep(
+    pattern: string,
+    limit = 20,
+    ignoreCase = false,
+  ): Promise<Memory[]> {
+    syncIndex(this.config, this.db);
+    const rows = grepMemories(this.db, pattern, limit, ignoreCase);
+    const memories: Memory[] = [];
+    for (const row of rows) {
+      const mem = resolveQuery(this.config, this.db, row.id);
+      if (mem) memories.push(mem);
+    }
+    return memories;
   }
 
   async list(): Promise<Memory[]> {

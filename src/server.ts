@@ -138,6 +138,22 @@ export function startServer(
 
     [
       'GET',
+      '/memories/grep',
+      async ({ url, res }) => {
+        const q = url.searchParams.get('q');
+        if (!q) {
+          json(res, 400, { error: 'Missing query parameter: q' });
+          return;
+        }
+        const limitRaw = parseInt(url.searchParams.get('limit') ?? '20', 10);
+        const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
+        const ignoreCase = url.searchParams.get('ignoreCase') === '1';
+        json(res, 200, { data: await ops.grep(q, limit, ignoreCase) });
+      },
+    ],
+
+    [
+      'GET',
       '/memories/:query',
       async ({ params, res }) => {
         const mem = await ops.read(params.query);

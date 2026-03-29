@@ -202,6 +202,19 @@ export function getContentHash(db: DB, id: string): string | undefined {
   return row?.content_hash;
 }
 
+export function grepMemories(
+  db: DB,
+  pattern: string,
+  limit = 20,
+  ignoreCase = false,
+): Array<{ id: string }> {
+  const escaped = escapeLike(pattern);
+  const sql = ignoreCase
+    ? `SELECT id FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) OR (title LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) LIMIT ?`
+    : `SELECT id FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\') OR (title LIKE '%' || ? || '%' ESCAPE '\\') LIMIT ?`;
+  return db.prepare(sql).all(escaped, escaped, limit) as Array<{ id: string }>;
+}
+
 export function clearDb(db: DB): void {
   db.exec('DELETE FROM embeddings');
   db.exec('DELETE FROM memories');

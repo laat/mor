@@ -164,6 +164,45 @@ program
   });
 
 program
+  .command('grep <pattern>')
+  .description('Search memories for literal substring matches')
+  .option('-n, --limit <n>', 'Max results', '20')
+  .option('-i, --ignore-case', 'Case-insensitive matching')
+  .option('-l, --long', 'Show file path or URL')
+  .action(
+    async (
+      pattern: string,
+      opts: { limit: string; ignoreCase?: boolean; long?: boolean },
+    ) => {
+      const config = loadConfig();
+      const ops = getOps(config);
+      try {
+        const limitRaw = parseInt(opts.limit, 10);
+        const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
+        const memories = await ops.grep(pattern, limit, opts.ignoreCase);
+        if (memories.length === 0) {
+          console.log('No memories found.');
+          return;
+        }
+        for (const mem of memories) {
+          if (opts.long) {
+            const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
+            console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
+            console.log(`         ${path.basename(mem.filePath)}`);
+          } else {
+            console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+          }
+        }
+      } catch (e) {
+        console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        process.exit(1);
+      } finally {
+        ops.close();
+      }
+    },
+  );
+
+program
   .command('add [file]')
   .description('Add a new memory from file or stdin')
   .option('-t, --title <title>', 'Memory title')
@@ -219,9 +258,7 @@ program
           }
         } else {
           // Interactive with --title: open $EDITOR
-          const tmpDir = fs.mkdtempSync(
-            path.join(os.tmpdir(), 'code-memory-'),
-          );
+          const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
           const tmpFile = path.join(tmpDir, 'new-memory.md');
           fs.writeFileSync(tmpFile, '');
           openInEditor(tmpFile);
@@ -307,7 +344,8 @@ program
 
 function exportMemory(mem: Memory, raw?: boolean): string {
   if (raw) return serializeMemory(mem);
-  if (mem.type === 'file') return stripCodeFence(mem.content)?.code ?? mem.content;
+  if (mem.type === 'file')
+    return stripCodeFence(mem.content)?.code ?? mem.content;
   return mem.content;
 }
 
