@@ -26,7 +26,7 @@ export async function startMcpServer(): Promise<void> {
     'memory_search',
     {
       description:
-        'Full-text search across all memories. Returns matching memories ranked by relevance.',
+        'Search memories by query. Returns titles and descriptions — use memory_read to get full content.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -34,21 +34,20 @@ export async function startMcpServer(): Promise<void> {
     },
     async ({ query, limit }) => {
       const results = await ops.search(query, limit ?? 20);
-      const text = results
-        .map((r) => {
-          const tags =
-            r.memory.tags.length > 0
-              ? `\nTags: ${r.memory.tags.join(', ')}`
-              : '';
-          const desc = r.memory.description
-            ? `\nDescription: ${r.memory.description}`
-            : '';
-          return `## ${r.memory.title}\nID: ${r.memory.id}\nFile: ${path.basename(r.memory.filePath)}${tags}${desc}\nScore: ${r.score.toFixed(3)}\n\n${r.memory.content}`;
-        })
-        .join('\n\n---\n\n');
+      const lines = results.map((r) => {
+        const tags =
+          r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
+        const desc = r.memory.description
+          ? `\n  ${r.memory.description}`
+          : '';
+        return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${desc}`;
+      });
       return {
         content: [
-          { type: 'text' as const, text: text || 'No memories found.' },
+          {
+            type: 'text' as const,
+            text: lines.length > 0 ? lines.join('\n') : 'No memories found.',
+          },
         ],
       };
     },
