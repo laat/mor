@@ -450,10 +450,11 @@ program
         // Edit full file with frontmatter
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
-        fs.writeFileSync(tmpFile, serializeMemory(mem));
+        const original = serializeMemory(mem);
+        fs.writeFileSync(tmpFile, original);
         openInEditor(tmpFile);
         const edited = fs.readFileSync(tmpFile, 'utf-8');
-        if (edited !== serializeMemory(mem)) {
+        if (edited !== original) {
           const { data, content: newContent } = (
             await import('gray-matter')
           ).default(edited);

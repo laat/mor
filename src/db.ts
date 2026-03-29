@@ -207,12 +207,15 @@ export function grepMemories(
   pattern: string,
   limit = 20,
   ignoreCase = false,
-): Array<{ id: string }> {
+): Array<{ id: string; file_path: string }> {
   const escaped = escapeLike(pattern);
   const sql = ignoreCase
-    ? `SELECT id FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) OR (title LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) LIMIT ?`
-    : `SELECT id FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\') OR (title LIKE '%' || ? || '%' ESCAPE '\\') LIMIT ?`;
-  return db.prepare(sql).all(escaped, escaped, limit) as Array<{ id: string }>;
+    ? `SELECT id, file_path FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) OR (title LIKE '%' || ? || '%' ESCAPE '\\' COLLATE NOCASE) LIMIT ?`
+    : `SELECT id, file_path FROM memories WHERE (content LIKE '%' || ? || '%' ESCAPE '\\') OR (title LIKE '%' || ? || '%' ESCAPE '\\') LIMIT ?`;
+  return db.prepare(sql).all(escaped, escaped, limit) as Array<{
+    id: string;
+    file_path: string;
+  }>;
 }
 
 export function clearDb(db: DB): void {

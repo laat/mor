@@ -6,6 +6,7 @@ import { isRemote, loadConfig } from './config.js';
 import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
+import { MEMORY_TYPES } from './types.js';
 
 function createOps(): Operations {
   const config = loadConfig();
@@ -96,15 +97,7 @@ export function createMcpServer(ops: Operations): McpServer {
         content: z.string().describe('Memory content (markdown)'),
         tags: z.array(z.string()).optional().describe('Tags'),
         type: z
-          .enum([
-            'user',
-            'feedback',
-            'project',
-            'reference',
-            'knowledge',
-            'snippet',
-            'file',
-          ])
+          .enum(MEMORY_TYPES)
           .optional()
           .describe('Memory type (default: knowledge)'),
       },
@@ -197,18 +190,7 @@ export function createMcpServer(ops: Operations): McpServer {
         description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
         tags: z.array(z.string()).optional().describe('New tags'),
-        type: z
-          .enum([
-            'user',
-            'feedback',
-            'project',
-            'reference',
-            'knowledge',
-            'snippet',
-            'file',
-          ])
-          .optional()
-          .describe('New type'),
+        type: z.enum(MEMORY_TYPES).optional().describe('New type'),
       },
     },
     async ({ query, title, description, content, tags, type }) => {

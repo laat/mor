@@ -151,8 +151,11 @@ export class LocalOperations implements Operations {
     const rows = grepMemories(this.db, pattern, limit, ignoreCase);
     const memories: Memory[] = [];
     for (const row of rows) {
-      const mem = resolveQuery(this.config, this.db, row.id);
-      if (mem) memories.push(mem);
+      try {
+        memories.push(readMemory(row.file_path));
+      } catch {
+        // skip unparseable files
+      }
     }
     return memories;
   }
