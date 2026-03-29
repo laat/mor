@@ -3,8 +3,34 @@
   "version": "0.1.0",
   "description": "A shared memory store for humans and AI",
   "type": "module",
+  "license": "MIT",
+  "author": "Sigurd Fosseng",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laat/mor.git"
+  },
+  "homepage": "https://github.com/laat/mor",
+  "bugs": "https://github.com/laat/mor/issues",
+  "keywords": [
+    "memory",
+    "ai",
+    "mcp",
+    "knowledge-base",
+    "markdown",
+    "sqlite",
+    "fts5",
+    "embeddings",
+    "cli"
+  ],
   "bin": {
     "mor": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsc",
@@ -15,26 +41,12 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/"
   },
-  "packageManager": "pnpm@10.11.0",
-  "engines": {
-    "node": ">=20"
-  },
-  "files": [
-    "dist"
-  ],
-  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
     "better-sqlite3": "^12.8.0",
     "commander": "^14.0.3",
     "gray-matter": "^4.0.3",
     "zod": "^4.3.6"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild"
-    ]
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -47,5 +59,11 @@
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.2",
     "vitest": "^4.1.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild"
+    ]
   }
 }
