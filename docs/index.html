@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mor - A shared memory store for humans and AI</title>
+<meta name="description" content="Plain markdown files. SQLite full-text search. MCP server. CLI. Because your AI deserves to remember things too.">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--surface:#12121a;--border:#1e1e2e;--text:#e0e0e8;--dim:#6e6e82;--accent:#7c5cff;--accent2:#ff5cf0;--accent3:#5cffe4;--glow:rgba(124,92,255,0.15)}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono',SFMono-Regular,ui-monospace,'DejaVu Sans Mono','Cascadia Code',Menlo,Consolas,monospace;line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Animated gradient background */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(124,92,255,0.12),transparent),radial-gradient(ellipse 60% 50% at 20% 80%,rgba(255,92,240,0.06),transparent),radial-gradient(ellipse 60% 40% at 80% 20%,rgba(92,255,228,0.06),transparent);pointer-events:none}
+
+/* Floating grid */
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(124,92,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(124,92,255,0.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 60% at 50% 50%,black,transparent);pointer-events:none}
+
+/* Floating particles */
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;width:3px;height:3px;border-radius:50%;opacity:0;animation:float linear infinite}
+@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
+
+.logo{font-size:clamp(5rem,15vw,12rem);font-weight:900;letter-spacing:-0.04em;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1;animation:logoIn 1s ease-out}
+@keyframes logoIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:none}}
+
+.tagline{font-size:clamp(1rem,2.5vw,1.5rem);color:var(--dim);margin-top:1rem;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.3s both}
+.tagline em{color:var(--text);font-style:normal}
+@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
+
+.hero-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.6s both}
+.btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.5rem;border-radius:8px;font-size:0.95rem;font-family:inherit;font-weight:600;transition:all 0.2s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 0 30px rgba(124,92,255,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(124,92,255,0.4);text-decoration:none}
+.btn-secondary{border:1px solid var(--border);color:var(--text);background:var(--surface)}
+.btn-secondary:hover{border-color:var(--accent);text-decoration:none}
+
+.install-box{margin-top:2rem;position:relative;z-index:1;animation:fadeIn 1s ease-out 0.9s both}
+.install-cmd{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1.5rem;font-family:inherit;font-size:1rem;color:var(--accent3);cursor:pointer;transition:all 0.2s;position:relative}
+.install-cmd:hover{border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
+.install-cmd .copied{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:7px;color:var(--accent3);opacity:0;transition:opacity 0.2s}
+.install-cmd .copied.show{opacity:1}
+
+/* Meme badge */
+.meme-badge{position:relative;z-index:1;margin-top:3rem;animation:fadeIn 1.2s ease-out 1.2s both}
+.meme-badge span{display:inline-block;padding:0.4rem 1rem;border-radius:20px;font-size:0.75rem;color:var(--dim);border:1px solid var(--border);background:var(--surface)}
+
+/* Sections */
+section{padding:5rem 2rem;max-width:900px;margin:0 auto}
+.section-title{font-size:clamp(1.5rem,4vw,2.5rem);font-weight:800;margin-bottom:0.5rem;background:linear-gradient(135deg,var(--text),var(--dim));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-sub{color:var(--dim);margin-bottom:3rem;font-size:1.05rem}
+
+/* Feature cards */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:all 0.3s}
+.card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 30px var(--glow)}
+.card-icon{font-size:1.8rem;margin-bottom:0.75rem;display:block}
+.card h3{font-size:1.1rem;margin-bottom:0.5rem}
+.card p{color:var(--dim);font-size:0.9rem;line-height:1.5}
+
+/* Terminal demo */
+.terminal{background:#0d0d14;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:2rem 0;font-size:0.85rem}
+.terminal-header{display:flex;gap:6px;padding:12px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot:nth-child(1){background:#ff5f57}
+.terminal-dot:nth-child(2){background:#febc2e}
+.terminal-dot:nth-child(3){background:#28c840}
+.terminal-body{padding:1rem 1.5rem;line-height:1.8;overflow-x:auto}
+.terminal-body .prompt{color:var(--accent3)}
+.terminal-body .cmd{color:var(--text)}
+.terminal-body .output{color:var(--dim)}
+.terminal-body .highlight{color:var(--accent2)}
+
+/* How it works */
+.how-it-works{display:flex;flex-direction:column;gap:2rem}
+.step{display:flex;gap:1.5rem;align-items:flex-start}
+.step-num{flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem}
+.step-content h3{font-size:1.05rem;margin-bottom:0.3rem}
+.step-content p{color:var(--dim);font-size:0.9rem}
+
+/* Architecture */
+.arch{display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;margin:2rem 0}
+.arch-node{padding:0.6rem 1.2rem;border-radius:8px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);position:relative}
+.arch-node.active{border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
+.arch-arrow{display:flex;align-items:center;color:var(--dim);font-size:1.2rem}
+
+/* Footer */
+footer{text-align:center;padding:3rem 2rem;color:var(--dim);font-size:0.85rem;border-top:1px solid var(--border)}
+footer a{color:var(--accent)}
+
+/* Responsive */
+@media(max-width:600px){
+  .step{flex-direction:column;gap:0.75rem}
+  .arch{flex-direction:column;align-items:center}
+  .arch-arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="grid-bg"></div>
+  <div class="particles" id="particles"></div>
+  <div class="logo">mor</div>
+  <p class="tagline">A shared memory store for <em>humans</em> and <em>AI</em></p>
+  <div class="hero-cta">
+    <a href="https://github.com/laat/mor" class="btn btn-primary">GitHub</a>
+    <a href="https://www.npmjs.com/package/mor" class="btn btn-secondary">npm</a>
+  </div>
+  <div class="install-box">
+    <div class="install-cmd" onclick="copyInstall(this)" title="Click to copy">
+      <span>npm install -g mor</span>
+      <div class="copied">copied!</div>
+    </div>
+  </div>
+  <div class="meme-badge">
+    <span>your AI forgets everything between sessions. this fixes that.</span>
+  </div>
+</div>
+
+<section>
+  <h2 class="section-title">What is this?</h2>
+  <p class="section-sub">
+    Plain markdown files with YAML frontmatter. SQLite full-text search. An MCP server so your AI assistant can actually remember things. A CLI because you're a human who also likes to remember things.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+      <div class="terminal-dot"></div>
+    </div>
+    <div class="terminal-body">
+      <div><span class="prompt">$</span> <span class="cmd">mor add retryWithBackoff.ts -t "retryWithBackoff.ts" -d "RxJS retry with exponential backoff"</span></div>
+      <div class="output">Created: 405614a7  retryWithBackoff.ts</div>
+      <br>
+      <div><span class="prompt">$</span> <span class="cmd">mor find "retry http"</span></div>
+      <div class="output"><span class="highlight">405614a7</span>  retryWithBackoff.ts  [rxjs, fetch]  (1.00)</div>
+      <div class="output">3326ba2a  env-secrets.ts  [typescript, gcp]  (0.31)</div>
+      <br>
+      <div><span class="prompt">$</span> <span class="cmd">mor ls --tag "rxjs"</span></div>
+      <div class="output">405614a7  retryWithBackoff.ts  &mdash; RxJS retry with exponential backoff</div>
+      <div class="output">d8555419  rxjs.dom.ts  &mdash; Visibility and media query observables</div>
+      <div class="output">010fb8f5  rxjs.subjects.ts  &mdash; LocalStorage-backed BehaviorSubject</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">Features</h2>
+  <p class="section-sub">Everything you need. Nothing you don't.</p>
+  <div class="features">
+    <div class="card">
+      <span class="card-icon">&#x1F50D;</span>
+      <h3>Full-text search</h3>
+      <p>SQLite FTS5 with porter stemming. OR-ranked multi-word queries. Literal substring grep. Optional vector embeddings.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F916;</span>
+      <h3>MCP server</h3>
+      <p>Claude Code, Claude Desktop, Cursor &mdash; any MCP client. Your AI searches, reads, and saves memories natively.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F4BB;</span>
+      <h3>CLI</h3>
+      <p>find, grep, add, cat, edit, ls, rm, cp, update, push. Unix-flavored. Pipe-friendly. Glob filters on tags, types, repos.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F310;</span>
+      <h3>HTTP server</h3>
+      <p>Run on one machine, access from anywhere. REST API + streamable MCP transport. Bearer token auth. DNS rebinding protection.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F4DD;</span>
+      <h3>Plain markdown</h3>
+      <p>Memories are .md files with YAML frontmatter. Human-readable. Git-friendly. Edit with any text editor. No lock-in.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F3F7;&#xFE0F;</span>
+      <h3>Smart tagging</h3>
+      <p>Auto-tags files by language. Filter by tag, type, repo, extension. Glob patterns everywhere. Descriptions for context.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">Architecture</h2>
+  <p class="section-sub">Three interfaces, one abstraction, plain files.</p>
+  <div class="arch">
+    <div class="arch-node">CLI</div>
+    <div class="arch-node">MCP</div>
+    <div class="arch-node">HTTP</div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-node active">Operations</div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-node">SQLite + .md files</div>
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">Get started</h2>
+  <p class="section-sub">Three commands to never forget again.</p>
+  <div class="how-it-works">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Install</h3>
+        <p><code>npm install -g mor</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Remember something</h3>
+        <p><code>mor add snippet.ts -d "that retry helper I always rewrite"</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Find it later</h3>
+        <p><code>mor find "retry"</code> or let your AI do it via MCP.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <a href="https://github.com/laat/mor">GitHub</a> &middot;
+    <a href="https://www.npmjs.com/package/mor">npm</a> &middot;
+    MIT License &middot;
+    Built by <a href="https://github.com/laat">Sigurd Fosseng</a>
+  </p>
+  <p style="margin-top:0.75rem;font-size:0.75rem">
+    Made with mass prompting and mass vibes. The AI remembers so you don't have to.
+  </p>
+</footer>
+
+<script>
+// Particles
+const container = document.getElementById('particles');
+const colors = ['#7c5cff','#ff5cf0','#5cffe4','#fff'];
+for (let i = 0; i < 40; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.background = colors[Math.floor(Math.random() * colors.length)];
+  p.style.animationDuration = (8 + Math.random() * 12) + 's';
+  p.style.animationDelay = (Math.random() * 10) + 's';
+  p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+  container.appendChild(p);
+}
+
+// Copy install command
+function copyInstall(el) {
+  navigator.clipboard.writeText('npm install -g mor');
+  const copied = el.querySelector('.copied');
+  copied.classList.add('show');
+  setTimeout(() => copied.classList.remove('show'), 1200);
+}
+</script>
+</body>
+</html>
