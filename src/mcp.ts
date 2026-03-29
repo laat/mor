@@ -16,6 +16,8 @@ export async function startMcpServer(): Promise<void> {
   const server = new McpServer({
     name: 'mor',
     version: '0.1.0',
+    description:
+      "The user's primary memory store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
   });
 
   const ops = createOps();
@@ -24,7 +26,7 @@ export async function startMcpServer(): Promise<void> {
     'memory_search',
     {
       description:
-        'Search memories by query string. Returns matching memories with scores.',
+        'Full-text search across all memories. Returns matching memories ranked by relevance.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
