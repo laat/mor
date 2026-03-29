@@ -8,6 +8,24 @@ import { LocalOperations, type Operations } from './operations.js';
 import { RemoteOperations } from './remote.js';
 import { MEMORY_TYPES } from './types.js';
 
+function simpleDiff(a: string, b: string): string {
+  const aLines = a.split('\n');
+  const bLines = b.split('\n');
+  const lines: string[] = [];
+  const max = Math.max(aLines.length, bLines.length);
+  for (let i = 0; i < max; i++) {
+    if (i >= aLines.length) {
+      lines.push(`+ ${bLines[i]}`);
+    } else if (i >= bLines.length) {
+      lines.push(`- ${aLines[i]}`);
+    } else if (aLines[i] !== bLines[i]) {
+      lines.push(`- ${aLines[i]}`);
+      lines.push(`+ ${bLines[i]}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 function createOps(): Operations {
   const config = loadConfig();
   if (isRemote(config)) return new RemoteOperations(config);
@@ -195,18 +213,38 @@ export function createMcpServer(ops: Operations): McpServer {
     },
     async ({ query, title, description, content, tags, type }) => {
       try {
-        const updated = await ops.update(query, {
+        const before = await ops.read(query);
+        if (!before) throw new Error(`Memory not found: ${query}`);
+        const updated = await ops.update(before.id, {
           title,
           description,
           content,
           tags,
           type,
         });
+        const changes: string[] = [];
+        if (title && title !== before.title)
+          changes.push(`title: ${before.title} → ${title}`);
+        if (description && description !== before.description)
+          changes.push(
+            `description: ${before.description ?? '(none)'} → ${description}`,
+          );
+        if (tags && JSON.stringify(tags) !== JSON.stringify(before.tags))
+          changes.push(
+            `tags: [${before.tags.join(', ')}] → [${tags.join(', ')}]`,
+          );
+        if (type && type !== before.type)
+          changes.push(`type: ${before.type} → ${type}`);
+        if (content && content !== before.content) {
+          changes.push('content changed:');
+          changes.push(simpleDiff(before.content, content));
+        }
+        const diff = changes.length > 0 ? '\n\n' + changes.join('\n') : '';
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Updated: ${updated.title}\nID: ${updated.id}\nFile: ${path.basename(updated.filePath)}`,
+              text: `Updated: ${updated.title}${diff}`,
             },
           ],
         };
