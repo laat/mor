@@ -48,14 +48,14 @@ mor ls -l
 | `cat <query>` | Print content (`--raw` for frontmatter) |
 | `cp <query> <dest>` | Copy content to file |
 | `edit <query>` | Open in `$EDITOR` (`--raw` to edit frontmatter) |
-| `update <query>` | Update metadata (`-t` title, `-d` description, `--tags`, `--type`) |
+| `update <query>` | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content) |
 | `rm <query>` | Remove a memory |
 | `ls` | List all (`-n` limit, `-l` long) |
 | `push` | Git commit and push the memory folder |
 | `reindex` | Rebuild search index |
 | `import <dir>` | Import `.md` files from a directory |
 | `mcp` | Start MCP server (stdio) |
-| `serve` | Start HTTP server (`-p` port, `-H` host, `--token`) |
+| `serve` | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`) |
 
 Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
 

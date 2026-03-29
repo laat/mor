@@ -353,6 +353,7 @@ program
         const updates: {
           title?: string;
           description?: string;
+          content?: string;
           tags?: string[];
           type?: MemoryType;
         } = {};
@@ -360,9 +361,12 @@ program
         if (opts.description) updates.description = opts.description;
         if (opts.tags) updates.tags = opts.tags.split(',').map((t) => t.trim());
         if (opts.type) updates.type = parseType(opts.type);
+        if (!process.stdin.isTTY) {
+          updates.content = fs.readFileSync(0, 'utf-8');
+        }
         if (Object.keys(updates).length === 0) {
           console.error(
-            'Error: no updates provided. Use --title, --description, --tags, or --type.',
+            'Error: no updates provided. Use --title, --description, --tags, --type, or pipe content via stdin.',
           );
           process.exit(1);
         }
