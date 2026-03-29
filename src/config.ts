@@ -45,10 +45,8 @@ export function loadConfig(): Config {
     };
   } else {
     config = { ...DEFAULT_CONFIG };
-    if (process.env.CODE_MEMORY_HOME) {
-      config.memoryDir = path.join(configDir, "memories");
-      config.dbPath = path.join(configDir, "index.db");
-    }
+    config.memoryDir = path.join(configDir, "memories");
+    config.dbPath = path.join(configDir, "index.db");
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
   }
 

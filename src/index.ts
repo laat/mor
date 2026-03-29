@@ -5,7 +5,7 @@ import { clearDb, upsertMemoryChecked, deleteMemoryFromDb, getAllMemoryIds, getC
 import type { Config, Memory, SearchResult } from "./types.js";
 import { createProvider, type EmbeddingProvider } from "./embeddings/provider.js";
 
-function hashContent(content: string): string {
+export function hashContent(content: string): string {
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
@@ -98,7 +98,7 @@ async function computeAndStoreEmbedding(db: DB, provider: EmbeddingProvider, mem
   ).run(mem.id, buffer, provider.model, embedding.length);
 }
 
-export async function searchAsync(config: Config, db: DB, query: string, limit = 20): Promise<SearchResult[]> {
+export async function searchAsync(config: Config, db: DB, query: string, limit = 20, provider?: EmbeddingProvider): Promise<SearchResult[]> {
   syncIndex(config, db);
 
   const ftsResults = searchFts(db, query, limit);
@@ -106,10 +106,10 @@ export async function searchAsync(config: Config, db: DB, query: string, limit =
 
   // Check for embeddings
   const embeddingRows = db.prepare("SELECT COUNT(*) as count FROM embeddings").get() as { count: number };
-  const provider = createProvider(config.embedding);
+  const effectiveProvider = provider ?? createProvider(config.embedding);
 
-  if (embeddingRows.count > 0 && provider.name !== "none") {
-    const queryEmbedding = await provider.embed(query);
+  if (embeddingRows.count > 0 && effectiveProvider.name !== "none") {
+    const queryEmbedding = await effectiveProvider.embed(query);
 
     const allEmbeddings = db.prepare("SELECT id, embedding FROM embeddings").all() as Array<{
       id: string;
@@ -119,6 +119,7 @@ export async function searchAsync(config: Config, db: DB, query: string, limit =
     const vectorScores: Array<{ id: string; score: number }> = [];
     for (const row of allEmbeddings) {
       const stored = new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / 4);
+      if (queryEmbedding.length !== stored.length) continue;
       const sim = cosineSimilarity(queryEmbedding, Array.from(stored));
       vectorScores.push({ id: row.id, score: (sim + 1) / 2 }); // normalize to 0-1
     }

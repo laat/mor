@@ -24,7 +24,7 @@ type Handler = (ctx: Ctx) => Promise<void>;
 function router(routes: Array<[string, string, Handler]>): (req: http.IncomingMessage, res: http.ServerResponse) => Promise<void> {
   const compiled = routes.map(([method, pattern, handler]) => {
     const keys: string[] = [];
-    const re = new RegExp("^" + pattern.replace(/:(\w+)/g, (_, k) => { keys.push(k); return "(.+)"; }) + "$");
+    const re = new RegExp("^" + pattern.replace(/:(\w+)/g, (_, k) => { keys.push(k); return "([^/]+)"; }) + "$");
     return { method, re, keys, handler };
   });
 
@@ -69,7 +69,8 @@ export function startServer(config: Config, opts: { port: number; host: string; 
     ["POST", "/memories", async ({ req, res }) => {
       const body = JSON.parse(await readBody(req));
       if (!body.title || !body.content) { json(res, 400, { error: "Missing required fields: title, content" }); return; }
-      json(res, 201, { data: await ops.add(body) });
+      const { title, content, tags, type, repository } = body;
+      json(res, 201, { data: await ops.add({ title, content, tags, type, repository }) });
     }],
 
     ["GET", "/memories/:query", async ({ params, res }) => {
@@ -80,9 +81,12 @@ export function startServer(config: Config, opts: { port: number; host: string; 
 
     ["PUT", "/memories/:query", async ({ params, req, res }) => {
       try {
-        json(res, 200, { data: await ops.update(params.query, JSON.parse(await readBody(req))) });
+        const body = JSON.parse(await readBody(req));
+        const { title, content, tags, type } = body;
+        json(res, 200, { data: await ops.update(params.query, { title, content, tags, type }) });
       } catch (e) {
-        json(res, 404, { error: e instanceof Error ? e.message : String(e) });
+        const msg = e instanceof Error ? e.message : String(e);
+        json(res, msg.includes("Memory not found") ? 404 : 500, { error: msg });
       }
     }],
 
@@ -90,7 +94,8 @@ export function startServer(config: Config, opts: { port: number; host: string; 
       try {
         json(res, 200, { data: await ops.remove(params.query) });
       } catch (e) {
-        json(res, 404, { error: e instanceof Error ? e.message : String(e) });
+        const msg = e instanceof Error ? e.message : String(e);
+        json(res, msg.includes("Memory not found") ? 404 : 500, { error: msg });
       }
     }],
   ]);

@@ -1,9 +1,10 @@
-import path from "node:path";
+import fs from "node:fs";
 import type { Config, Memory, SearchResult } from "./types.js";
-import { openDb, type DB } from "./db.js";
-import { syncIndex, searchAsync } from "./index.js";
+import { openDb, upsertMemoryChecked, deleteMemoryFromDb, type DB } from "./db.js";
+import { syncIndex, searchAsync, hashContent } from "./index.js";
 import { createMemory, readMemory, deleteMemory, updateMemory, listMemoryFiles } from "./memory.js";
 import { resolveQuery } from "./query.js";
+import { createProvider, type EmbeddingProvider } from "./embeddings/provider.js";
 
 export interface Operations {
   search(query: string, limit?: number): Promise<SearchResult[]>;
@@ -18,14 +19,16 @@ export interface Operations {
 export class LocalOperations implements Operations {
   private config: Config;
   private db: DB;
+  private provider: EmbeddingProvider;
 
   constructor(config: Config) {
     this.config = config;
     this.db = openDb(config);
+    this.provider = createProvider(config.embedding);
   }
 
   async search(query: string, limit = 20): Promise<SearchResult[]> {
-    return searchAsync(this.config, this.db, query, limit);
+    return searchAsync(this.config, this.db, query, limit, this.provider);
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -34,7 +37,19 @@ export class LocalOperations implements Operations {
 
   async add(opts: { title: string; content: string; tags?: string[]; type?: string; repository?: string }): Promise<Memory> {
     const mem = createMemory(this.config, opts);
-    syncIndex(this.config, this.db);
+    const raw = fs.readFileSync(mem.filePath, "utf-8");
+    upsertMemoryChecked(this.db, {
+      id: mem.id,
+      title: mem.title,
+      tags: mem.tags,
+      type: mem.type,
+      repository: mem.repository,
+      created: mem.created,
+      updated: mem.updated,
+      content: mem.content,
+      filePath: mem.filePath,
+      contentHash: hashContent(raw),
+    });
     return mem;
   }
 
@@ -42,7 +57,19 @@ export class LocalOperations implements Operations {
     const mem = resolveQuery(this.config, this.db, query);
     if (!mem) throw new Error(`Memory not found: ${query}`);
     const updated = updateMemory(mem.filePath, updates);
-    syncIndex(this.config, this.db);
+    const raw = fs.readFileSync(updated.filePath, "utf-8");
+    upsertMemoryChecked(this.db, {
+      id: updated.id,
+      title: updated.title,
+      tags: updated.tags,
+      type: updated.type,
+      repository: updated.repository,
+      created: updated.created,
+      updated: updated.updated,
+      content: updated.content,
+      filePath: updated.filePath,
+      contentHash: hashContent(raw),
+    });
     return updated;
   }
 
@@ -50,7 +77,7 @@ export class LocalOperations implements Operations {
     const mem = resolveQuery(this.config, this.db, query);
     if (!mem) throw new Error(`Memory not found: ${query}`);
     deleteMemory(mem.filePath);
-    syncIndex(this.config, this.db);
+    deleteMemoryFromDb(this.db, mem.id);
     return { title: mem.title, id: mem.id };
   }
 

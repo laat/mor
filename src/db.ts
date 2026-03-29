@@ -38,59 +38,6 @@ export function openDb(config: Config): DB {
   return db;
 }
 
-export function upsertMemory(
-  db: DB,
-  mem: {
-    id: string;
-    title: string;
-    tags: string[];
-    type: string;
-    repository?: string;
-    created: string;
-    updated: string;
-    content: string;
-    filePath: string;
-    contentHash: string;
-  },
-): void {
-  const tagsStr = mem.tags.join(",");
-
-  // Get existing rowid if updating
-  const existing = db.prepare("SELECT rowid FROM memories WHERE id = ?").get(mem.id) as
-    | { rowid: number }
-    | undefined;
-
-  if (existing) {
-    // Delete old FTS entry
-    db.prepare("INSERT INTO memories_fts(memories_fts, rowid, title, tags, content) VALUES('delete', ?, ?, ?, ?)").run(
-      existing.rowid,
-      // Need old values for delete - just use new ones since we're replacing
-      mem.title,
-      tagsStr,
-      mem.content,
-    );
-  }
-
-  db.prepare(
-    `INSERT INTO memories (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-       title=excluded.title, tags=excluded.tags, type=excluded.type,
-       repository=excluded.repository, updated=excluded.updated,
-       content=excluded.content, file_path=excluded.file_path,
-       content_hash=excluded.content_hash`,
-  ).run(mem.id, mem.title, tagsStr, mem.type, mem.repository ?? null, mem.created, mem.updated, mem.content, mem.filePath, mem.contentHash);
-
-  // Get the rowid for FTS
-  const row = db.prepare("SELECT rowid FROM memories WHERE id = ?").get(mem.id) as { rowid: number };
-  db.prepare("INSERT INTO memories_fts(rowid, title, tags, content) VALUES(?, ?, ?, ?)").run(
-    row.rowid,
-    mem.title,
-    tagsStr,
-    mem.content,
-  );
-}
-
 export function upsertMemoryChecked(
   db: DB,
   mem: {
@@ -177,12 +124,16 @@ export function searchFts(db: DB, query: string, limit = 20): Array<{ id: string
   }));
 }
 
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, "\\$&");
+}
+
 export function getMemoryById(db: DB, id: string): { file_path: string } | undefined {
   return db.prepare("SELECT file_path FROM memories WHERE id = ?").get(id) as { file_path: string } | undefined;
 }
 
 export function getMemoryByPrefix(db: DB, prefix: string): { file_path: string; id: string } | undefined {
-  const rows = db.prepare("SELECT id, file_path FROM memories WHERE id LIKE ? || '%'").all(prefix) as Array<{
+  const rows = db.prepare("SELECT id, file_path FROM memories WHERE id LIKE ? || '%' ESCAPE '\\'").all(escapeLike(prefix)) as Array<{
     id: string;
     file_path: string;
   }>;
@@ -190,7 +141,7 @@ export function getMemoryByPrefix(db: DB, prefix: string): { file_path: string; 
 }
 
 export function getMemoryByFilename(db: DB, filename: string): { file_path: string } | undefined {
-  return db.prepare("SELECT file_path FROM memories WHERE file_path LIKE '%' || ?").get(filename) as
+  return db.prepare("SELECT file_path FROM memories WHERE file_path LIKE '%' || ? ESCAPE '\\'").get(escapeLike(filename)) as
     | { file_path: string }
     | undefined;
 }

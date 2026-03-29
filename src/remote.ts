@@ -1,6 +1,12 @@
 import type { Config, Memory, SearchResult } from "./types.js";
 import type { Operations } from "./operations.js";
 
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 export class RemoteOperations implements Operations {
   private baseUrl: string;
   private token?: string;
@@ -26,7 +32,7 @@ export class RemoteOperations implements Operations {
     });
     const json = (await res.json()) as { data?: T; error?: string };
     if (!res.ok) {
-      throw new Error(json.error ?? `HTTP ${res.status}`);
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
     }
     return json.data as T;
   }
@@ -40,7 +46,7 @@ export class RemoteOperations implements Operations {
     try {
       return await this.request<Memory>("GET", `/memories/${encodeURIComponent(query)}`);
     } catch (e) {
-      if (e instanceof Error && e.message.includes("404")) return undefined;
+      if (e instanceof HttpError && e.status === 404) return undefined;
       throw e;
     }
   }
