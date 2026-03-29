@@ -93,6 +93,18 @@ function wrapCodeFence(content: string, filename: string): string {
   return '```' + lang + '\n' + content.replace(/\n$/, '') + '\n```';
 }
 
+const LANG_TO_EXT: Record<string, string> = Object.fromEntries(
+  Object.entries(EXT_TO_LANG).map(([ext, lang]) => [lang, ext]),
+);
+
+function stripCodeFence(
+  content: string,
+): { code: string; lang: string } | null {
+  const match = content.match(/^```(\w*)\n([\s\S]*?)\n```\s*$/);
+  if (!match) return null;
+  return { code: match[2], lang: match[1] };
+}
+
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
   if (isRemote(config)) return new RemoteOperations(config);
   return new LocalOperations(config);
@@ -314,7 +326,8 @@ program
 program
   .command('edit <query>')
   .description('Open memory in $EDITOR')
-  .action(async (query: string) => {
+  .option('--raw', 'Edit full file including frontmatter')
+  .action(async (query: string, opts: { raw?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
     let tmpDir: string | undefined;
@@ -325,8 +338,54 @@ program
         process.exit(1);
       }
       const editor = process.env.EDITOR ?? 'vi';
-      if (isRemote(config)) {
-        // Remote: fetch → temp file → $EDITOR → update via API
+
+      if (opts.raw) {
+        // Edit full file with frontmatter
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+        const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
+        fs.writeFileSync(tmpFile, serializeMemory(mem));
+        spawnSync(editor, [tmpFile], { stdio: 'inherit', shell: true });
+        const edited = fs.readFileSync(tmpFile, 'utf-8');
+        if (edited !== serializeMemory(mem)) {
+          const { data, content: newContent } = (
+            await import('gray-matter')
+          ).default(edited);
+          await ops.update(mem.id, {
+            title: data.title,
+            tags: data.tags,
+            type: data.type,
+            content: newContent.trim(),
+          });
+          console.log(`Updated: ${mem.title}`);
+        } else {
+          console.log('No changes.');
+        }
+      } else if (mem.type === 'file') {
+        // For file type: edit the code without fence/frontmatter
+        const fenced = stripCodeFence(mem.content);
+        const code = fenced ? fenced.code : mem.content;
+        const lang = fenced?.lang ?? '';
+        const ext = LANG_TO_EXT[lang] ?? (lang ? `.${lang}` : '.txt');
+
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
+        const tmpFile = path.join(
+          tmpDir,
+          path.basename(mem.title, path.extname(mem.title)) + ext,
+        );
+        fs.writeFileSync(tmpFile, code);
+        spawnSync(editor, [tmpFile], { stdio: 'inherit', shell: true });
+        const edited = fs.readFileSync(tmpFile, 'utf-8');
+        if (edited !== code) {
+          const newContent = fenced
+            ? '```' + lang + '\n' + edited.replace(/\n$/, '') + '\n```'
+            : edited;
+          await ops.update(mem.id, { content: newContent });
+          console.log(`Updated: ${mem.title}`);
+        } else {
+          console.log('No changes.');
+        }
+      } else if (isRemote(config)) {
+        // Remote non-file: edit content in temp file
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'code-memory-'));
         const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
         fs.writeFileSync(tmpFile, mem.content);
@@ -339,7 +398,7 @@ program
           console.log('No changes.');
         }
       } else {
-        // Local: open file directly
+        // Local non-file: open markdown file directly
         spawnSync(editor, [mem.filePath], { stdio: 'inherit', shell: true });
       }
     } finally {
