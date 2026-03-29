@@ -128,7 +128,7 @@ export function searchFts(
        ORDER BY rank
        LIMIT ?`,
     )
-    .all(query, limit) as Array<{ id: string; rank: number }>;
+    .all(escapeFtsQuery(query), limit) as Array<{ id: string; rank: number }>;
 
   // rank is negative (more negative = better match), normalize to relative 0-1 score
   if (rows.length === 0) return [];
@@ -137,6 +137,16 @@ export function searchFts(
     id: r.id,
     score: Math.abs(r.rank) / best,
   }));
+}
+
+function escapeFtsQuery(query: string): string {
+  // Quote each token to prevent FTS5 operator interpretation
+  // e.g. "retry-after" → '"retry-after"', "foo bar" → '"foo" "bar"'
+  return query
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => `"${token.replace(/"/g, '""')}"`)
+    .join(' ');
 }
 
 function escapeLike(s: string): string {

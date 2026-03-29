@@ -30,6 +30,69 @@ function parseRawGitHubUrl(
   return { filename, repository: `github.com/${owner}/${repo}` };
 }
 
+const EXT_TO_LANG: Record<string, string> = {
+  '.js': 'javascript',
+  '.mjs': 'javascript',
+  '.cjs': 'javascript',
+  '.ts': 'typescript',
+  '.mts': 'typescript',
+  '.cts': 'typescript',
+  '.tsx': 'tsx',
+  '.jsx': 'jsx',
+  '.py': 'python',
+  '.rb': 'ruby',
+  '.rs': 'rust',
+  '.go': 'go',
+  '.java': 'java',
+  '.kt': 'kotlin',
+  '.swift': 'swift',
+  '.c': 'c',
+  '.h': 'c',
+  '.cpp': 'cpp',
+  '.cc': 'cpp',
+  '.cs': 'csharp',
+  '.sh': 'bash',
+  '.bash': 'bash',
+  '.zsh': 'zsh',
+  '.fish': 'fish',
+  '.sql': 'sql',
+  '.json': 'json',
+  '.yaml': 'yaml',
+  '.yml': 'yaml',
+  '.toml': 'toml',
+  '.xml': 'xml',
+  '.html': 'html',
+  '.css': 'css',
+  '.scss': 'scss',
+  '.lua': 'lua',
+  '.r': 'r',
+  '.R': 'r',
+  '.ex': 'elixir',
+  '.exs': 'elixir',
+  '.erl': 'erlang',
+  '.hs': 'haskell',
+  '.clj': 'clojure',
+  '.scala': 'scala',
+  '.php': 'php',
+  '.pl': 'perl',
+  '.dockerfile': 'dockerfile',
+  '.tf': 'hcl',
+  '.zig': 'zig',
+  '.nim': 'nim',
+  '.dart': 'dart',
+  '.vue': 'vue',
+  '.svelte': 'svelte',
+};
+
+function wrapCodeFence(content: string, filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === '.md' || ext === '.markdown' || ext === '.txt' || ext === '') {
+    return content;
+  }
+  const lang = EXT_TO_LANG[ext] ?? ext.slice(1);
+  return '```' + lang + '\n' + content.replace(/\n$/, '') + '\n```';
+}
+
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
   if (isRemote(config)) return new RemoteOperations(config);
   return new LocalOperations(config);
@@ -78,11 +141,11 @@ program
   .description('Add a new memory from file or stdin')
   .option('-t, --title <title>', 'Memory title')
   .option('--tags <tags>', 'Comma-separated tags')
-  .option('--type <type>', 'Memory type', 'knowledge')
+  .option('--type <type>', 'Memory type')
   .action(
     async (
       file: string | undefined,
-      opts: { title?: string; tags?: string; type: string },
+      opts: { title?: string; tags?: string; type?: string },
     ) => {
       const config = loadConfig();
       const ops = getOps(config);
@@ -90,6 +153,7 @@ program
         let content: string;
         let title = opts.title;
         let repository: string | undefined;
+        const isFile = file && file !== '-';
 
         if (file && /^https?:\/\//.test(file)) {
           const res = await fetch(file);
@@ -97,16 +161,23 @@ program
             console.error(`Error: failed to fetch ${file} (${res.status})`);
             process.exit(1);
           }
-          content = await res.text();
+          const raw = await res.text();
           const urlInfo = parseRawGitHubUrl(file);
+          let filename: string;
           if (urlInfo) {
-            if (!title) title = urlInfo.filename;
+            filename = urlInfo.filename;
+            if (!title) title = filename;
             repository = urlInfo.repository;
           } else {
-            if (!title) title = path.basename(new URL(file).pathname) || file;
+            filename = path.basename(new URL(file).pathname) || file;
+            if (!title) title = filename;
           }
+          content = wrapCodeFence(raw, filename);
         } else if (file && file !== '-') {
-          content = fs.readFileSync(file, 'utf-8');
+          content = wrapCodeFence(
+            fs.readFileSync(file, 'utf-8'),
+            path.basename(file),
+          );
           if (!title) title = path.basename(file);
         } else {
           content = fs.readFileSync(0, 'utf-8');
@@ -121,7 +192,7 @@ program
           title,
           content,
           tags,
-          type: opts.type,
+          type: opts.type ?? (isFile ? 'file' : 'knowledge'),
           repository,
         });
         console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);
