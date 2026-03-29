@@ -10,9 +10,7 @@ export interface EmbeddingProvider {
   embed(text: string): Promise<number[]>;
 }
 
-export function createProvider(
-  config?: EmbeddingConfig,
-): EmbeddingProvider {
+export function createProvider(config?: EmbeddingConfig): EmbeddingProvider {
   switch (config?.provider) {
     case 'openai':
       return new OpenAIProvider(config);
