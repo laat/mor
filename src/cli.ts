@@ -625,13 +625,13 @@ addFilterOptions(
 });
 
 program
-  .command('push')
-  .description('Commit and push the memory folder if it is a git repo')
+  .command('sync')
+  .description('Pull remote changes, commit and push local changes')
   .action(async () => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      const result = await ops.push();
+      const result = await ops.sync();
       console.log(result.message);
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);

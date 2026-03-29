@@ -117,8 +117,8 @@ export class RemoteOperations implements Operations {
     return this.request<{ count: number }>('POST', '/reindex');
   }
 
-  async push(): Promise<{ pushed: boolean; message: string }> {
-    return this.request<{ pushed: boolean; message: string }>('POST', '/push');
+  async sync(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('POST', '/sync');
   }
 
   close(): void {

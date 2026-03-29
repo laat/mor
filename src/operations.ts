@@ -57,7 +57,7 @@ export interface Operations {
   ): Promise<Memory[]>;
   list(): Promise<Memory[]>;
   reindex(): Promise<{ count: number }>;
-  push(): Promise<{ pushed: boolean; message: string }>;
+  sync(): Promise<{ message: string }>;
   close(): void;
 }
 
@@ -185,7 +185,7 @@ export class LocalOperations implements Operations {
     return { count };
   }
 
-  async push(): Promise<{ pushed: boolean; message: string }> {
+  async sync(): Promise<{ message: string }> {
     const dir = this.config.memoryDir;
     const git = (args: string[]) =>
       spawnSync('git', args, {
@@ -198,23 +198,39 @@ export class LocalOperations implements Operations {
     if (status.status !== 0) {
       throw new Error('Memory folder is not a git repository');
     }
-    if (!status.stdout.trim()) {
-      return { pushed: false, message: 'Nothing to push' };
+
+    const actions: string[] = [];
+
+    // Pull remote changes first
+    const pull = git(['pull', '--rebase', '--autostash']);
+    if (pull.status !== 0)
+      throw new Error(`git pull failed: ${pull.stderr.trim()}`);
+    if (!pull.stdout.includes('Already up to date')) {
+      actions.push('pulled');
+      syncIndex(this.config, this.db);
     }
 
-    const add = git(['add', '-A']);
-    if (add.status !== 0)
-      throw new Error(`git add failed: ${add.stderr.trim()}`);
+    // Commit and push local changes
+    if (status.stdout.trim()) {
+      const add = git(['add', '-A']);
+      if (add.status !== 0)
+        throw new Error(`git add failed: ${add.stderr.trim()}`);
 
-    const commit = git(['commit', '-m', 'update memory']);
-    if (commit.status !== 0)
-      throw new Error(`git commit failed: ${commit.stderr.trim()}`);
+      const commit = git(['commit', '-m', 'update memory']);
+      if (commit.status !== 0)
+        throw new Error(`git commit failed: ${commit.stderr.trim()}`);
 
-    const push = git(['push']);
-    if (push.status !== 0)
-      throw new Error(`git push failed: ${push.stderr.trim()}`);
+      const push = git(['push']);
+      if (push.status !== 0)
+        throw new Error(`git push failed: ${push.stderr.trim()}`);
 
-    return { pushed: true, message: 'Pushed memory changes' };
+      actions.push('pushed');
+    }
+
+    return {
+      message:
+        actions.length > 0 ? actions.join(' and ') : 'Already up to date',
+    };
   }
 
   close(): void {

@@ -51,7 +51,7 @@ mor ls -l
 | `update <query>` | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content) |
 | `rm <query>` | Remove a memory |
 | `ls` | List all (`-n` limit, `-l` long) |
-| `push` | Git commit and push the memory folder |
+| `sync` | Pull, commit, and push the memory folder via git |
 | `reindex` | Rebuild search index |
 | `import <dir>` | Import `.md` files from a directory |
 | `mcp` | Start MCP server (stdio) |
@@ -156,7 +156,7 @@ Memories are markdown files with YAML frontmatter, stored in `~/.config/mor/memo
     meeting-notes-c3d4.md
 ```
 
-Files are human-readable and git-friendly. Use `mor push` to commit and push if the memory folder is a git repo.
+Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the memory folder is a git repo.
 
 ## License
 

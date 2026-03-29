@@ -227,10 +227,10 @@ export function startServer(
 
     [
       'POST',
-      '/push',
+      '/sync',
       async ({ res }) => {
         try {
-          json(res, 200, { data: await ops.push() });
+          json(res, 200, { data: await ops.sync() });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           json(res, 500, { error: msg });
