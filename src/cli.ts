@@ -632,36 +632,36 @@ addFilterOptions(
         }
         return;
       }
-    if (opts.limit) {
-      const limitRaw = parseInt(opts.limit, 10);
-      const limit =
-        Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
-      memories = memories.slice(0, limit);
-    }
-    for (const mem of memories) {
-      if (opts.long) {
-        const date = mem.updated.slice(0, 10);
-        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-        const loc = isRemote(config)
-          ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
-          : mem.filePath;
-        console.log(
-          `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
-        );
-        if (mem.description) console.log(`         ${mem.description}`);
-        console.log(`         ${loc}`);
-      } else {
-        const desc = mem.description ? `  — ${mem.description}` : '';
-        console.log(`${mem.id.slice(0, 8)}  ${mem.title}${desc}`);
+      if (opts.limit) {
+        const limitRaw = parseInt(opts.limit, 10);
+        const limit =
+          Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
+        memories = memories.slice(0, limit);
       }
+      for (const mem of memories) {
+        if (opts.long) {
+          const date = mem.updated.slice(0, 10);
+          const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+          const loc = isRemote(config)
+            ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
+            : mem.filePath;
+          console.log(
+            `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
+          );
+          if (mem.description) console.log(`         ${mem.description}`);
+          console.log(`         ${loc}`);
+        } else {
+          const desc = mem.description ? `  — ${mem.description}` : '';
+          console.log(`${mem.id.slice(0, 8)}  ${mem.title}${desc}`);
+        }
+      }
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      ops.close();
     }
-  } catch (e) {
-    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-    process.exit(1);
-  } finally {
-    ops.close();
-  }
-},
+  },
 );
 
 program
