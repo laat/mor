@@ -11,7 +11,7 @@ import {
   listMemoryFiles,
 } from './memory.js';
 import { LocalOperations } from './operations-local.js';
-import type { Config } from './types.js';
+import type { Config } from './operations.js';
 
 let testDir: string;
 let config: Config;

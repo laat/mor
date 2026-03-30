@@ -5,7 +5,7 @@ import os from 'node:os';
 import http from 'node:http';
 import { loadConfig } from './config.js';
 import { startServer } from './operations-server.js';
-import type { Config } from './types.js';
+import type { Config } from './operations.js';
 
 let testDir: string;
 let config: Config;

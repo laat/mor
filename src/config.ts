@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Config } from './types.js';
+import type { Config } from './operations.js';
 
 function expandHome(p: string): string {
   if (p.startsWith('~/') || p === '~') {

@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Config, FrontMatter, Memory, MemoryType } from './types.js';
+import type { Config, FrontMatter, Memory, MemoryType } from './operations.js';
 
 export function detectRepository(): string | undefined {
   try {

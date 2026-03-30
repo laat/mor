@@ -1,4 +1,4 @@
-import type { EmbeddingConfig } from '../types.js';
+import type { EmbeddingConfig } from '../operations.js';
 import type { EmbeddingProvider } from './provider.js';
 
 export class AzureOpenAIProvider implements EmbeddingProvider {

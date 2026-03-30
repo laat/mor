@@ -27,8 +27,13 @@ import {
   safeReadMemory,
   updateMemory,
 } from './memory.js';
-import type { Operations } from './operations.js';
-import type { Config, Memory, MemoryType, SearchResult } from './types.js';
+import type {
+  Config,
+  Memory,
+  MemoryType,
+  Operations,
+  SearchResult,
+} from './operations.js';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

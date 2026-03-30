@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import type { Memory, SearchResult } from './types.js';
+import type { Memory, SearchResult } from './operations.js';
 
 export interface MemoryFilter {
   type?: string;

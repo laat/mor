@@ -8,7 +8,7 @@ import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import type { Operations } from './operations.js';
-import { MEMORY_TYPES } from './types.js';
+import { MEMORY_TYPES } from './operations.js';
 
 function unifiedDiff(a: string, b: string, ctx = 3): string {
   const aLines = a.split('\n');

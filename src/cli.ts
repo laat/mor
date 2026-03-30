@@ -17,7 +17,7 @@ import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import type { Operations } from './operations.js';
 import { startServer } from './operations-server.js';
-import { MEMORY_TYPES, type Memory, type MemoryType } from './types.js';
+import { MEMORY_TYPES, type Memory, type MemoryType } from './operations.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');

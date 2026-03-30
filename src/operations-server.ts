@@ -7,7 +7,7 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { createMcpServer } from './mcp.js';
 import { LocalOperations } from './operations-local.js';
-import type { Config } from './types.js';
+import type { Config } from './operations.js';
 
 function log(msg: string): void {
   process.stderr.write(`[mor] ${msg}\n`);

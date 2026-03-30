@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import type { Config } from './types.js';
+import type { Config } from './operations.js';
 
 export type DB = Database.Database;
 

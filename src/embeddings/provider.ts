@@ -1,4 +1,4 @@
-import type { EmbeddingConfig } from '../types.js';
+import type { EmbeddingConfig } from '../operations.js';
 import { AzureOpenAIProvider } from './azure-openai.js';
 import { NoneProvider } from './none.js';
 import { OllamaProvider } from './ollama.js';
