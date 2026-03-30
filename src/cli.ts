@@ -345,7 +345,12 @@ program
   .command('rm <id>')
   .description('Remove a memory by UUID or UUID prefix')
   .action(async (id: string) => {
-    if (!/^[0-9a-f-]{4,}$/i.test(id)) {
+    const isFullUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id,
+      );
+    const isUuidPrefix = /^[0-9a-f]{8,}$/i.test(id);
+    if (!isFullUuid && !isUuidPrefix) {
       console.error(
         'Error: rm requires a UUID or UUID prefix. Use "mor find" or "mor ls" to find the ID.',
       );
