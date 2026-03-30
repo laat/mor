@@ -207,9 +207,7 @@ export function createMcpServer(ops: Operations): McpServer {
       const mem = await ops.read(id);
       if (!mem) {
         return {
-          content: [
-            { type: 'text' as const, text: `Memory not found: ${id}` },
-          ],
+          content: [{ type: 'text' as const, text: `Memory not found: ${id}` }],
           isError: true,
         };
       }
