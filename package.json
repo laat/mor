@@ -1,6 +1,6 @@
 {
   "name": "mor",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "A shared memory store for humans and AI",
   "type": "module",
   "license": "MIT",
