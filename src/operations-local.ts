@@ -186,18 +186,25 @@ export class LocalOperations implements Operations {
 
   // ---- Query resolution ----
 
-  private resolveQuery(query: string): Memory | undefined {
+  private resolveById(id: string): Memory | undefined {
     this.syncIndexIfNeeded();
 
-    if (UUID_RE.test(query)) {
-      const row = getMemoryById(this.db, query);
+    if (UUID_RE.test(id)) {
+      const row = getMemoryById(this.db, id);
       if (row) return readMemory(row.file_path);
     }
 
-    if (UUID_PREFIX_RE.test(query) && query.length >= 4) {
-      const row = getMemoryByPrefix(this.db, query);
+    if (UUID_PREFIX_RE.test(id) && id.length >= 8) {
+      const row = getMemoryByPrefix(this.db, id);
       if (row) return readMemory(row.file_path);
     }
+
+    return undefined;
+  }
+
+  private resolveQuery(query: string): Memory | undefined {
+    const byId = this.resolveById(query);
+    if (byId) return byId;
 
     const byFilename = getMemoryByFilename(this.db, query);
     if (byFilename) return readMemory(byFilename.file_path);
@@ -317,8 +324,11 @@ export class LocalOperations implements Operations {
       type?: MemoryType;
     },
   ): Promise<Memory> {
-    const existing = this.resolveQuery(query);
-    if (!existing) throw new Error(`Memory not found: ${query}`);
+    const existing = this.resolveById(query);
+    if (!existing)
+      throw new Error(
+        `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+      );
     const { mem, raw } = updateMemory(existing.filePath, updates);
     this.upsertFromMemory(mem, raw);
     await this.computeEmbedding(mem);
@@ -326,8 +336,11 @@ export class LocalOperations implements Operations {
   }
 
   async remove(query: string): Promise<{ title: string; id: string }> {
-    const mem = this.resolveQuery(query);
-    if (!mem) throw new Error(`Memory not found: ${query}`);
+    const mem = this.resolveById(query);
+    if (!mem)
+      throw new Error(
+        `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+      );
     deleteMemory(mem.filePath);
     deleteMemoryFromDb(this.db, mem.id);
     return { title: mem.title, id: mem.id };
