@@ -130,7 +130,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_add',
     {
       description:
-        'Create a new memory with title, content, optional tags and type.',
+        'Create a new memory. Before creating, check if a similar memory already exists with memory_search — use memory_update to modify existing memories instead of recreating them.',
       inputSchema: {
         title: z.string().describe('Memory title'),
         description: z.string().optional().describe('Short description'),
