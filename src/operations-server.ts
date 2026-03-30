@@ -43,8 +43,12 @@ export function startServer(
 
   if (opts.token) {
     app.use(async (c, next) => {
-      const expectedBuf = Buffer.from(`Bearer ${opts.token}`);
-      const providedBuf = Buffer.from(c.req.header('authorization') ?? '');
+      const provided =
+        c.req.header('authorization')?.replace(/^Bearer\s+/i, '') ??
+        c.req.query('token') ??
+        '';
+      const expectedBuf = Buffer.from(opts.token!);
+      const providedBuf = Buffer.from(provided);
       if (
         expectedBuf.byteLength !== providedBuf.byteLength ||
         !crypto.timingSafeEqual(providedBuf, expectedBuf)
