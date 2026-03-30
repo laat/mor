@@ -331,7 +331,7 @@ document.querySelectorAll('section').forEach(sec => {
   const title = sec.querySelector('.section-title');
   const sub = sec.querySelector('.section-sub');
   const tl = gsap.timeline({
-    scrollTrigger: { trigger: sec, start: 'top 80%', toggleActions: 'play none none none' }
+    scrollTrigger: { trigger: sec, start: 'top 80%', once: true }
   });
   if (title) tl.from(title, { opacity: 0, y: 30, duration: 0.7 });
   if (sub) tl.from(sub, { opacity: 0, y: 20, duration: 0.6 }, '-=0.3');
@@ -340,6 +340,7 @@ document.querySelectorAll('section').forEach(sec => {
 // ===== CARDS — stagger =====
 ScrollTrigger.batch('.card', {
   start: 'top 85%',
+  once: true,
   onEnter: batch => gsap.to(batch, {
     opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out'
   }),
@@ -349,6 +350,7 @@ ScrollTrigger.batch('.card', {
 ScrollTrigger.create({
   trigger: '.arch',
   start: 'top 80%',
+  once: true,
   onEnter: () => gsap.to('.arch > *', {
     opacity: 1, x: 0, stagger: 0.08, duration: 0.5, ease: 'power2.out'
   }),
@@ -358,6 +360,7 @@ ScrollTrigger.create({
 ScrollTrigger.create({
   trigger: '#meme',
   start: 'top 75%',
+  once: true,
   onEnter: () => {
     gsap.from('.meme-quote', { opacity: 0, y: 30, duration: 0.8 });
     gsap.from('.meme-attr', { opacity: 0, y: 15, duration: 0.6, delay: 0.4 });
@@ -367,6 +370,7 @@ ScrollTrigger.create({
 // ===== STEPS — stagger =====
 ScrollTrigger.batch('.step', {
   start: 'top 85%',
+  once: true,
   onEnter: batch => gsap.from(batch, {
     opacity: 0, x: -30, stagger: 0.15, duration: 0.6, ease: 'power2.out'
   }),
