@@ -13,6 +13,7 @@ export interface ServeConfig {
 export interface Config {
   memoryDir: string;
   dbPath: string;
+  autosync?: boolean;
   embedding?: EmbeddingConfig;
   server?: ServerConfig;
   serve?: ServeConfig;
@@ -110,6 +111,6 @@ export interface Operations {
   ): Promise<Memory[]>;
   list(filter?: MemoryFilter): Promise<Memory[]>;
   reindex(): Promise<{ count: number }>;
-  sync(): Promise<{ message: string }>;
+  sync(commitMessage?: string): Promise<{ message: string }>;
   close(): void;
 }

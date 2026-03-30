@@ -144,7 +144,7 @@ export class RemoteOperations implements Operations {
     return this.request<{ count: number }>('POST', '/reindex');
   }
 
-  async sync(): Promise<{ message: string }> {
+  async sync(_commitMessage?: string): Promise<{ message: string }> {
     return this.request<{ message: string }>('POST', '/sync');
   }
 

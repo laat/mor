@@ -297,6 +297,7 @@ export class LocalOperations implements Operations {
     const { mem, raw } = createMemory(this.config, opts);
     this.upsertFromMemory(mem, raw);
     await this.computeEmbedding(mem);
+    await this.autoSync(`add: ${mem.title}`);
     return mem;
   }
 
@@ -318,6 +319,7 @@ export class LocalOperations implements Operations {
     const { mem, raw } = updateMemory(existing.filePath, updates);
     this.upsertFromMemory(mem, raw);
     await this.computeEmbedding(mem);
+    await this.autoSync(`update: ${mem.title}`);
     return mem;
   }
 
@@ -329,6 +331,7 @@ export class LocalOperations implements Operations {
       );
     deleteMemory(mem.filePath);
     deleteMemoryFromDb(this.db, mem.id);
+    await this.autoSync(`remove: ${mem.title}`);
     return { title: mem.title, id: mem.id };
   }
 
@@ -373,7 +376,7 @@ export class LocalOperations implements Operations {
     return { count };
   }
 
-  async sync(): Promise<{ message: string }> {
+  async sync(commitMessage?: string): Promise<{ message: string }> {
     const dir = this.config.memoryDir;
     const git = (args: string[]) =>
       spawnSync('git', args, {
@@ -402,7 +405,7 @@ export class LocalOperations implements Operations {
       if (add.status !== 0)
         throw new Error(`git add failed: ${add.stderr.trim()}`);
 
-      const commit = git(['commit', '-m', 'update memory']);
+      const commit = git(['commit', '-m', commitMessage ?? 'update memory']);
       if (commit.status !== 0)
         throw new Error(`git commit failed: ${commit.stderr.trim()}`);
 
@@ -417,6 +420,17 @@ export class LocalOperations implements Operations {
       message:
         actions.length > 0 ? actions.join(' and ') : 'Already up to date',
     };
+  }
+
+  private async autoSync(commitMessage: string): Promise<void> {
+    if (!this.config.autosync) return;
+    try {
+      await this.sync(commitMessage);
+    } catch (e) {
+      process.stderr.write(
+        `Warning: autosync failed: ${e instanceof Error ? e.message : e}\n`,
+      );
+    }
   }
 
   close(): void {
