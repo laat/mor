@@ -5,17 +5,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { isRemote, loadConfig } from './config.js';
-import {
-  addFilterOptions,
-  filterMemories,
-  filterResults,
-  type MemoryFilter,
-} from './filter.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
-import type { Operations } from './operations.js';
+import type { MemoryFilter, Operations } from './operations.js';
 import { startServer } from './operations-server.js';
 import { MEMORY_TYPES, type Memory, type MemoryType } from './operations.js';
 import { createRequire } from 'node:module';
@@ -135,6 +129,14 @@ function getOps(config: ReturnType<typeof loadConfig>): Operations {
 
 const program = new Command();
 
+function addFilterOptions(cmd: Command): Command {
+  return cmd
+    .option('--type <type>', 'Filter by memory type (comma-separated, glob)')
+    .option('--tag <pattern>', 'Filter by tag (glob)')
+    .option('--repo <pattern>', 'Filter by repository (glob)')
+    .option('--ext <ext>', 'Filter by file extension in title');
+}
+
 program
   .name(path.basename(process.argv[1]))
   .description('A shared memory store for humans and AI')
@@ -150,11 +152,11 @@ addFilterOptions(
   const ops = getOps(config);
   try {
     const limitRaw = parseInt(opts.limit, 10);
-    let results = await ops.search(
+    const results = await ops.search(
       query,
       Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
+      opts,
     );
-    results = filterResults(results, opts);
     if (results.length === 0) {
       console.log('No memories found.');
       return;
@@ -194,8 +196,7 @@ addFilterOptions(
     try {
       const limitRaw = parseInt(opts.limit, 10);
       const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-      let memories = await ops.grep(pattern, limit, opts.ignoreCase);
-      memories = filterMemories(memories, opts);
+      const memories = await ops.grep(pattern, limit, opts.ignoreCase, opts);
       if (memories.length === 0) {
         console.log('No memories found.');
         return;
@@ -613,8 +614,7 @@ addFilterOptions(
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      let memories = await ops.list();
-      memories = filterMemories(memories, opts);
+      let memories = await ops.list(opts);
       if (memories.length === 0) {
         console.log('No memories stored.');
         return;

@@ -4,11 +4,9 @@ import path from 'node:path';
 import { z } from 'zod';
 import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
-import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
-import type { Operations } from './operations.js';
-import { MEMORY_TYPES } from './operations.js';
+import { MEMORY_TYPES, type Operations } from './operations.js';
 
 function unifiedDiff(a: string, b: string, ctx = 3): string {
   const aLines = a.split('\n');
@@ -132,8 +130,7 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ query, limit, tag, type }) => {
-      let results = await ops.search(query, limit ?? 20);
-      if (tag || type) results = filterResults(results, { tag, type });
+      const results = await ops.search(query, limit ?? 20, { tag, type });
       if (results.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
@@ -173,8 +170,9 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ pattern, limit, ignore_case, tag }) => {
-      let memories = await ops.grep(pattern, limit ?? 20, ignore_case);
-      if (tag) memories = filterMemories(memories, { tag });
+      const memories = await ops.grep(pattern, limit ?? 20, ignore_case, {
+        tag,
+      });
       if (memories.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
@@ -298,8 +296,7 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ tag, type }) => {
-      let memories = await ops.list();
-      if (tag || type) memories = filterMemories(memories, { tag, type });
+      const memories = await ops.list({ tag, type });
       if (memories.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories stored.' }],

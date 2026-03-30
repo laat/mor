@@ -30,6 +30,7 @@ import {
 import type {
   Config,
   Memory,
+  MemoryFilter,
   MemoryType,
   Operations,
   SearchResult,
@@ -54,6 +55,47 @@ function cosineSimilarity(a: number[], b: number[]): number {
   }
   const denom = Math.sqrt(normA) * Math.sqrt(normB);
   return denom === 0 ? 0 : dot / denom;
+}
+
+function globToRegex(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  const withWildcards = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
+  return new RegExp(`^${withWildcards}$`, 'i');
+}
+
+function matchGlob(value: string, pattern: string): boolean {
+  return globToRegex(pattern).test(value);
+}
+
+function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
+  if (filter.type) {
+    const types = filter.type.split(',').map((t) => t.trim());
+    if (!types.some((t) => matchGlob(mem.type, t))) return false;
+  }
+  if (filter.tag) {
+    if (!mem.tags.some((tag) => matchGlob(tag, filter.tag!))) return false;
+  }
+  if (filter.repo) {
+    if (!mem.repository || !matchGlob(mem.repository, filter.repo))
+      return false;
+  }
+  if (filter.ext) {
+    const ext = filter.ext.startsWith('.') ? filter.ext : `.${filter.ext}`;
+    if (!mem.title.toLowerCase().endsWith(ext.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function applyFilter<T extends Memory | { memory: Memory }>(
+  items: T[],
+  filter?: MemoryFilter,
+): T[] {
+  if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
+    return items;
+  return items.filter((item) => {
+    const mem = 'memory' in item ? (item as any).memory : item;
+    return matchMemory(mem, filter);
+  });
 }
 
 export class LocalOperations implements Operations {
@@ -171,7 +213,11 @@ export class LocalOperations implements Operations {
 
   // ---- Operations interface ----
 
-  async search(query: string, limit = 20): Promise<SearchResult[]> {
+  async search(
+    query: string,
+    limit = 20,
+    filter?: MemoryFilter,
+  ): Promise<SearchResult[]> {
     this.syncIndexIfNeeded();
 
     const ftsResults = searchFts(this.db, query, limit);
@@ -216,28 +262,34 @@ export class LocalOperations implements Operations {
       }
       merged.sort((a, b) => b.score - a.score);
 
-      return merged.slice(0, limit).map((r) => {
+      return applyFilter(
+        merged.slice(0, limit).map((r) => {
+          const row = this.db
+            .prepare('SELECT file_path FROM memories WHERE id = ?')
+            .get(r.id) as { file_path: string };
+          const mem = readMemory(row.file_path);
+          return {
+            memory: mem,
+            score: r.score,
+            matchType: (vectorMap.has(r.id) ? 'vector' : 'fts') as
+              | 'vector'
+              | 'fts',
+          };
+        }),
+        filter,
+      );
+    }
+
+    return applyFilter(
+      ftsResults.map((r) => {
         const row = this.db
           .prepare('SELECT file_path FROM memories WHERE id = ?')
           .get(r.id) as { file_path: string };
         const mem = readMemory(row.file_path);
-        return {
-          memory: mem,
-          score: r.score,
-          matchType: (vectorMap.has(r.id) ? 'vector' : 'fts') as
-            | 'vector'
-            | 'fts',
-        };
-      });
-    }
-
-    return ftsResults.map((r) => {
-      const row = this.db
-        .prepare('SELECT file_path FROM memories WHERE id = ?')
-        .get(r.id) as { file_path: string };
-      const mem = readMemory(row.file_path);
-      return { memory: mem, score: r.score, matchType: 'fts' as const };
-    });
+        return { memory: mem, score: r.score, matchType: 'fts' as const };
+      }),
+      filter,
+    );
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -288,22 +340,24 @@ export class LocalOperations implements Operations {
     pattern: string,
     limit = 20,
     ignoreCase = false,
+    filter?: MemoryFilter,
   ): Promise<Memory[]> {
     this.syncIndexIfNeeded();
     const rows = grepMemories(this.db, pattern, limit, ignoreCase);
-    return rows
+    const memories = rows
       .map((row) => safeReadMemory(row.file_path))
       .filter((m): m is Memory => m !== undefined);
+    return applyFilter(memories, filter);
   }
 
-  async list(): Promise<Memory[]> {
+  async list(filter?: MemoryFilter): Promise<Memory[]> {
     this.syncIndex();
     const files = listMemoryFiles(this.config);
     const memories = files
       .map((f) => safeReadMemory(f))
       .filter((m): m is Memory => m !== undefined);
     memories.sort((a, b) => b.updated.localeCompare(a.updated));
-    return memories;
+    return applyFilter(memories, filter);
   }
 
   async reindex(): Promise<{ count: number }> {

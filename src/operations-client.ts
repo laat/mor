@@ -1,5 +1,10 @@
-import type { Operations } from './operations.js';
-import type { Config, Memory, SearchResult } from './operations.js';
+import type {
+  Config,
+  Memory,
+  MemoryFilter,
+  Operations,
+  SearchResult,
+} from './operations.js';
 
 class HttpError extends Error {
   constructor(
@@ -8,6 +13,16 @@ class HttpError extends Error {
   ) {
     super(message);
   }
+}
+
+function filterParams(filter?: MemoryFilter): Record<string, string> {
+  if (!filter) return {};
+  const p: Record<string, string> = {};
+  if (filter.type) p.type = filter.type;
+  if (filter.tag) p.tag = filter.tag;
+  if (filter.repo) p.repo = filter.repo;
+  if (filter.ext) p.ext = filter.ext;
+  return p;
 }
 
 export class RemoteOperations implements Operations {
@@ -44,8 +59,16 @@ export class RemoteOperations implements Operations {
     return json.data as T;
   }
 
-  async search(query: string, limit = 20): Promise<SearchResult[]> {
-    const params = new URLSearchParams({ q: query, limit: String(limit) });
+  async search(
+    query: string,
+    limit = 20,
+    filter?: MemoryFilter,
+  ): Promise<SearchResult[]> {
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(limit),
+      ...filterParams(filter),
+    });
     return this.request<SearchResult[]>('GET', `/memories/search?${params}`);
   }
 
@@ -100,17 +123,21 @@ export class RemoteOperations implements Operations {
     pattern: string,
     limit = 20,
     ignoreCase = false,
+    filter?: MemoryFilter,
   ): Promise<Memory[]> {
     const params = new URLSearchParams({
       q: pattern,
       limit: String(limit),
       ...(ignoreCase ? { ignoreCase: '1' } : {}),
+      ...filterParams(filter),
     });
     return this.request<Memory[]>('GET', `/memories/grep?${params}`);
   }
 
-  async list(): Promise<Memory[]> {
-    return this.request<Memory[]>('GET', '/memories');
+  async list(filter?: MemoryFilter): Promise<Memory[]> {
+    const params = new URLSearchParams(filterParams(filter));
+    const qs = params.toString();
+    return this.request<Memory[]>('GET', `/memories${qs ? `?${qs}` : ''}`);
   }
 
   async reindex(): Promise<{ count: number }> {

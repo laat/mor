@@ -69,8 +69,19 @@ export interface SearchResult {
   matchType: 'uuid' | 'filename' | 'fts' | 'vector';
 }
 
+export interface MemoryFilter {
+  type?: string;
+  tag?: string;
+  repo?: string;
+  ext?: string;
+}
+
 export interface Operations {
-  search(query: string, limit?: number): Promise<SearchResult[]>;
+  search(
+    query: string,
+    limit?: number,
+    filter?: MemoryFilter,
+  ): Promise<SearchResult[]>;
   read(query: string): Promise<Memory | undefined>;
   add(opts: {
     title: string;
@@ -95,8 +106,9 @@ export interface Operations {
     pattern: string,
     limit?: number,
     ignoreCase?: boolean,
+    filter?: MemoryFilter,
   ): Promise<Memory[]>;
-  list(): Promise<Memory[]>;
+  list(filter?: MemoryFilter): Promise<Memory[]>;
   reindex(): Promise<{ count: number }>;
   sync(): Promise<{ message: string }>;
   close(): void;
