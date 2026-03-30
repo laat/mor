@@ -11,7 +11,6 @@ export function detectRepository(): string | undefined {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
-    // Normalize git URLs to domain/path format
     return url
       .replace(/^https?:\/\//, '')
       .replace(/^git@/, '')
@@ -34,6 +33,28 @@ export function generateFilename(title: string, id: string): string {
   return `${slug}-${hash}.md`;
 }
 
+function buildFrontmatter(fields: {
+  id: string;
+  title: string;
+  description?: string;
+  tags: string[];
+  type: MemoryType;
+  repository?: string;
+  created: string;
+  updated: string;
+}): FrontMatter {
+  return {
+    id: fields.id,
+    title: fields.title,
+    ...(fields.description ? { description: fields.description } : {}),
+    tags: fields.tags,
+    type: fields.type,
+    ...(fields.repository ? { repository: fields.repository } : {}),
+    created: fields.created,
+    updated: fields.updated,
+  };
+}
+
 export function createMemory(
   config: Config,
   opts: {
@@ -44,35 +65,52 @@ export function createMemory(
     type?: MemoryType;
     repository?: string;
   },
-): Memory {
+): { mem: Memory; raw: string } {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const repo = opts.repository ?? detectRepository();
-  const frontmatter: FrontMatter = {
+  const frontmatter = buildFrontmatter({
     id,
     title: opts.title,
-    ...(opts.description ? { description: opts.description } : {}),
+    description: opts.description,
     tags: opts.tags ?? [],
     type: opts.type ?? 'knowledge',
-    ...(repo ? { repository: repo } : {}),
+    repository: repo,
     created: now,
     updated: now,
-  };
+  });
 
   const filename = generateFilename(opts.title, id);
   const filePath = path.join(config.memoryDir, filename);
-  const fileContent = matter.stringify(opts.content, frontmatter);
-  fs.writeFileSync(filePath, fileContent);
+  const raw = matter.stringify(opts.content, frontmatter);
+  fs.writeFileSync(filePath, raw);
 
   return {
-    ...frontmatter,
-    content: opts.content,
-    filePath,
+    mem: { ...frontmatter, content: opts.content, filePath },
+    raw,
   };
 }
 
 export function readMemory(filePath: string): Memory {
   const raw = fs.readFileSync(filePath, 'utf-8');
+  return parseMemory(raw, filePath);
+}
+
+export function readMemoryWithRaw(
+  filePath: string,
+): { mem: Memory; raw: string } | undefined {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return { mem: parseMemory(raw, filePath), raw };
+  } catch (e) {
+    process.stderr.write(
+      `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
+    );
+    return undefined;
+  }
+}
+
+function parseMemory(raw: string, filePath: string): Memory {
   const { data, content } = matter(raw);
   const fm = data as FrontMatter;
   return {
@@ -90,16 +128,7 @@ export function readMemory(filePath: string): Memory {
 }
 
 export function serializeMemory(mem: Memory): string {
-  const frontmatter: FrontMatter = {
-    id: mem.id,
-    title: mem.title,
-    ...(mem.description ? { description: mem.description } : {}),
-    tags: mem.tags,
-    type: mem.type,
-    ...(mem.repository ? { repository: mem.repository } : {}),
-    created: mem.created,
-    updated: mem.updated,
-  };
+  const frontmatter = buildFrontmatter(mem);
   return matter.stringify(mem.content, frontmatter);
 }
 
@@ -112,40 +141,40 @@ export function updateMemory(
     tags?: string[];
     type?: MemoryType;
   },
-): Memory {
-  const mem = readMemory(filePath);
+): { mem: Memory; raw: string } {
+  const existing = readMemory(filePath);
   const now = new Date().toISOString();
   const description =
-    updates.description !== undefined ? updates.description : mem.description;
+    updates.description !== undefined
+      ? updates.description
+      : existing.description;
 
-  const frontmatter: FrontMatter = {
-    id: mem.id,
-    title: updates.title ?? mem.title,
-    ...(description ? { description } : {}),
-    tags: updates.tags ?? mem.tags,
-    type: updates.type ?? mem.type,
-    ...(mem.repository ? { repository: mem.repository } : {}),
-    created: mem.created,
+  const frontmatter = buildFrontmatter({
+    id: existing.id,
+    title: updates.title ?? existing.title,
+    description,
+    tags: updates.tags ?? existing.tags,
+    type: updates.type ?? existing.type,
+    repository: existing.repository,
+    created: existing.created,
     updated: now,
-  };
+  });
 
-  const content = updates.content ?? mem.content;
-  const fileContent = matter.stringify(content, frontmatter);
+  const content = updates.content ?? existing.content;
+  const raw = matter.stringify(content, frontmatter);
 
-  // If title changed, rename file (write new before deleting old to prevent data loss)
   let newPath = filePath;
-  if (updates.title && updates.title !== mem.title) {
-    const newFilename = generateFilename(updates.title, mem.id);
+  if (updates.title && updates.title !== existing.title) {
+    const newFilename = generateFilename(updates.title, existing.id);
     newPath = path.join(path.dirname(filePath), newFilename);
   }
 
-  fs.writeFileSync(newPath, fileContent);
+  fs.writeFileSync(newPath, raw);
   if (newPath !== filePath) fs.unlinkSync(filePath);
 
   return {
-    ...frontmatter,
-    content,
-    filePath: newPath,
+    mem: { ...frontmatter, content, filePath: newPath },
+    raw,
   };
 }
 
@@ -159,4 +188,8 @@ export function listMemoryFiles(config: Config): string[] {
     .readdirSync(config.memoryDir)
     .filter((f) => f.endsWith('.md'))
     .map((f) => path.join(config.memoryDir, f));
+}
+
+export function safeReadMemory(filePath: string): Memory | undefined {
+  return readMemoryWithRaw(filePath)?.mem;
 }

@@ -5,16 +5,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { isRemote, loadConfig } from './config.js';
-import { openDb } from './db.js';
 import {
   addFilterOptions,
   filterMemories,
   filterResults,
   type MemoryFilter,
 } from './filter.js';
-import { syncIndex } from './index.js';
 import { startMcpServer } from './mcp.js';
-import { createMemory, serializeMemory } from './memory.js';
+import { serializeMemory } from './memory.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-remote.js';
 import type { Operations } from './operations.js';
@@ -562,13 +560,9 @@ program
 program
   .command('import <dir>')
   .description('Import markdown files from a directory')
-  .action((dir: string) => {
+  .action(async (dir: string) => {
     const config = loadConfig();
-    if (isRemote(config)) {
-      console.error('Error: import is only available in local mode');
-      process.exit(1);
-    }
-    const db = openDb(config);
+    const ops = getOps(config);
     try {
       const absDir = path.resolve(dir);
       const files = fs.readdirSync(absDir).filter((f) => f.endsWith('.md'));
@@ -578,7 +572,7 @@ program
           const filePath = path.join(absDir, file);
           const content = fs.readFileSync(filePath, 'utf-8');
           const title = path.basename(file, '.md');
-          createMemory(config, { title, content });
+          await ops.add({ title, content });
           count++;
         } catch (e) {
           console.error(
@@ -586,10 +580,9 @@ program
           );
         }
       }
-      syncIndex(config, db);
       console.log(`Imported ${count} memories.`);
     } finally {
-      db.close();
+      ops.close();
     }
   });
 
