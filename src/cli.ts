@@ -605,10 +605,11 @@ addFilterOptions(
     .description('List all memories')
     .option('-n, --limit <n>', 'Max results')
     .option('-l, --long', 'Show file path or URL')
-    .option('--tags', 'List all tags with counts'),
+    .option('--tags', 'List all tags with counts')
+    .option('--types', 'List all types with counts'),
 ).action(
   async (
-    opts: { limit?: string; long?: boolean; tags?: boolean } & MemoryFilter,
+    opts: { limit?: string; long?: boolean; tags?: boolean; types?: boolean } & MemoryFilter,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -619,16 +620,20 @@ addFilterOptions(
         console.log('No memories stored.');
         return;
       }
-      if (opts.tags) {
+      if (opts.tags || opts.types) {
         const counts = new Map<string, number>();
         for (const mem of memories) {
-          for (const tag of mem.tags) {
-            counts.set(tag, (counts.get(tag) ?? 0) + 1);
+          if (opts.types) {
+            counts.set(mem.type, (counts.get(mem.type) ?? 0) + 1);
+          } else {
+            for (const tag of mem.tags) {
+              counts.set(tag, (counts.get(tag) ?? 0) + 1);
+            }
           }
         }
         const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-        for (const [tag, count] of sorted) {
-          console.log(`${String(count).padStart(4)}  ${tag}`);
+        for (const [key, count] of sorted) {
+          console.log(`${String(count).padStart(4)}  ${key}`);
         }
         return;
       }
