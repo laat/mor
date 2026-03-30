@@ -1,13 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Config } from './operations.js';
-
-function expandHome(p: string): string {
-  if (p.startsWith('~/') || p === '~') {
-    return path.join(process.env.HOME ?? '', p.slice(1));
-  }
-  return p;
-}
+import { expandHome } from './utils/path.js';
 
 function getConfigDir(): string {
   if (process.env.MOR_HOME) {
