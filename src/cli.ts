@@ -342,13 +342,19 @@ program
   );
 
 program
-  .command('rm <query>')
-  .description('Remove a memory')
-  .action(async (query: string) => {
+  .command('rm <id>')
+  .description('Remove a memory by UUID or UUID prefix')
+  .action(async (id: string) => {
+    if (!/^[0-9a-f-]{4,}$/i.test(id)) {
+      console.error(
+        'Error: rm requires a UUID or UUID prefix. Use "mor find" or "mor ls" to find the ID.',
+      );
+      process.exit(1);
+    }
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      const result = await ops.remove(query);
+      const result = await ops.remove(id);
       console.log(`Removed: ${result.id.slice(0, 8)}  ${result.title}`);
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
