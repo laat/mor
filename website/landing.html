@@ -14,72 +14,51 @@ code,.mono{font-family:'SF Mono',SFMono-Regular,ui-monospace,'Cascadia Code',Men
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
-/* ===== HERO ===== */
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
-
-/* Layered backgrounds */
 .hero-aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.hero-aurora .blob{position:absolute;border-radius:50%;filter:blur(100px);mix-blend-mode:screen;animation:drift ease-in-out infinite alternate}
-.hero-aurora .blob:nth-child(1){width:600px;height:600px;background:rgba(61,220,132,0.12);top:-10%;left:10%;animation-duration:12s}
-.hero-aurora .blob:nth-child(2){width:500px;height:500px;background:rgba(0,229,160,0.08);bottom:-5%;right:5%;animation-duration:15s;animation-delay:-5s}
-.hero-aurora .blob:nth-child(3){width:400px;height:400px;background:rgba(176,255,212,0.06);top:30%;right:20%;animation-duration:18s;animation-delay:-8s}
-.hero-aurora .blob:nth-child(4){width:300px;height:300px;background:rgba(61,220,132,0.05);bottom:20%;left:30%;animation-duration:20s;animation-delay:-3s}
-@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(60px,-40px) scale(1.1)}}
+.hero-aurora .blob{position:absolute;border-radius:50%;filter:blur(100px);mix-blend-mode:screen;will-change:transform}
+.hero-aurora .blob:nth-child(1){width:600px;height:600px;background:rgba(61,220,132,0.12);top:-10%;left:10%}
+.hero-aurora .blob:nth-child(2){width:500px;height:500px;background:rgba(0,229,160,0.08);bottom:-5%;right:5%}
+.hero-aurora .blob:nth-child(3){width:400px;height:400px;background:rgba(176,255,212,0.06);top:30%;right:20%}
+.hero-aurora .blob:nth-child(4){width:300px;height:300px;background:rgba(61,220,132,0.05);bottom:20%;left:30%}
 
-.grid-bg{position:absolute;inset:0;background-image:
-  linear-gradient(rgba(61,220,132,0.03) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(61,220,132,0.03) 1px,transparent 1px);
-  background-size:50px 50px;mask-image:radial-gradient(ellipse 60% 55% at 50% 45%,black,transparent);pointer-events:none}
-
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(61,220,132,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(61,220,132,0.03) 1px,transparent 1px);background-size:50px 50px;mask-image:radial-gradient(ellipse 60% 55% at 50% 45%,black,transparent);pointer-events:none}
 .particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .particle{position:absolute;border-radius:50%;opacity:0;animation:float linear infinite}
 @keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:0.7}90%{opacity:0.7}100%{transform:translateY(-10vh) scale(1);opacity:0}}
 
-/* Logo */
-.logo-wrap{position:relative;z-index:3;animation:logoIn 1.2s cubic-bezier(0.16,1,0.3,1)}
-@keyframes logoIn{from{opacity:0;transform:translateY(40px) scale(0.9);filter:blur(15px)}to{opacity:1;transform:none;filter:blur(0)}}
+.logo-wrap{position:relative;z-index:3;visibility:hidden}
 .logo{font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace;font-size:clamp(5rem,16vw,13rem);font-weight:900;letter-spacing:-0.05em;line-height:1;background:linear-gradient(160deg,var(--accent3),var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 80px rgba(61,220,132,0.35)) drop-shadow(0 0 20px rgba(61,220,132,0.2))}
-.logo-glow{position:absolute;inset:0;font-family:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;color:var(--accent);opacity:0.15;filter:blur(40px);pointer-events:none;z-index:-1}
-
-.tagline{font-size:clamp(1.05rem,2.5vw,1.45rem);color:var(--dim);margin-top:1.2rem;position:relative;z-index:3;animation:fadeIn 1s ease-out 0.4s both;font-weight:400}
+.tagline{font-size:clamp(1.05rem,2.5vw,1.45rem);color:var(--dim);margin-top:1.2rem;position:relative;z-index:3;font-weight:400;visibility:hidden}
 .tagline em{color:var(--accent3);font-style:normal;font-weight:600}
-@keyframes fadeIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
-
-.hero-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:3;animation:fadeIn 1s ease-out 0.7s both}
+.hero-cta{margin-top:2.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:3;visibility:hidden}
 .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.8rem 1.75rem;border-radius:10px;font-size:0.95rem;font-family:inherit;font-weight:600;transition:all 0.3s;position:relative;overflow:hidden}
 .btn-primary{background:linear-gradient(135deg,#1a8a4a,var(--accent));color:#000;box-shadow:0 0 30px rgba(61,220,132,0.2),0 4px 15px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1)}
 .btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent 60%);pointer-events:none}
 .btn-primary:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(61,220,132,0.35),0 8px 25px rgba(0,0,0,0.3);text-decoration:none}
 .btn-secondary{border:1px solid var(--border);color:var(--text);background:var(--surface);backdrop-filter:blur(12px)}
 .btn-secondary:hover{border-color:var(--accent);text-decoration:none;box-shadow:0 0 20px var(--glow);transform:translateY(-2px)}
-
-.install-box{margin-top:2rem;position:relative;z-index:3;animation:fadeIn 1s ease-out 1s both}
+.install-box{margin-top:2rem;position:relative;z-index:3;visibility:hidden}
 .install-cmd{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1.75rem;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace;font-size:1rem;color:var(--accent);cursor:pointer;transition:all 0.3s;position:relative}
 .install-cmd:hover{border-color:var(--accent);box-shadow:0 0 30px var(--glow),inset 0 0 30px rgba(61,220,132,0.03)}
 .install-cmd .copied{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--surface);backdrop-filter:blur(12px);border-radius:9px;color:var(--accent);opacity:0;transition:opacity 0.2s;font-weight:600}
 .install-cmd .copied.show{opacity:1}
-
-.meme-badge{position:relative;z-index:3;margin-top:3.5rem;animation:fadeIn 1.2s ease-out 1.3s both}
+.meme-badge{position:relative;z-index:3;margin-top:3.5rem;visibility:hidden}
 .meme-badge span{display:inline-block;padding:0.5rem 1.4rem;border-radius:24px;font-size:0.8rem;color:var(--dim);border:1px solid rgba(61,220,132,0.08);background:rgba(10,25,15,0.6);backdrop-filter:blur(8px);letter-spacing:0.02em}
-
-/* Scroll indicator */
-.scroll-hint{position:absolute;bottom:2rem;z-index:3;animation:fadeIn 1.5s ease-out 2s both}
+.scroll-hint{position:absolute;bottom:2rem;z-index:3;visibility:hidden}
 .scroll-hint span{display:block;width:20px;height:32px;border:2px solid rgba(61,220,132,0.3);border-radius:12px;position:relative}
 .scroll-hint span::after{content:'';position:absolute;top:6px;left:50%;width:3px;height:8px;margin-left:-1.5px;background:var(--accent);border-radius:2px;animation:scrollDot 2s ease-in-out infinite}
 @keyframes scrollDot{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(10px);opacity:0.3}}
 
-/* ===== DIVIDER ===== */
 .divider{height:1px;max-width:900px;margin:0 auto;position:relative;overflow:visible}
 .divider::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.15}
 .divider::after{content:'';position:absolute;top:-15px;left:50%;width:120px;height:30px;margin-left:-60px;background:radial-gradient(ellipse,rgba(61,220,132,0.12),transparent);filter:blur(8px)}
 
-/* ===== SECTIONS ===== */
 section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 .section-title{font-size:clamp(1.6rem,4vw,2.8rem);font-weight:800;margin-bottom:0.5rem;letter-spacing:-0.02em}
 .section-title span{background:linear-gradient(135deg,var(--accent3),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-sub{color:var(--dim);margin-bottom:3rem;font-size:1.1rem;max-width:600px}
 
-/* ===== TERMINAL ===== */
 .terminal{background:rgba(4,10,6,0.9);border:1px solid rgba(61,220,132,0.1);border-radius:14px;overflow:hidden;margin:2.5rem 0;font-size:0.85rem;box-shadow:0 4px 60px rgba(0,0,0,0.5),0 0 40px rgba(61,220,132,0.03);backdrop-filter:blur(4px)}
 .terminal-header{display:flex;gap:7px;padding:14px 18px;background:rgba(255,255,255,0.015);border-bottom:1px solid rgba(61,220,132,0.06)}
 .terminal-dot{width:11px;height:11px;border-radius:50%}
@@ -87,13 +66,15 @@ section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 .terminal-dot:nth-child(2){background:#febc2e;box-shadow:0 0 6px rgba(254,188,46,0.3)}
 .terminal-dot:nth-child(3){background:#28c840;box-shadow:0 0 6px rgba(40,200,64,0.3)}
 .terminal-body{padding:1.5rem 1.75rem;line-height:2;overflow-x:auto;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace}
+.terminal-body .line{overflow:hidden}
 .terminal-body .prompt{color:var(--accent);font-weight:600}
 .terminal-body .cmd{color:var(--text)}
 .terminal-body .output{color:var(--dim)}
 .terminal-body .hl{color:var(--accent3)}
 .terminal-body .comment{color:rgba(122,158,130,0.4);font-style:italic}
+.terminal-body .cursor{display:inline-block;width:8px;height:1.1em;background:var(--accent);vertical-align:text-bottom;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-/* ===== FEATURES ===== */
 .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.25rem}
 .card{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:1.75rem;transition:all 0.35s;position:relative;overflow:hidden}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.35s}
@@ -104,31 +85,25 @@ section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 .card h3{font-size:1.1rem;margin-bottom:0.5rem;color:var(--accent3);font-weight:700}
 .card p{color:var(--dim);font-size:0.9rem;line-height:1.6}
 
-/* ===== ARCHITECTURE ===== */
 .arch{display:flex;justify-content:center;align-items:center;gap:0.75rem;flex-wrap:wrap;margin:2.5rem 0;perspective:600px}
 .arch-node{padding:0.7rem 1.4rem;border-radius:10px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(12px);transition:all 0.3s;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace}
 .arch-node:hover{border-color:var(--accent);box-shadow:0 0 20px var(--glow);transform:translateY(-2px)}
 .arch-node.active{border-color:var(--accent);box-shadow:0 0 30px var(--glow-strong),inset 0 0 20px rgba(61,220,132,0.05);color:var(--accent)}
 .arch-arrow{color:var(--accent);font-size:1.3rem;opacity:0.4}
 
-/* ===== MEME QUOTE ===== */
 .meme-section{text-align:center;padding:5rem 2rem;position:relative}
-.meme-section::before{content:'"';position:absolute;top:1rem;left:50%;transform:translateX(-50%);font-size:12rem;color:rgba(61,220,132,0.04);font-family:Georgia,serif;line-height:1;pointer-events:none}
+.meme-section::before{content:'\201C';position:absolute;top:1rem;left:50%;transform:translateX(-50%);font-size:12rem;color:rgba(61,220,132,0.04);font-family:Georgia,serif;line-height:1;pointer-events:none}
 .meme-quote{font-size:clamp(1.1rem,3vw,1.5rem);color:var(--dim);font-style:italic;max-width:580px;margin:0 auto;line-height:1.8}
 .meme-quote em{color:var(--accent3);font-style:normal;font-weight:600}
 .meme-attr{margin-top:1.2rem;font-size:0.85rem;color:rgba(122,158,130,0.5)}
 
-/* ===== STEPS ===== */
 .how-it-works{display:flex;flex-direction:column;gap:2.25rem}
-.step{display:flex;gap:1.5rem;align-items:flex-start;animation:fadeIn 0.6s ease-out both}
-.step:nth-child(2){animation-delay:0.1s}
-.step:nth-child(3){animation-delay:0.2s}
+.step{display:flex;gap:1.5rem;align-items:flex-start}
 .step-num{flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:50%;background:linear-gradient(135deg,#1a8a4a,var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:#000;box-shadow:0 0 20px rgba(61,220,132,0.2)}
 .step-content h3{font-size:1.1rem;margin-bottom:0.35rem;color:var(--accent3);font-weight:700}
 .step-content p{color:var(--dim);font-size:0.95rem}
 .step-content code{color:var(--accent);background:rgba(61,220,132,0.08);padding:0.2rem 0.5rem;border-radius:5px;font-size:0.85rem;border:1px solid rgba(61,220,132,0.1)}
 
-/* ===== FOOTER ===== */
 footer{text-align:center;padding:4rem 2rem;color:var(--dim);font-size:0.85rem;border-top:1px solid rgba(61,220,132,0.06);position:relative;overflow:hidden}
 footer::before{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:radial-gradient(ellipse 60% 100% at 50% 100%,rgba(61,220,132,0.03),transparent);pointer-events:none}
 footer a{color:var(--accent)}
@@ -136,7 +111,6 @@ footer .footer-links{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wr
 footer .footer-links .sep{color:rgba(122,158,130,0.3)}
 footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)}
 
-/* ===== RESPONSIVE ===== */
 @media(max-width:600px){
   .step{flex-direction:column;gap:0.75rem}
   .arch{flex-direction:column;align-items:center}
@@ -179,7 +153,7 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
 
 <div class="divider"></div>
 
-<section>
+<section id="what">
   <h2 class="section-title"><span>What is this?</span></h2>
   <p class="section-sub">
     Plain markdown files. SQLite full-text search.<br>
@@ -193,32 +167,13 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
       <div class="terminal-dot"></div>
       <div class="terminal-dot"></div>
     </div>
-    <div class="terminal-body">
-      <div class="comment"># save a code snippet</div>
-      <div><span class="prompt">$</span> <span class="cmd">mor add retryWithBackoff.ts -d "RxJS retry with exponential backoff"</span></div>
-      <div class="output">Created: 405614a7  retryWithBackoff.ts  [typescript]</div>
-      <br>
-      <div class="comment"># full-text search with relevance scores</div>
-      <div><span class="prompt">$</span> <span class="cmd">mor find "retry http"</span></div>
-      <div class="output"><span class="hl">405614a7</span>  retryWithBackoff.ts  [rxjs, fetch]  (1.00)</div>
-      <div class="output">c937cadb  rxjs.svelte.ts  [rxjs, svelte]  (0.31)</div>
-      <br>
-      <div class="comment"># browse by tag</div>
-      <div><span class="prompt">$</span> <span class="cmd">mor ls --tag "rxjs"</span></div>
-      <div class="output">405614a7  retryWithBackoff.ts  &mdash; RxJS retry with exponential backoff</div>
-      <div class="output">d8555419  rxjs.dom.ts  &mdash; Visibility and media query observables</div>
-      <div class="output">010fb8f5  rxjs.subjects.ts  &mdash; LocalStorage-backed BehaviorSubject</div>
-      <br>
-      <div class="comment"># literal substring search</div>
-      <div><span class="prompt">$</span> <span class="cmd">mor grep "Retry-After" -i</span></div>
-      <div class="output">405614a7  retryWithBackoff.ts</div>
-    </div>
+    <div class="terminal-body" id="term"></div>
   </div>
 </section>
 
 <div class="divider"></div>
 
-<section>
+<section id="features">
   <h2 class="section-title"><span>Features</span></h2>
   <p class="section-sub">Everything you need. Nothing you don't.</p>
   <div class="features">
@@ -235,7 +190,7 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
     <div class="card">
       <span class="card-icon">&#x1F4BB;</span>
       <h3>CLI</h3>
-      <p>find, grep, add, cat, edit, ls, rm, cp, update, push. Unix-flavored. Pipe-friendly. Glob filters on tags, types, repos.</p>
+      <p>find, grep, add, cat, edit, ls, rm, cp, update, sync. Unix-flavored. Pipe-friendly. Glob filters on tags, types, repos.</p>
     </div>
     <div class="card">
       <span class="card-icon">&#x1F310;</span>
@@ -257,7 +212,7 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
 
 <div class="divider"></div>
 
-<section>
+<section id="arch">
   <h2 class="section-title"><span>Architecture</span></h2>
   <p class="section-sub">Three interfaces, one abstraction, plain files.</p>
   <div class="arch">
@@ -273,14 +228,14 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
 
 <div class="divider"></div>
 
-<div class="meme-section">
+<div class="meme-section" id="meme">
   <p class="meme-quote">&ldquo;I wrote that <em>exact helper function</em> six months ago.<br>In a different repo. I think. Maybe it was a gist?<br>Or a Slack message?&rdquo;</p>
   <p class="meme-attr">&mdash; every developer, every week</p>
 </div>
 
 <div class="divider"></div>
 
-<section>
+<section id="start">
   <h2 class="section-title"><span>Get started</span></h2>
   <p class="section-sub">Three commands to never forget again.</p>
   <div class="how-it-works">
@@ -323,8 +278,180 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
   <p class="footer-sub">Made with mass prompting and mass vibes. The AI remembers so you don't have to.</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
 <script>
-// Particles with glow
+gsap.registerPlugin(ScrollTrigger);
+
+// ===== HERO ENTRANCE =====
+const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+heroTl
+  .fromTo('.logo-wrap', { autoAlpha: 0, y: 50, scale: 0.9, filter: 'blur(15px)' },
+    { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.2 })
+  .fromTo('.tagline', { autoAlpha: 0, y: 20 },
+    { autoAlpha: 1, y: 0, duration: 0.8 }, '-=0.6')
+  .fromTo('.hero-cta', { autoAlpha: 0, y: 20 },
+    { autoAlpha: 1, y: 0, duration: 0.7 }, '-=0.4')
+  .fromTo('.install-box', { autoAlpha: 0, y: 15 },
+    { autoAlpha: 1, y: 0, duration: 0.6 }, '-=0.3')
+  .fromTo('.meme-badge', { autoAlpha: 0, y: 10 },
+    { autoAlpha: 1, y: 0, duration: 0.5 }, '-=0.2')
+  .fromTo('.scroll-hint', { autoAlpha: 0 },
+    { autoAlpha: 1, duration: 0.5 }, '-=0.1');
+
+// ===== AURORA BLOBS — continuous floating =====
+document.querySelectorAll('.blob').forEach((blob, i) => {
+  gsap.to(blob, {
+    x: () => Math.random() * 120 - 60,
+    y: () => Math.random() * 80 - 40,
+    scale: () => 0.9 + Math.random() * 0.3,
+    duration: 10 + i * 3,
+    ease: 'sine.inOut',
+    repeat: -1,
+    yoyo: true,
+  });
+});
+
+// ===== PARALLAX — blobs move on scroll =====
+document.querySelectorAll('.blob').forEach((blob, i) => {
+  gsap.to(blob, {
+    yPercent: -30 - i * 15,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 1,
+    },
+  });
+});
+
+// ===== SCROLL-TRIGGERED SECTIONS =====
+document.querySelectorAll('section').forEach(sec => {
+  const title = sec.querySelector('.section-title');
+  const sub = sec.querySelector('.section-sub');
+  const tl = gsap.timeline({
+    scrollTrigger: { trigger: sec, start: 'top 80%', toggleActions: 'play none none none' }
+  });
+  if (title) tl.from(title, { opacity: 0, y: 30, duration: 0.7 });
+  if (sub) tl.from(sub, { opacity: 0, y: 20, duration: 0.6 }, '-=0.3');
+});
+
+// ===== CARDS — stagger =====
+ScrollTrigger.batch('.card', {
+  start: 'top 85%',
+  onEnter: batch => gsap.from(batch, {
+    opacity: 0, y: 40, stagger: 0.1, duration: 0.6, ease: 'power2.out'
+  }),
+});
+
+// ===== ARCH NODES — stagger from left =====
+ScrollTrigger.create({
+  trigger: '.arch',
+  start: 'top 80%',
+  onEnter: () => gsap.from('.arch > *', {
+    opacity: 0, x: -20, stagger: 0.08, duration: 0.5, ease: 'power2.out'
+  }),
+});
+
+// ===== MEME QUOTE =====
+ScrollTrigger.create({
+  trigger: '#meme',
+  start: 'top 75%',
+  onEnter: () => {
+    gsap.from('.meme-quote', { opacity: 0, y: 30, duration: 0.8 });
+    gsap.from('.meme-attr', { opacity: 0, y: 15, duration: 0.6, delay: 0.4 });
+  },
+});
+
+// ===== STEPS — stagger =====
+ScrollTrigger.batch('.step', {
+  start: 'top 85%',
+  onEnter: batch => gsap.from(batch, {
+    opacity: 0, x: -30, stagger: 0.15, duration: 0.6, ease: 'power2.out'
+  }),
+});
+
+// ===== TERMINAL TYPEWRITER =====
+const termLines = [
+  { type: 'comment', text: '# save a code snippet' },
+  { type: 'cmd', text: 'mor add retryWithBackoff.ts -d "RxJS retry with exponential backoff"' },
+  { type: 'output', text: 'Created: 405614a7  retryWithBackoff.ts  [typescript]' },
+  { type: 'blank' },
+  { type: 'comment', text: '# full-text search with relevance scores' },
+  { type: 'cmd', text: 'mor find "retry http"' },
+  { type: 'output', html: '<span class="hl">405614a7</span>  retryWithBackoff.ts  [rxjs, fetch]  (1.00)' },
+  { type: 'output', text: 'c937cadb  rxjs.svelte.ts  [rxjs, svelte]  (0.31)' },
+  { type: 'blank' },
+  { type: 'comment', text: '# browse by tag' },
+  { type: 'cmd', text: 'mor ls --tag "rxjs"' },
+  { type: 'output', text: '405614a7  retryWithBackoff.ts  \u2014 RxJS retry with exponential backoff' },
+  { type: 'output', text: 'd8555419  rxjs.dom.ts  \u2014 Visibility and media query observables' },
+  { type: 'output', text: '010fb8f5  rxjs.subjects.ts  \u2014 LocalStorage-backed BehaviorSubject' },
+  { type: 'blank' },
+  { type: 'comment', text: '# literal substring search' },
+  { type: 'cmd', text: 'mor grep "Retry-After" -i' },
+  { type: 'output', text: '405614a7  retryWithBackoff.ts' },
+];
+
+const term = document.getElementById('term');
+let termStarted = false;
+
+ScrollTrigger.create({
+  trigger: '.terminal',
+  start: 'top 75%',
+  onEnter: () => {
+    if (termStarted) return;
+    termStarted = true;
+    typeTerm(0);
+  },
+});
+
+function typeTerm(idx) {
+  if (idx >= termLines.length) return;
+  const l = termLines[idx];
+  if (l.type === 'blank') {
+    term.appendChild(document.createElement('br'));
+    typeTerm(idx + 1);
+    return;
+  }
+  const div = document.createElement('div');
+  div.className = 'line';
+  if (l.type === 'cmd') {
+    const prompt = document.createElement('span');
+    prompt.className = 'prompt';
+    prompt.textContent = '$ ';
+    div.appendChild(prompt);
+    const cmdSpan = document.createElement('span');
+    cmdSpan.className = 'cmd';
+    div.appendChild(cmdSpan);
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    div.appendChild(cursor);
+    term.appendChild(div);
+    typeText(cmdSpan, l.text, 0, () => {
+      cursor.remove();
+      setTimeout(() => typeTerm(idx + 1), 150);
+    });
+  } else {
+    div.className = l.type;
+    if (l.html) div.innerHTML = l.html;
+    else div.textContent = l.text;
+    term.appendChild(div);
+    gsap.from(div, { opacity: 0, y: 5, duration: 0.3, onComplete: () => {
+      setTimeout(() => typeTerm(idx + 1), l.type === 'comment' ? 300 : 80);
+    }});
+  }
+}
+
+function typeText(el, text, i, done) {
+  if (i >= text.length) { done(); return; }
+  el.textContent += text[i];
+  const delay = 15 + Math.random() * 20;
+  setTimeout(() => typeText(el, text, i + 1, done), delay);
+}
+
+// ===== PARTICLES =====
 const container = document.getElementById('particles');
 const colors = ['#3ddc84','#00e5a0','#b0ffd4','#1a8a4a'];
 for (let i = 0; i < 60; i++) {
@@ -342,25 +469,13 @@ for (let i = 0; i < 60; i++) {
   container.appendChild(p);
 }
 
-// Copy
+// ===== COPY =====
 function copyInstall(el) {
   navigator.clipboard.writeText('npm install -g mor');
   const copied = el.querySelector('.copied');
   copied.classList.add('show');
   setTimeout(() => copied.classList.remove('show'), 1200);
 }
-
-// Intersection observer for section animations
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) e.target.style.opacity = '1';
-  });
-}, { threshold: 0.1 });
-document.querySelectorAll('section').forEach(s => {
-  s.style.opacity = '0';
-  s.style.transition = 'opacity 0.8s ease-out';
-  observer.observe(s);
-});
 </script>
 </body>
 </html>
