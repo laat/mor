@@ -691,9 +691,8 @@ program
   .option('-p, --port <port>', 'Port to listen on')
   .option('-H, --host <host>', 'Host to bind to')
   .option('--token <token>', 'Bearer token for authentication')
-  .option('--mcp', 'Enable MCP protocol endpoint at /mcp')
   .action(
-    (opts: { port?: string; host?: string; token?: string; mcp?: boolean }) => {
+    (opts: { port?: string; host?: string; token?: string }) => {
       const config = loadConfig();
       const port =
         (opts.port ? parseInt(opts.port) : undefined) ??
@@ -701,8 +700,7 @@ program
         7677;
       const host = opts.host ?? config.serve?.host ?? '127.0.0.1';
       const token = opts.token ?? config.serve?.token;
-      const mcp = opts.mcp ?? config.serve?.mcp ?? false;
-      startServer(config, { port, host, token, mcp });
+      startServer(config, { port, host, token });
     },
   );
 
