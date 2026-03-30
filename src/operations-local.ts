@@ -7,7 +7,7 @@ import {
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
-    getMemoryByFilename,
+  getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
   grepMemories,
