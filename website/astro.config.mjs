@@ -13,6 +13,9 @@ export default defineConfig({
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/laat/mor' },
 			],
 			customCss: ['./src/styles/custom.css'],
+			components: {
+				ThemeSelect: './src/components/ThemeSelect.astro',
+			},
 			sidebar: [
 				{ label: 'Getting Started', slug: 'getting-started' },
 				{ label: 'CLI', slug: 'cli' },

@@ -1,5 +1,6 @@
 
 .mor-dev/
+.venv/
 website/node_modules/
 website/dist/
 website/.astro/
@@ -144,3 +145,4 @@ dist
 # SvelteKit build / generate output
 .svelte-kit
 
+Gemini_Generated_Image_*
