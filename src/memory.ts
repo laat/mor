@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Config, FrontMatter, Memory, MemoryType } from './operations.js';
+import { normalizeGitUrl } from './utils/git.js';
 
 export function detectRepository(): string | undefined {
   try {
@@ -11,11 +12,7 @@ export function detectRepository(): string | undefined {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
-    return url
-      .replace(/^https?:\/\//, '')
-      .replace(/^git@/, '')
-      .replace(/\.git$/, '')
-      .replace(/:(\d+:)?/, '/');
+    return normalizeGitUrl(url);
   } catch {
     return undefined;
   }
