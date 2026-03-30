@@ -32,7 +32,7 @@ Options can also be set in `~/.config/mor/config.json`:
 {
   "serve": {
     "port": 7677,
-    "host": "0.0.0.0",
+    "host": "127.0.0.1",
     "token": "your-secret-token",
     "mcp": true
   }
