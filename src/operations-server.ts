@@ -178,38 +178,38 @@ export function startServer(
   if (opts.mcp) {
     app.all('/mcp', async (c) => {
       const sessionId = c.req.header('mcp-session-id');
-      log(`MCP ${c.req.method} session=${sessionId ?? '(none)'}`);
+
+      // Look up existing transport
+      const existingTransport = sessionId
+        ? mcpTransports.get(sessionId)
+        : undefined;
 
       if (c.req.method === 'GET' || c.req.method === 'DELETE') {
-        const transport = sessionId ? mcpTransports.get(sessionId) : undefined;
-        if (!transport) {
-          log(`MCP reject: no transport for session ${sessionId}`);
+        if (!existingTransport) {
+          // 404 tells the client to re-initialize
           return c.json(
             {
               jsonrpc: '2.0',
-              error: {
-                code: -32000,
-                message: 'Invalid or missing session ID',
-              },
+              error: { code: -32000, message: 'Session not found' },
               id: null,
             },
-            400,
+            404,
           );
         }
-        return transport.handleRequest(c.req.raw);
+        return existingTransport.handleRequest(c.req.raw);
       }
 
       // POST
       const body = await c.req.json();
-      log(`MCP POST body method=${(body as any)?.method ?? '(batch)'}`);
 
-      if (sessionId && mcpTransports.has(sessionId)) {
-        return mcpTransports
-          .get(sessionId)!
-          .handleRequest(c.req.raw, { parsedBody: body });
+      if (existingTransport) {
+        return existingTransport.handleRequest(c.req.raw, {
+          parsedBody: body,
+        });
       }
 
-      if (!sessionId && isInitializeRequest(body)) {
+      // No existing transport — create one for initialize requests
+      if (isInitializeRequest(body)) {
         const transport: WebStandardStreamableHTTPServerTransport =
           new WebStandardStreamableHTTPServerTransport({
             sessionIdGenerator: () => crypto.randomUUID(),
@@ -225,16 +225,14 @@ export function startServer(
         return transport.handleRequest(c.req.raw, { parsedBody: body });
       }
 
+      // Unknown session + non-initialize → 404 to trigger re-init
       return c.json(
         {
           jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Bad Request: invalid or missing session',
-          },
+          error: { code: -32000, message: 'Session not found' },
           id: null,
         },
-        400,
+        404,
       );
     });
   }

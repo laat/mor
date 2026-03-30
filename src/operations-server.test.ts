@@ -302,7 +302,7 @@ describe('MCP HTTP Transport', () => {
         id: 1,
       }),
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   it('rejects GET with invalid session ID', async () => {
@@ -310,6 +310,6 @@ describe('MCP HTTP Transport', () => {
       method: 'GET',
       headers: { 'mcp-session-id': 'bogus-session-id' },
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 });
