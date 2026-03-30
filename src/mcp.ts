@@ -30,7 +30,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_search',
     {
       description:
-        'Search memories by query. Returns the top result with full content, and summaries for the rest. Use memory_read to get full content of other results.',
+        'Search memories by query. Returns top result with full content, and summaries for the rest.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -67,7 +67,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_grep',
     {
       description:
-        'Literal substring search across memory content. Use for exact strings, code identifiers, URLs. Returns top result with full content.',
+        'Literal substring search across memory content. Use for exact strings, code identifiers, URLs.',
       inputSchema: {
         pattern: z.string().describe('Literal substring to search for'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -107,7 +107,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_read',
     {
       description:
-        'Read a specific memory by its full UUID. Use memory_search to find IDs.',
+        'Read full content of a memory by ID. Use memory_search to find IDs.',
       inputSchema: {
         id: z.string().describe('Full UUID of the memory'),
       },
@@ -127,10 +127,10 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_add',
+    'memory_create',
     {
       description:
-        'Create a new memory. Before creating, check if a similar memory already exists with memory_search — use memory_update to modify existing memories instead of recreating them.',
+        'Create a new memory with title, content, optional tags and type.',
       inputSchema: {
         title: z.string().describe('Memory title'),
         description: z.string().optional().describe('Short description'),
@@ -165,7 +165,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_remove',
     {
       description:
-        'Delete a memory by its full UUID. Use memory_search to find IDs.',
+        'Delete a memory by ID. Use memory_search to find the ID first.',
       inputSchema: {
         id: z.string().describe('Full UUID of the memory'),
       },
@@ -198,7 +198,8 @@ export function createMcpServer(ops: Operations): McpServer {
   server.registerTool(
     'memory_list',
     {
-      description: 'List all stored memories with their titles, IDs, and tags.',
+      description:
+        'List all memories with titles, IDs, and tags. Use tag/type params to filter.',
       inputSchema: {
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
         type: z.string().optional().describe('Filter by memory type'),
@@ -224,7 +225,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_update',
     {
       description:
-        "Update an existing memory's title, content, tags, or type. Use memory_search to find IDs.",
+        'Update a memory by ID. Use memory_search to find the ID first, then pass it here. Only the provided fields are changed.',
       inputSchema: {
         id: z.string().describe('Full UUID of the memory'),
         title: z.string().optional().describe('New title'),
