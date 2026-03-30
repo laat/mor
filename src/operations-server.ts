@@ -59,7 +59,7 @@ export function startServer(
     });
   }
 
-  if (isLoopbackHost(opts.host)) {
+  if (isLoopbackHost(opts.host) && !opts.token) {
     app.use(async (c, next) => {
       const reqHost = c.req.header('host');
       if (!reqHost || !isLoopbackHost(reqHost)) {
