@@ -100,6 +100,18 @@ function unifiedDiff(a: string, b: string, ctx = 3): string {
   return hunks.map((h) => h.join('\n')).join('\n...\n');
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireUuid(id: string): string {
+  if (!UUID_RE.test(id)) {
+    throw new Error(
+      `Expected a full UUID, got "${id}". Use memory_search or memory_list to find the ID first.`,
+    );
+  }
+  return id;
+}
+
 function createOps(): Operations {
   const config = loadConfig();
   if (isRemote(config)) return new RemoteOperations(config);
@@ -146,7 +158,7 @@ export function createMcpServer(ops: Operations): McpServer {
             ? `\n  ${r.memory.content.split('\n')[0].slice(0, 100)}`
             : '';
         const body = i === 0 ? `\n\n${r.memory.content}` : '';
-        return `- ${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
+        return `- ${r.memory.id}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
       });
       return {
         content: [{ type: 'text' as const, text: lines.join('\n') }],
@@ -186,7 +198,7 @@ export function createMcpServer(ops: Operations): McpServer {
             ? `\n  ${mem.content.split('\n')[0].slice(0, 100)}`
             : '';
         const body = i === 0 ? `\n\n${mem.content}` : '';
-        return `- ${mem.id.slice(0, 8)}  ${mem.title}${tags}${desc}${preview}${body}`;
+        return `- ${mem.id}  ${mem.title}${tags}${desc}${preview}${body}`;
       });
       return {
         content: [{ type: 'text' as const, text: lines.join('\n') }],
@@ -198,19 +210,17 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_read',
     {
       description:
-        'Read a specific memory by UUID, UUID prefix, filename, or search query.',
+        'Read a specific memory by its full UUID. Use memory_search to find IDs.',
       inputSchema: {
-        query: z
-          .string()
-          .describe('UUID, UUID prefix, filename, or search query'),
+        id: z.string().describe('Full UUID of the memory'),
       },
     },
-    async ({ query }) => {
-      const mem = await ops.read(query);
+    async ({ id }) => {
+      const mem = await ops.read(requireUuid(id));
       if (!mem) {
         return {
           content: [
-            { type: 'text' as const, text: `Memory not found: ${query}` },
+            { type: 'text' as const, text: `Memory not found: ${id}` },
           ],
           isError: true,
         };
@@ -254,16 +264,14 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_remove',
     {
       description:
-        'Delete a memory by UUID, UUID prefix, filename, or search query.',
+        'Delete a memory by its full UUID. Use memory_search to find IDs.',
       inputSchema: {
-        query: z
-          .string()
-          .describe('UUID, UUID prefix, filename, or search query'),
+        id: z.string().describe('Full UUID of the memory'),
       },
     },
-    async ({ query }) => {
+    async ({ id }) => {
       try {
-        const result = await ops.remove(query);
+        const result = await ops.remove(requireUuid(id));
         return {
           content: [
             {
@@ -305,7 +313,7 @@ export function createMcpServer(ops: Operations): McpServer {
       const lines = memories.map((mem) => {
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
         const desc = mem.description ? `\n  ${mem.description}` : '';
-        return `- ${mem.id.slice(0, 8)}  ${mem.title}${tags}${desc}`;
+        return `- ${mem.id}  ${mem.title}${tags}${desc}`;
       });
       return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
     },
@@ -314,13 +322,10 @@ export function createMcpServer(ops: Operations): McpServer {
   server.registerTool(
     'memory_update',
     {
-      description: "Update an existing memory's title, content, tags, or type.",
+      description:
+        "Update an existing memory's title, content, tags, or type. Use memory_search to find IDs.",
       inputSchema: {
-        query: z
-          .string()
-          .describe(
-            'UUID, UUID prefix, filename, or search query to find the memory',
-          ),
+        id: z.string().describe('Full UUID of the memory'),
         title: z.string().optional().describe('New title'),
         description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
@@ -328,11 +333,12 @@ export function createMcpServer(ops: Operations): McpServer {
         type: z.enum(MEMORY_TYPES).optional().describe('New type'),
       },
     },
-    async ({ query, title, description, content, tags, type }) => {
+    async ({ id, title, description, content, tags, type }) => {
       try {
-        const before = await ops.read(query);
-        if (!before) throw new Error(`Memory not found: ${query}`);
-        const updated = await ops.update(before.id, {
+        requireUuid(id);
+        const before = await ops.read(id);
+        if (!before) throw new Error(`Memory not found: ${id}`);
+        const updated = await ops.update(id, {
           title,
           description,
           content,
