@@ -12,6 +12,7 @@ import { RemoteOperations } from './operations-client.js';
 import type { MemoryFilter, Operations } from './operations.js';
 import { startServer } from './operations-server.js';
 import { MEMORY_TYPES, type Memory, type MemoryType } from './operations.js';
+import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -32,60 +33,6 @@ function parseRawGitHubUrl(
   return { filename, repository: `github.com/${owner}/${repo}` };
 }
 
-const EXT_TO_LANG: Record<string, string> = {
-  '.js': 'javascript',
-  '.mjs': 'javascript',
-  '.cjs': 'javascript',
-  '.ts': 'typescript',
-  '.mts': 'typescript',
-  '.cts': 'typescript',
-  '.tsx': 'tsx',
-  '.jsx': 'jsx',
-  '.py': 'python',
-  '.rb': 'ruby',
-  '.rs': 'rust',
-  '.go': 'go',
-  '.java': 'java',
-  '.kt': 'kotlin',
-  '.swift': 'swift',
-  '.c': 'c',
-  '.h': 'c',
-  '.cpp': 'cpp',
-  '.cc': 'cpp',
-  '.cs': 'csharp',
-  '.sh': 'bash',
-  '.bash': 'bash',
-  '.zsh': 'zsh',
-  '.fish': 'fish',
-  '.sql': 'sql',
-  '.json': 'json',
-  '.yaml': 'yaml',
-  '.yml': 'yaml',
-  '.toml': 'toml',
-  '.xml': 'xml',
-  '.html': 'html',
-  '.css': 'css',
-  '.scss': 'scss',
-  '.lua': 'lua',
-  '.r': 'r',
-  '.R': 'r',
-  '.ex': 'elixir',
-  '.exs': 'elixir',
-  '.erl': 'erlang',
-  '.hs': 'haskell',
-  '.clj': 'clojure',
-  '.scala': 'scala',
-  '.php': 'php',
-  '.pl': 'perl',
-  '.dockerfile': 'dockerfile',
-  '.tf': 'hcl',
-  '.zig': 'zig',
-  '.nim': 'nim',
-  '.dart': 'dart',
-  '.vue': 'vue',
-  '.svelte': 'svelte',
-};
-
 function wrapCodeFence(content: string, filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   if (ext === '.md' || ext === '.markdown' || ext === '.txt' || ext === '') {
@@ -94,10 +41,6 @@ function wrapCodeFence(content: string, filename: string): string {
   const lang = EXT_TO_LANG[ext] ?? ext.slice(1);
   return '```' + lang + '\n' + content.replace(/\n$/, '') + '\n```';
 }
-
-const LANG_TO_EXT: Record<string, string> = Object.fromEntries(
-  Object.entries(EXT_TO_LANG).map(([ext, lang]) => [lang, ext]),
-);
 
 function stripCodeFence(
   content: string,
