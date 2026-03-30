@@ -454,6 +454,7 @@ program
           ).default(edited);
           await ops.update(mem.id, {
             title: data.title,
+            description: data.description,
             tags: data.tags,
             type: parseType(data.type),
             content: newContent.trim(),
