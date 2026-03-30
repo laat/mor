@@ -218,6 +218,45 @@ export function grepMemories(
   }>;
 }
 
+export function getFilePath(
+  db: DB,
+  id: string,
+): { file_path: string } | undefined {
+  return db.prepare('SELECT file_path FROM memories WHERE id = ?').get(id) as
+    | { file_path: string }
+    | undefined;
+}
+
+export function getEmbeddingCount(db: DB): number {
+  const row = db.prepare('SELECT COUNT(*) as count FROM embeddings').get() as {
+    count: number;
+  };
+  return row.count;
+}
+
+export function getAllEmbeddings(
+  db: DB,
+): Array<{ id: string; embedding: Buffer }> {
+  return db.prepare('SELECT id, embedding FROM embeddings').all() as Array<{
+    id: string;
+    embedding: Buffer;
+  }>;
+}
+
+export function upsertEmbedding(
+  db: DB,
+  id: string,
+  embedding: Buffer,
+  model: string,
+  dimensions: number,
+): void {
+  db.prepare(
+    `INSERT INTO embeddings (id, embedding, model, dimensions)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET embedding=excluded.embedding, model=excluded.model, dimensions=excluded.dimensions`,
+  ).run(id, embedding, model, dimensions);
+}
+
 export function clearDb(db: DB): void {
   db.exec('DELETE FROM embeddings');
   db.exec('DELETE FROM memories');

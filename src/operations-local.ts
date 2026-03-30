@@ -3,14 +3,18 @@ import { spawnSync } from 'node:child_process';
 import {
   clearDb,
   deleteMemoryFromDb,
+  getAllEmbeddings,
   getAllMemoryIds,
   getContentHash,
+  getEmbeddingCount,
+  getFilePath,
   getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
   grepMemories,
   openDb,
   searchFts,
+  upsertEmbedding,
   upsertMemoryChecked,
   type DB,
 } from './db.js';
@@ -86,16 +90,22 @@ function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
   return true;
 }
 
-function applyFilter<T extends Memory | { memory: Memory }>(
-  items: T[],
+function applyMemoryFilter(
+  memories: Memory[],
   filter?: MemoryFilter,
-): T[] {
+): Memory[] {
   if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
-    return items;
-  return items.filter((item) => {
-    const mem = 'memory' in item ? (item as any).memory : item;
-    return matchMemory(mem, filter);
-  });
+    return memories;
+  return memories.filter((mem) => matchMemory(mem, filter));
+}
+
+function applyResultFilter(
+  results: SearchResult[],
+  filter?: MemoryFilter,
+): SearchResult[] {
+  if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
+    return results;
+  return results.filter((r) => matchMemory(r.memory, filter));
 }
 
 export class LocalOperations implements Operations {
@@ -166,13 +176,13 @@ export class LocalOperations implements Operations {
     const embedding = await this.provider.embed(text);
 
     const buffer = Buffer.from(new Float32Array(embedding).buffer);
-    this.db
-      .prepare(
-        `INSERT INTO embeddings (id, embedding, model, dimensions)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET embedding=excluded.embedding, model=excluded.model, dimensions=excluded.dimensions`,
-      )
-      .run(mem.id, buffer, this.provider.model, embedding.length);
+    upsertEmbedding(
+      this.db,
+      mem.id,
+      buffer,
+      this.provider.model,
+      embedding.length,
+    );
   }
 
   // ---- Query resolution ----
@@ -223,20 +233,12 @@ export class LocalOperations implements Operations {
     const ftsResults = searchFts(this.db, query, limit);
     const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));
 
-    const embeddingRows = this.db
-      .prepare('SELECT COUNT(*) as count FROM embeddings')
-      .get() as { count: number };
-
-    if (embeddingRows.count > 0 && this.provider.name !== 'none') {
+    if (getEmbeddingCount(this.db) > 0 && this.provider.name !== 'none') {
       const queryEmbedding = await this.provider.embed(query);
-
-      const allEmbeddings = this.db
-        .prepare('SELECT id, embedding FROM embeddings')
-        .all() as Array<{ id: string; embedding: Buffer }>;
 
       const MIN_COSINE_SIMILARITY = 0.15;
       const vectorScores: Array<{ id: string; score: number }> = [];
-      for (const row of allEmbeddings) {
+      for (const row of getAllEmbeddings(this.db)) {
         const stored = new Float32Array(
           row.embedding.buffer,
           row.embedding.byteOffset,
@@ -262,34 +264,30 @@ export class LocalOperations implements Operations {
       }
       merged.sort((a, b) => b.score - a.score);
 
-      return applyFilter(
-        merged.slice(0, limit).map((r) => {
-          const row = this.db
-            .prepare('SELECT file_path FROM memories WHERE id = ?')
-            .get(r.id) as { file_path: string };
-          const mem = readMemory(row.file_path);
-          return {
-            memory: mem,
-            score: r.score,
-            matchType: (vectorMap.has(r.id) ? 'vector' : 'fts') as
-              | 'vector'
-              | 'fts',
-          };
-        }),
-        filter,
-      );
+      const results: SearchResult[] = [];
+      for (const r of merged.slice(0, limit)) {
+        const row = getFilePath(this.db, r.id);
+        if (!row) continue;
+        results.push({
+          memory: readMemory(row.file_path),
+          score: r.score,
+          matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
+        });
+      }
+      return applyResultFilter(results, filter);
     }
 
-    return applyFilter(
-      ftsResults.map((r) => {
-        const row = this.db
-          .prepare('SELECT file_path FROM memories WHERE id = ?')
-          .get(r.id) as { file_path: string };
-        const mem = readMemory(row.file_path);
-        return { memory: mem, score: r.score, matchType: 'fts' as const };
-      }),
-      filter,
-    );
+    const results: SearchResult[] = [];
+    for (const r of ftsResults) {
+      const row = getFilePath(this.db, r.id);
+      if (!row) continue;
+      results.push({
+        memory: readMemory(row.file_path),
+        score: r.score,
+        matchType: 'fts',
+      });
+    }
+    return applyResultFilter(results, filter);
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -347,7 +345,7 @@ export class LocalOperations implements Operations {
     const memories = rows
       .map((row) => safeReadMemory(row.file_path))
       .filter((m): m is Memory => m !== undefined);
-    return applyFilter(memories, filter);
+    return applyMemoryFilter(memories, filter);
   }
 
   async list(filter?: MemoryFilter): Promise<Memory[]> {
@@ -357,7 +355,7 @@ export class LocalOperations implements Operations {
       .map((f) => safeReadMemory(f))
       .filter((m): m is Memory => m !== undefined);
     memories.sort((a, b) => b.updated.localeCompare(a.updated));
-    return applyFilter(memories, filter);
+    return applyMemoryFilter(memories, filter);
   }
 
   async reindex(): Promise<{ count: number }> {
