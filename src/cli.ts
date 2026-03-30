@@ -604,17 +604,34 @@ addFilterOptions(
     .command('ls')
     .description('List all memories')
     .option('-n, --limit <n>', 'Max results')
-    .option('-l, --long', 'Show file path or URL'),
-).action(async (opts: { limit?: string; long?: boolean } & MemoryFilter) => {
-  const config = loadConfig();
-  const ops = getOps(config);
-  try {
-    let memories = await ops.list();
-    memories = filterMemories(memories, opts);
-    if (memories.length === 0) {
-      console.log('No memories stored.');
-      return;
-    }
+    .option('-l, --long', 'Show file path or URL')
+    .option('--tags', 'List all tags with counts'),
+).action(
+  async (
+    opts: { limit?: string; long?: boolean; tags?: boolean } & MemoryFilter,
+  ) => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      let memories = await ops.list();
+      memories = filterMemories(memories, opts);
+      if (memories.length === 0) {
+        console.log('No memories stored.');
+        return;
+      }
+      if (opts.tags) {
+        const counts = new Map<string, number>();
+        for (const mem of memories) {
+          for (const tag of mem.tags) {
+            counts.set(tag, (counts.get(tag) ?? 0) + 1);
+          }
+        }
+        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+        for (const [tag, count] of sorted) {
+          console.log(`${String(count).padStart(4)}  ${tag}`);
+        }
+        return;
+      }
     if (opts.limit) {
       const limitRaw = parseInt(opts.limit, 10);
       const limit =
@@ -644,7 +661,8 @@ addFilterOptions(
   } finally {
     ops.close();
   }
-});
+},
+);
 
 program
   .command('sync')
