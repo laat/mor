@@ -1,5 +1,8 @@
 
 .mor-dev/
+website/node_modules/
+website/dist/
+website/.astro/
 
 ### Node ###
 # Logs

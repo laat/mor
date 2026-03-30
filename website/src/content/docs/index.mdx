@@ -1,0 +1,38 @@
+---
+title: mor
+description: A shared memory store for humans and AI
+template: splash
+hero:
+  tagline: Plain markdown files. SQLite full-text search. An MCP server so your AI can actually remember things. A CLI because you're a human who also likes to remember things.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/laat/mor
+      variant: minimal
+      icon: github
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<Card title="Full-text search" icon="magnifier">
+		SQLite FTS5 with porter stemming. OR-ranked multi-word queries. Literal substring grep. Optional vector embeddings.
+	</Card>
+	<Card title="MCP server" icon="puzzle">
+		Claude Code, Claude Desktop, Cursor — any MCP client. Your AI searches, reads, and saves memories natively.
+	</Card>
+	<Card title="CLI" icon="laptop">
+		find, grep, add, cat, edit, ls, rm, cp, update, sync. Unix-flavored. Pipe-friendly. Glob filters on tags, types, repos.
+	</Card>
+	<Card title="HTTP + remote MCP" icon="globe">
+		Run on one machine, access from anywhere. REST API + streamable MCP transport. Bearer token auth.
+	</Card>
+	<Card title="Plain markdown" icon="document">
+		Memories are .md files with YAML frontmatter. Human-readable. Git-friendly. Edit with any text editor. No lock-in.
+	</Card>
+	<Card title="Smart tagging" icon="star">
+		Auto-tags files by language. Filter by tag, type, repo, extension. Glob patterns everywhere.
+	</Card>
+</CardGrid>
