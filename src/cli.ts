@@ -609,7 +609,12 @@ addFilterOptions(
     .option('--types', 'List all types with counts'),
 ).action(
   async (
-    opts: { limit?: string; long?: boolean; tags?: boolean; types?: boolean } & MemoryFilter,
+    opts: {
+      limit?: string;
+      long?: boolean;
+      tags?: boolean;
+      types?: boolean;
+    } & MemoryFilter,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
