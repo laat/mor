@@ -135,15 +135,21 @@ export function createMcpServer(ops: Operations): McpServer {
         title: z.string().describe('Memory title'),
         description: z.string().optional().describe('Short description'),
         content: z.string().describe('Memory content (markdown)'),
-        tags: z.array(z.string()).optional().describe('Tags'),
+        tags: z.array(z.string()).nullish().describe('Tags'),
         type: z
           .enum(MEMORY_TYPES)
-          .optional()
+          .nullish()
           .describe('Memory type (default: knowledge)'),
       },
     },
     async ({ title, description, content, tags, type }) => {
-      const mem = await ops.add({ title, description, content, tags, type });
+      const mem = await ops.add({
+        title,
+        description,
+        content,
+        tags: tags ?? undefined,
+        type: type ?? undefined,
+      });
       return {
         content: [
           {

@@ -151,17 +151,23 @@ export class LocalOperations implements Operations {
   private async computeEmbedding(mem: Memory): Promise<void> {
     if (this.provider.name === 'none') return;
 
-    const text = `${mem.title}\n${mem.tags.join(', ')}\n${mem.content}`;
-    const embedding = await this.provider.embed(text);
+    try {
+      const text = `${mem.title}\n${mem.tags.join(', ')}\n${mem.content}`;
+      const embedding = await this.provider.embed(text);
 
-    const buffer = Buffer.from(new Float32Array(embedding).buffer);
-    upsertEmbedding(
-      this.db,
-      mem.id,
-      buffer,
-      this.provider.model,
-      embedding.length,
-    );
+      const buffer = Buffer.from(new Float32Array(embedding).buffer);
+      upsertEmbedding(
+        this.db,
+        mem.id,
+        buffer,
+        this.provider.model,
+        embedding.length,
+      );
+    } catch (e) {
+      process.stderr.write(
+        `Warning: embedding failed for ${mem.id}: ${e instanceof Error ? e.message : e}\n`,
+      );
+    }
   }
 
   // ---- Query resolution ----
