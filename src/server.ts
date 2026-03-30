@@ -3,7 +3,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import crypto from 'node:crypto';
 import http from 'node:http';
 import { createMcpServer } from './mcp.js';
-import { LocalOperations } from './operations.js';
+import { LocalOperations } from './operations-local.js';
 import type { Config } from './types.js';
 
 function log(msg: string): void {

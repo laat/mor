@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
 import { filterMemories, filterResults } from './filter.js';
-import { LocalOperations, type Operations } from './operations.js';
-import { RemoteOperations } from './remote.js';
+import { LocalOperations } from './operations-local.js';
+import { RemoteOperations } from './operations-remote.js';
+import type { Operations } from './operations.js';
 import { MEMORY_TYPES } from './types.js';
 
 function unifiedDiff(a: string, b: string, ctx = 3): string {

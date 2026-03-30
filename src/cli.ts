@@ -15,8 +15,9 @@ import {
 import { syncIndex } from './index.js';
 import { startMcpServer } from './mcp.js';
 import { createMemory, serializeMemory } from './memory.js';
-import { LocalOperations, type Operations } from './operations.js';
-import { RemoteOperations } from './remote.js';
+import { LocalOperations } from './operations-local.js';
+import { RemoteOperations } from './operations-remote.js';
+import type { Operations } from './operations.js';
 import { startServer } from './server.js';
 import { MEMORY_TYPES, type Memory, type MemoryType } from './types.js';
 import { createRequire } from 'node:module';
