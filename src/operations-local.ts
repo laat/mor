@@ -7,8 +7,7 @@ import {
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
-  getFilePath,
-  getMemoryByFilename,
+    getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
   grepMemories,
@@ -233,7 +232,7 @@ export class LocalOperations implements Operations {
     const ftsResults = searchFts(this.db, query, limit);
     const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));
 
-    if (getEmbeddingCount(this.db) > 0 && this.provider.name !== 'none') {
+    if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
       const queryEmbedding = await this.provider.embed(query);
 
       const MIN_COSINE_SIMILARITY = 0.15;
@@ -266,7 +265,7 @@ export class LocalOperations implements Operations {
 
       const results: SearchResult[] = [];
       for (const r of merged.slice(0, limit)) {
-        const row = getFilePath(this.db, r.id);
+        const row = getMemoryById(this.db, r.id);
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
@@ -279,7 +278,7 @@ export class LocalOperations implements Operations {
 
     const results: SearchResult[] = [];
     for (const r of ftsResults) {
-      const row = getFilePath(this.db, r.id);
+      const row = getMemoryById(this.db, r.id);
       if (!row) continue;
       results.push({
         memory: readMemory(row.file_path),

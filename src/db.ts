@@ -218,14 +218,6 @@ export function grepMemories(
   }>;
 }
 
-export function getFilePath(
-  db: DB,
-  id: string,
-): { file_path: string } | undefined {
-  return db.prepare('SELECT file_path FROM memories WHERE id = ?').get(id) as
-    | { file_path: string }
-    | undefined;
-}
 
 export function getEmbeddingCount(db: DB): number {
   const row = db.prepare('SELECT COUNT(*) as count FROM embeddings').get() as {
