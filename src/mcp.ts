@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
 import { filterMemories, filterResults } from './filter.js';
 import { LocalOperations } from './operations-local.js';
-import { RemoteOperations } from './operations-remote.js';
+import { RemoteOperations } from './operations-client.js';
 import type { Operations } from './operations.js';
 import { MEMORY_TYPES } from './types.js';
 

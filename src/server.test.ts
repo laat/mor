@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
 import { loadConfig } from './config.js';
-import { startServer } from './server.js';
+import { startServer } from './operations-server.js';
 import type { Config } from './types.js';
 
 let testDir: string;
