@@ -71,7 +71,7 @@ export function unifiedDiff(a: string, b: string, ctx = 3): string {
         hunks.push(hunk);
         hunk = [];
       }
-      for (let c = Math.max(lastChange + ctx + 1, i - ctx); c < i; c++) {
+      for (let c = Math.max(lastChange + ctx + 1, i - ctx, 0); c < i; c++) {
         if (edits[c].type === '=') hunk.push(`  ${aLines[edits[c].aLine]}`);
       }
       lastChange = i;
