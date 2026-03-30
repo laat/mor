@@ -100,18 +100,6 @@ function unifiedDiff(a: string, b: string, ctx = 3): string {
   return hunks.map((h) => h.join('\n')).join('\n...\n');
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function requireUuid(id: string): string {
-  if (!UUID_RE.test(id)) {
-    throw new Error(
-      `Expected a full UUID, got "${id}". Use memory_search or memory_list to find the ID first.`,
-    );
-  }
-  return id;
-}
-
 function createOps(): Operations {
   const config = loadConfig();
   if (isRemote(config)) return new RemoteOperations(config);
@@ -216,7 +204,7 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ id }) => {
-      const mem = await ops.read(requireUuid(id));
+      const mem = await ops.read(id);
       if (!mem) {
         return {
           content: [
@@ -271,7 +259,7 @@ export function createMcpServer(ops: Operations): McpServer {
     },
     async ({ id }) => {
       try {
-        const result = await ops.remove(requireUuid(id));
+        const result = await ops.remove(id);
         return {
           content: [
             {
@@ -335,7 +323,6 @@ export function createMcpServer(ops: Operations): McpServer {
     },
     async ({ id, title, description, content, tags, type }) => {
       try {
-        requireUuid(id);
         const before = await ops.read(id);
         if (!before) throw new Error(`Memory not found: ${id}`);
         const updated = await ops.update(id, {
