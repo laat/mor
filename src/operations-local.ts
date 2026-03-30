@@ -47,17 +47,8 @@ function hashContent(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
+import { matchGlob } from './utils/glob.js';
 import { cosineSimilarity } from './utils/similarity.js';
-
-function globToRegex(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  const withWildcards = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
-  return new RegExp(`^${withWildcards}$`, 'i');
-}
-
-function matchGlob(value: string, pattern: string): boolean {
-  return globToRegex(pattern).test(value);
-}
 
 function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
   if (filter.type) {
