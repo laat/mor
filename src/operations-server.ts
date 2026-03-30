@@ -178,10 +178,12 @@ export function startServer(
   if (opts.mcp) {
     app.all('/mcp', async (c) => {
       const sessionId = c.req.header('mcp-session-id');
+      log(`MCP ${c.req.method} session=${sessionId ?? '(none)'}`);
 
       if (c.req.method === 'GET' || c.req.method === 'DELETE') {
         const transport = sessionId ? mcpTransports.get(sessionId) : undefined;
         if (!transport) {
+          log(`MCP reject: no transport for session ${sessionId}`);
           return c.json(
             {
               jsonrpc: '2.0',
@@ -199,6 +201,7 @@ export function startServer(
 
       // POST
       const body = await c.req.json();
+      log(`MCP POST body method=${(body as any)?.method ?? '(batch)'}`);
 
       if (sessionId && mcpTransports.has(sessionId)) {
         return mcpTransports
