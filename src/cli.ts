@@ -340,6 +340,7 @@ program
   .option('-d, --description <text>', 'Short description')
   .option('--tags <tags>', 'Comma-separated tags')
   .option('--type <type>', 'Memory type')
+  .option('--content-from <source>', 'Read content from file or URL')
   .action(
     async (
       query: string,
@@ -348,6 +349,7 @@ program
         description?: string;
         tags?: string;
         type?: string;
+        contentFrom?: string;
       },
     ) => {
       const config = loadConfig();
@@ -364,7 +366,24 @@ program
         if (opts.description) updates.description = opts.description;
         if (opts.tags) updates.tags = opts.tags.split(',').map((t) => t.trim());
         if (opts.type) updates.type = parseType(opts.type);
-        if (!process.stdin.isTTY) {
+        if (opts.contentFrom) {
+          const src = opts.contentFrom;
+          if (/^https?:\/\//.test(src)) {
+            const res = await fetch(src);
+            if (!res.ok) {
+              console.error(`Error: failed to fetch ${src} (${res.status})`);
+              process.exit(1);
+            }
+            const raw = await res.text();
+            const filename = path.basename(new URL(src).pathname) || src;
+            updates.content = wrapCodeFence(raw, filename);
+          } else {
+            updates.content = wrapCodeFence(
+              fs.readFileSync(src, 'utf-8'),
+              path.basename(src),
+            );
+          }
+        } else if (opts.contentFrom === '-') {
           updates.content = fs.readFileSync(0, 'utf-8');
         }
         if (Object.keys(updates).length === 0) {
