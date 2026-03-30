@@ -227,3 +227,88 @@ describe('HTTP Server Auth', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('MCP HTTP Transport', () => {
+  let mcpServer: http.Server;
+  let mcpUrl: string;
+
+  beforeEach(async () => {
+    mcpServer = startServer(config, {
+      port: 0,
+      host: '127.0.0.1',
+      mcp: true,
+    });
+    await new Promise<void>((resolve) => mcpServer.once('listening', resolve));
+    const addr = mcpServer.address() as { port: number };
+    mcpUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((resolve) => mcpServer.close(() => resolve()));
+  });
+
+  it('POST /mcp returns 404 when mcp is disabled', async () => {
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('initializes an MCP session', async () => {
+    const res = await fetch(`${mcpUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const sessionId = res.headers.get('mcp-session-id');
+    expect(sessionId).toBeTruthy();
+  });
+
+  it('rejects POST without session ID for non-initialize requests', async () => {
+    const res = await fetch(`${mcpUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects GET with invalid session ID', async () => {
+    const res = await fetch(`${mcpUrl}/mcp`, {
+      method: 'GET',
+      headers: { 'mcp-session-id': 'bogus-session-id' },
+    });
+    expect(res.status).toBe(400);
+  });
+});
