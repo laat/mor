@@ -65,7 +65,7 @@ section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 .terminal-dot:nth-child(1){background:#ff5f57;box-shadow:0 0 6px rgba(255,95,87,0.3)}
 .terminal-dot:nth-child(2){background:#febc2e;box-shadow:0 0 6px rgba(254,188,46,0.3)}
 .terminal-dot:nth-child(3){background:#28c840;box-shadow:0 0 6px rgba(40,200,64,0.3)}
-.terminal-body{padding:1.5rem 1.75rem;line-height:2;overflow-x:auto;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace}
+.terminal-body{padding:1.5rem 1.75rem;line-height:2;overflow-x:auto;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace;min-height:22em}
 .terminal-body .line{overflow:hidden}
 .terminal-body .prompt{color:var(--accent);font-weight:600}
 .terminal-body .cmd{color:var(--text)}
@@ -76,7 +76,7 @@ section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
 .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.25rem}
-.card{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:1.75rem;transition:all 0.35s;position:relative;overflow:hidden}
+.card{background:var(--surface);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:1.75rem;transition:all 0.35s;position:relative;overflow:hidden;opacity:0;transform:translateY(40px)}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.35s}
 .card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(61,220,132,0.04),transparent 70%);opacity:0;transition:opacity 0.35s}
 .card:hover{border-color:rgba(61,220,132,0.25);transform:translateY(-4px);box-shadow:0 12px 40px var(--glow),0 0 60px rgba(61,220,132,0.05)}
@@ -86,10 +86,10 @@ section{padding:6rem 2rem;max-width:960px;margin:0 auto}
 .card p{color:var(--dim);font-size:0.9rem;line-height:1.6}
 
 .arch{display:flex;justify-content:center;align-items:center;gap:0.75rem;flex-wrap:wrap;margin:2.5rem 0;perspective:600px}
-.arch-node{padding:0.7rem 1.4rem;border-radius:10px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(12px);transition:all 0.3s;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace}
+.arch-node{padding:0.7rem 1.4rem;border-radius:10px;font-size:0.85rem;font-weight:600;border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(12px);transition:all 0.3s;font-family:'SF Mono',SFMono-Regular,ui-monospace,monospace;opacity:0}
+.arch-arrow{color:var(--accent);font-size:1.3rem;opacity:0}
 .arch-node:hover{border-color:var(--accent);box-shadow:0 0 20px var(--glow);transform:translateY(-2px)}
 .arch-node.active{border-color:var(--accent);box-shadow:0 0 30px var(--glow-strong),inset 0 0 20px rgba(61,220,132,0.05);color:var(--accent)}
-.arch-arrow{color:var(--accent);font-size:1.3rem;opacity:0.4}
 
 .meme-section{text-align:center;padding:5rem 2rem;position:relative}
 .meme-section::before{content:'\201C';position:absolute;top:1rem;left:50%;transform:translateX(-50%);font-size:12rem;color:rgba(61,220,132,0.04);font-family:Georgia,serif;line-height:1;pointer-events:none}
@@ -340,17 +340,17 @@ document.querySelectorAll('section').forEach(sec => {
 // ===== CARDS — stagger =====
 ScrollTrigger.batch('.card', {
   start: 'top 85%',
-  onEnter: batch => gsap.from(batch, {
-    opacity: 0, y: 40, stagger: 0.1, duration: 0.6, ease: 'power2.out'
+  onEnter: batch => gsap.to(batch, {
+    opacity: 1, y: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out'
   }),
 });
 
-// ===== ARCH NODES — stagger from left =====
+// ===== ARCH NODES — stagger =====
 ScrollTrigger.create({
   trigger: '.arch',
   start: 'top 80%',
-  onEnter: () => gsap.from('.arch > *', {
-    opacity: 0, x: -20, stagger: 0.08, duration: 0.5, ease: 'power2.out'
+  onEnter: () => gsap.to('.arch > *', {
+    opacity: 1, x: 0, stagger: 0.08, duration: 0.5, ease: 'power2.out'
   }),
 });
 
