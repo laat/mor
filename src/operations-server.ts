@@ -5,9 +5,13 @@ import crypto from 'node:crypto';
 import type http from 'node:http';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
+import { createRequire } from 'node:module';
 import { createMcpServer } from './mcp.js';
 import { LocalOperations } from './operations-local.js';
 import type { Config } from './operations.js';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 function log(msg: string): void {
   process.stderr.write(`[mor] ${msg}\n`);
@@ -61,7 +65,7 @@ export function startServer(
     });
   }
 
-  app.get('/health', (c) => c.json({ ok: true }));
+  app.get('/health', (c) => c.json({ ok: true, version }));
 
   app.get('/memories/search', async (c) => {
     const q = c.req.query('q');

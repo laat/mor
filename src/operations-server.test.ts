@@ -47,7 +47,8 @@ describe('HTTP Server', () => {
   it('GET /health returns ok', async () => {
     const { status, json } = await req('GET', '/health');
     expect(status).toBe(200);
-    expect(json).toEqual({ ok: true });
+    expect(json.ok).toBe(true);
+    expect(json.version).toBeDefined();
   });
 
   it('POST /memories creates a memory', async () => {

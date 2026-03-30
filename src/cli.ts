@@ -139,8 +139,33 @@ function addFilterOptions(cmd: Command): Command {
 
 program
   .name(path.basename(process.argv[1]))
-  .description('A shared memory store for humans and AI')
-  .version(version);
+  .description('A shared memory store for humans and AI');
+
+program
+  .command('version')
+  .description('Show version info')
+  .action(async () => {
+    console.log(`mor ${version}`);
+    const config = loadConfig();
+    if (isRemote(config)) {
+      try {
+        const res = await fetch(
+          `${config.server!.url.replace(/\/+$/, '')}/health`,
+          {
+            headers: config.server!.token
+              ? { Authorization: `Bearer ${config.server!.token}` }
+              : {},
+          },
+        );
+        const json = (await res.json()) as { version?: string };
+        if (json.version) {
+          console.log(`server ${json.version} (${config.server!.url})`);
+        }
+      } catch {
+        console.log(`server unreachable (${config.server!.url})`);
+      }
+    }
+  });
 
 addFilterOptions(
   program
