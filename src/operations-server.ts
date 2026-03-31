@@ -34,6 +34,25 @@ function parseOffset(raw: string | undefined): number {
   return Number.isNaN(n) || n < 0 ? 0 : n;
 }
 
+function parseFilter(c: { req: { query(k: string): string | undefined } }) {
+  const tag = c.req.query('tag');
+  const type = c.req.query('type');
+  const repo = c.req.query('repo');
+  const ext = c.req.query('ext');
+  return tag || type || repo || ext ? { tag, type, repo, ext } : undefined;
+}
+
+function errMsg(e: unknown): { msg: string; status: 404 | 500 } {
+  const msg = e instanceof Error ? e.message : String(e);
+  return { msg, status: msg.includes('not found') ? 404 : 500 };
+}
+
+const SESSION_NOT_FOUND = {
+  jsonrpc: '2.0',
+  error: { code: -32000, message: 'Session not found' },
+  id: null,
+} as const;
+
 export function startServer(
   config: Config,
   opts: { port: number; host: string; token?: string; mcp?: boolean },
@@ -85,7 +104,7 @@ export function startServer(
       await ops.search(
         q,
         parseLimit(c.req.query('limit')),
-        undefined,
+        parseFilter(c),
         parseOffset(c.req.query('offset')),
       ),
     );
@@ -100,6 +119,7 @@ export function startServer(
         ignoreCase: c.req.query('ignoreCase') === '1',
         regex: c.req.query('regex') === '1',
         offset: parseOffset(c.req.query('offset')),
+        filter: parseFilter(c),
       }),
     );
   });
@@ -107,7 +127,7 @@ export function startServer(
   app.get('/memories', async (c) =>
     c.json(
       await ops.list(
-        undefined,
+        parseFilter(c),
         parseLimit(c.req.query('limit'), 100),
         parseOffset(c.req.query('offset')),
       ),
@@ -147,9 +167,8 @@ export function startServer(
   });
 
   app.put('/memories/:query', async (c) => {
-    const body = await c.req.json();
     try {
-      const { title, description, content, tags, type } = body;
+      const { title, description, content, tags, type } = await c.req.json();
       return c.json({
         data: await ops.update(c.req.param('query'), {
           title,
@@ -160,11 +179,8 @@ export function startServer(
         }),
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return c.json(
-        { error: msg },
-        msg.includes('Memory not found') ? 404 : 500,
-      );
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
     }
   });
 
@@ -172,11 +188,8 @@ export function startServer(
     try {
       return c.json({ data: await ops.remove(c.req.param('query')) });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return c.json(
-        { error: msg },
-        msg.includes('Memory not found') ? 404 : 500,
-      );
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
     }
   });
 
@@ -184,8 +197,8 @@ export function startServer(
     try {
       return c.json({ data: await ops.reindex() });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return c.json({ error: msg }, 500);
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
     }
   });
 
@@ -193,8 +206,8 @@ export function startServer(
     try {
       return c.json({ data: await ops.sync() });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return c.json({ error: msg }, 500);
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
     }
   });
 
@@ -210,15 +223,7 @@ export function startServer(
 
       if (c.req.method === 'GET' || c.req.method === 'DELETE') {
         if (!existingTransport) {
-          // 404 tells the client to re-initialize
-          return c.json(
-            {
-              jsonrpc: '2.0',
-              error: { code: -32000, message: 'Session not found' },
-              id: null,
-            },
-            404,
-          );
+          return c.json(SESSION_NOT_FOUND, 404);
         }
         return existingTransport.handleRequest(c.req.raw);
       }
@@ -249,15 +254,7 @@ export function startServer(
         return transport.handleRequest(c.req.raw, { parsedBody: body });
       }
 
-      // Unknown session + non-initialize → 404 to trigger re-init
-      return c.json(
-        {
-          jsonrpc: '2.0',
-          error: { code: -32000, message: 'Session not found' },
-          id: null,
-        },
-        404,
-      );
+      return c.json(SESSION_NOT_FOUND, 404);
     });
   }
 
@@ -278,18 +275,16 @@ export function startServer(
     ops.close();
     server.close();
   };
-  process.on('SIGINT', () => {
+  const onSignal = () => {
     shutdown();
     process.exit(0);
-  });
-  process.on('SIGTERM', () => {
-    shutdown();
-    process.exit(0);
-  });
+  };
+  process.on('SIGINT', onSignal);
+  process.on('SIGTERM', onSignal);
 
   server.on('close', () => {
-    process.removeAllListeners('SIGINT');
-    process.removeAllListeners('SIGTERM');
+    process.off('SIGINT', onSignal);
+    process.off('SIGTERM', onSignal);
   });
 
   return server;
