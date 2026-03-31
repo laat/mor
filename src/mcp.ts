@@ -134,21 +134,47 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_read',
     {
       description:
-        'Read full content of a memory by ID. Use memory_search to find IDs.',
+        'Read full content of one or more memories by ID.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the memory'),
+        ids: z
+          .array(z.string())
+          .describe('UUIDs of the memories to read'),
       },
     },
-    async ({ id }) => {
-      const mem = await ops.read(id);
-      if (!mem) {
+    async ({ ids }) => {
+      if (ids.length === 0) {
         return {
-          content: [{ type: 'text' as const, text: `Memory not found: ${id}` }],
+          content: [{ type: 'text' as const, text: 'No id or ids provided.' }],
           isError: true,
         };
       }
-      const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-      const text = `## ${mem.title}${tags}\n\n${mem.content}`;
+      const sections: string[] = [];
+      const notFound: string[] = [];
+      for (const memId of ids) {
+        const mem = await ops.read(memId);
+        if (!mem) {
+          notFound.push(memId);
+          continue;
+        }
+        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+        sections.push(`## ${mem.title}${tags}\n\n${mem.content}`);
+      }
+      if (sections.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Memory not found: ${notFound.join(', ')}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      const text =
+        sections.join('\n\n---\n\n') +
+        (notFound.length > 0
+          ? `\n\n---\n\nNot found: ${notFound.join(', ')}`
+          : '');
       return { content: [{ type: 'text' as const, text }] };
     },
   );
