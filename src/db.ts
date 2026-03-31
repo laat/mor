@@ -50,6 +50,19 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
+  // Migrate: add access tracking columns
+  const cols = db.prepare("PRAGMA table_info('memories')").all() as Array<{
+    name: string;
+  }>;
+  const colNames = new Set(cols.map((c) => c.name));
+  if (!colNames.has('access_count')) {
+    db.exec(
+      'ALTER TABLE memories ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0',
+    );
+  }
+  if (!colNames.has('last_accessed')) {
+    db.exec('ALTER TABLE memories ADD COLUMN last_accessed TEXT');
+  }
   if (config.embedding && config.embedding.provider !== 'none') {
     const dims = config.embedding.dimensions;
     const exists = get<{ name: string }>(
@@ -225,6 +238,21 @@ export function getMemoryByFilename(
     db,
     SQL`SELECT file_path FROM memories WHERE file_path LIKE ${'%/' + escaped} ESCAPE '\\'`,
   );
+}
+
+export function recordAccess(db: DB, id: string): void {
+  run(
+    db,
+    SQL`UPDATE memories SET access_count = access_count + 1, last_accessed = ${new Date().toISOString()} WHERE id = ${id}`,
+  );
+}
+
+export function getAccessCount(db: DB, id: string): number {
+  const row = get<{ access_count: number }>(
+    db,
+    SQL`SELECT access_count FROM memories WHERE id = ${id}`,
+  );
+  return row?.access_count ?? 0;
 }
 
 export function getAllMemoryIds(db: DB): Set<string> {

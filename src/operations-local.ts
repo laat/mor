@@ -6,7 +6,9 @@ import {
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
+  getAccessCount,
   getEmbeddingModel,
+  recordAccess,
   getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
@@ -288,6 +290,9 @@ export class LocalOperations implements Operations {
         let score = 0;
         if (ftsRanks.has(id)) score += 1 / (RRF_K + ftsRanks.get(id)!);
         if (vecRanks.has(id)) score += 1 / (RRF_K + vecRanks.get(id)!);
+        // Small access-based tiebreaker (max ~5% boost)
+        const accesses = getAccessCount(this.db, id);
+        score *= 1 + Math.min(accesses, 50) * 0.001;
         merged.push({ id, score });
       }
       merged.sort((a, b) => b.score - a.score);
@@ -309,12 +314,14 @@ export class LocalOperations implements Operations {
       for (const r of ftsResults) {
         const row = getMemoryById(this.db, r.id);
         if (!row) continue;
+        const accesses = getAccessCount(this.db, r.id);
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score,
+          score: r.score * (1 + Math.min(accesses, 50) * 0.001),
           matchType: 'fts',
         });
       }
+      results.sort((a, b) => b.score - a.score);
       all = applyResultFilter(results, filter);
     }
 
@@ -327,7 +334,9 @@ export class LocalOperations implements Operations {
   }
 
   async read(query: string): Promise<Memory | undefined> {
-    return this.resolveQuery(query);
+    const mem = this.resolveQuery(query);
+    if (mem) recordAccess(this.db, mem.id);
+    return mem;
   }
 
   async add(opts: {
