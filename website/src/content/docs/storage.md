@@ -26,7 +26,6 @@ updated: '2026-03-29T18:35:24.931Z'
 export const retryWithBackoff = <T>(count: number) => {
   // ...
 };
-`` `
 ```
 ````
 
