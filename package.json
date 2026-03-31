@@ -25,7 +25,9 @@
   "bin": {
     "mor": "dist/cli.js"
   },
-  "man": "man/mor.1",
+  "man": [
+    "./man/mor.1"
+  ],
   "files": [
     "dist",
     "man"
