@@ -43,22 +43,31 @@ export class RemoteOperations implements Operations {
     return h;
   }
 
-  private async request<T>(
+  private async fetch(
     method: string,
     path: string,
     body?: unknown,
-  ): Promise<T> {
+  ): Promise<unknown> {
     const url = `${this.baseUrl}${path}`;
     const res = await fetch(url, {
       method,
       headers: this.headers(),
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
-    const json = (await res.json()) as { data?: T; error?: string };
+    const json = (await res.json()) as { error?: string };
     if (!res.ok) {
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
     }
-    return json.data as T;
+    return json;
+  }
+
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<T> {
+    const json = (await this.fetch(method, path, body)) as { data: T };
+    return json.data;
   }
 
   async search(
@@ -73,10 +82,10 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    return this.request<Paginated<SearchResult>>(
+    return (await this.fetch(
       'GET',
       `/memories/search?${params}`,
-    );
+    )) as Paginated<SearchResult>;
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -142,7 +151,10 @@ export class RemoteOperations implements Operations {
       ...(regex ? { regex: '1' } : {}),
       ...filterParams(filter),
     });
-    return this.request<Paginated<Memory>>('GET', `/memories/grep?${params}`);
+    return (await this.fetch(
+      'GET',
+      `/memories/grep?${params}`,
+    )) as Paginated<Memory>;
   }
 
   async list(
@@ -155,7 +167,10 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    return this.request<Paginated<Memory>>('GET', `/memories?${params}`);
+    return (await this.fetch(
+      'GET',
+      `/memories?${params}`,
+    )) as Paginated<Memory>;
   }
 
   async reindex(): Promise<{ count: number }> {
