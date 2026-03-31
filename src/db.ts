@@ -47,6 +47,9 @@ export function openDb(config: Config): DB {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  db.function('regexp', (pattern: string, value: string) => {
+    return new RegExp(pattern).test(value) ? 1 : 0;
+  });
   return db;
 }
 
@@ -215,7 +218,18 @@ export function grepMemories(
   pattern: string,
   limit = 20,
   ignoreCase = false,
+  regex = false,
 ): Array<{ id: string; file_path: string }> {
+  if (regex) {
+    const re = ignoreCase ? `(?i)${pattern}` : pattern;
+    return all(
+      db,
+      SQL`SELECT id, file_path FROM memories
+          WHERE content REGEXP ${re}
+             OR title REGEXP ${re}
+          LIMIT ${limit}`,
+    );
+  }
   const escaped = escapeLike(pattern);
   const like = `%${escaped}%`;
   if (ignoreCase) {

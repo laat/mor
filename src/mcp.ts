@@ -69,25 +69,30 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_grep',
     {
       description:
-        'Literal substring search across memory content. Use for exact strings, code identifiers, URLs.',
+        'Search memory content by substring or regex. Use for exact strings, code identifiers, URLs, or patterns.',
       inputSchema: {
-        pattern: z.string().describe('Literal substring to search for'),
+        pattern: z.string().describe('Substring or regex pattern'),
         limit: z.number().optional().describe('Max results (default 20)'),
         offset: z.number().optional().describe('Skip first N results (default 0)'),
         ignore_case: z
           .boolean()
           .optional()
           .describe('Case-insensitive (default false)'),
+        regex: z
+          .boolean()
+          .optional()
+          .describe('Treat pattern as regex (default false)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
       },
     },
-    async ({ pattern, limit, offset, ignore_case, tag }) => {
+    async ({ pattern, limit, offset, ignore_case, regex, tag }) => {
       const page = await ops.grep(
         pattern,
         limit ?? 20,
         ignore_case,
         { tag },
         offset ?? 0,
+        regex,
       );
       if (page.data.length === 0) {
         return {

@@ -110,6 +110,7 @@ program
     }
   });
 
+
 addFilterOptions(
   program
     .command('find <query>')
@@ -146,9 +147,10 @@ addFilterOptions(
 addFilterOptions(
   program
     .command('grep <pattern>')
-    .description('Search memories for literal substring matches')
+    .description('Search memories by substring or regex')
     .option('-n, --limit <n>', 'Max results', '20')
     .option('-i, --ignore-case', 'Case-insensitive matching')
+    .option('-E, --regex', 'Treat pattern as regex')
     .option('-l, --long', 'Show file path or URL'),
 ).action(
   async (
@@ -156,6 +158,7 @@ addFilterOptions(
     opts: {
       limit: string;
       ignoreCase?: boolean;
+      regex?: boolean;
       long?: boolean;
     } & MemoryFilter,
   ) => {
@@ -164,7 +167,14 @@ addFilterOptions(
     try {
       const limitRaw = parseInt(opts.limit, 10);
       const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-      const page = await ops.grep(pattern, limit, opts.ignoreCase, opts);
+      const page = await ops.grep(
+        pattern,
+        limit,
+        opts.ignoreCase,
+        opts,
+        0,
+        opts.regex,
+      );
       if (page.data.length === 0) {
         console.log('No memories found.');
         return;

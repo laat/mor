@@ -131,12 +131,14 @@ export class RemoteOperations implements Operations {
     ignoreCase = false,
     filter?: MemoryFilter,
     offset = 0,
+    regex = false,
   ): Promise<Paginated<Memory>> {
     const params = new URLSearchParams({
       q: pattern,
       limit: String(limit),
       offset: String(offset),
       ...(ignoreCase ? { ignoreCase: '1' } : {}),
+      ...(regex ? { regex: '1' } : {}),
       ...filterParams(filter),
     });
     return this.request<Paginated<Memory>>('GET', `/memories/grep?${params}`);

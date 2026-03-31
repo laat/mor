@@ -117,6 +117,7 @@ export interface Operations {
     ignoreCase?: boolean,
     filter?: MemoryFilter,
     offset?: number,
+    regex?: boolean,
   ): Promise<Paginated<Memory>>;
   list(
     filter?: MemoryFilter,

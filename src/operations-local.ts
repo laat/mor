@@ -354,9 +354,16 @@ export class LocalOperations implements Operations {
     ignoreCase = false,
     filter?: MemoryFilter,
     offset = 0,
+    regex = false,
   ): Promise<Paginated<Memory>> {
     this.syncIndexIfNeeded();
-    const rows = grepMemories(this.db, pattern, offset + limit + 50, ignoreCase);
+    const rows = grepMemories(
+      this.db,
+      pattern,
+      offset + limit + 50,
+      ignoreCase,
+      regex,
+    );
     const all = applyMemoryFilter(
       rows
         .map((row) => safeReadMemory(row.file_path))
