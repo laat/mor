@@ -25,19 +25,26 @@ Add to your Claude Code or Claude Desktop MCP config:
 | Tool | Description |
 |------|-------------|
 | `memory_search` | Full-text search. Returns top result with full content, summaries for rest. |
-| `memory_grep` | Literal substring search. For exact strings and code identifiers. |
-| `memory_read` | Read a specific memory by UUID, prefix, filename, or search. |
-| `memory_add` | Create a new memory. |
-| `memory_update` | Update a memory. Returns a diff of changes. |
-| `memory_remove` | Delete a memory. |
-| `memory_list` | List all memories with descriptions. |
+| `memory_grep` | Substring or regex search. For exact strings, code identifiers, and patterns. |
+| `memory_read` | Read full content of a memory by ID. |
+| `memory_create` | Create a new memory with title, content, optional tags and type. |
+| `memory_update` | Update a memory by ID. Returns a diff of changes. |
+| `memory_remove` | Delete a memory by ID. |
+| `memory_list` | List all memories with titles, IDs, and tags. Supports pagination. |
 
 ### Filtering
 
-`memory_search`, `memory_grep`, and `memory_list` accept optional filter parameters:
+`memory_search`, `memory_grep`, and `memory_list` accept optional parameters:
 
 - `tag` — glob pattern matched against tags (e.g. `"rxjs*"`)
 - `type` — memory type filter (e.g. `"file"`, `"snippet"`)
+- `limit` — max results (default 20 for search/grep, 100 for list)
+- `offset` — skip first N results for pagination
+
+`memory_grep` also accepts:
+
+- `regex` — treat pattern as a JavaScript regular expression
+- `ignore_case` — case-insensitive matching
 
 ## Making Claude use mor first
 

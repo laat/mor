@@ -23,9 +23,10 @@ mor add https://raw.githubusercontent.com/owner/repo/main/config.ts
 # Search (FTS5 — tokenized, stemmed)
 mor find "python naming"
 
-# Grep (literal substring — exact matches)
+# Grep (literal substring or regex)
 mor grep "snake_case"
 mor grep -i "todo"
+mor grep -E "async\s+function"
 
 # Read, edit, copy, remove
 mor cat "python naming"
@@ -43,7 +44,7 @@ mor ls -l
 | Command | Description |
 |---------|-------------|
 | `find <query>` | Full-text search (`-n` limit, `-l` long) |
-| `grep <pattern>` | Literal substring search (`-n` limit, `-i` case-insensitive, `-l` long) |
+| `grep <pattern>` | Substring or regex search (`-n` limit, `-i` case-insensitive, `-E` regex, `-l` long) |
 | `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`) |
 | `cat <query>` | Print content (`--raw` for frontmatter) |
 | `cp <query> <dest>` | Copy content to file |
@@ -76,7 +77,7 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-Tools: `memory_search`, `memory_read`, `memory_add`, `memory_update`, `memory_remove`, `memory_list`.
+Tools: `memory_search`, `memory_read`, `memory_create`, `memory_update`, `memory_remove`, `memory_list`, `memory_grep`.
 
 To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
 
@@ -115,9 +116,9 @@ All CLI commands and MCP tools transparently proxy over HTTP when `server` is co
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Health check |
-| `GET` | `/memories` | List all |
-| `GET` | `/memories/search?q=...&limit=N` | FTS search |
-| `GET` | `/memories/grep?q=...&limit=N&ignoreCase=1` | Literal substring search |
+| `GET` | `/memories?limit=N&offset=N` | List all |
+| `GET` | `/memories/search?q=...&limit=N&offset=N` | FTS search |
+| `GET` | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search |
 | `GET` | `/memories/:query` | Read one |
 | `POST` | `/memories` | Create (`{title, content, tags?, type?}`) |
 | `PUT` | `/memories/:query` | Update (`{title?, content?, tags?, type?}`) |
@@ -156,7 +157,13 @@ Memories are markdown files with YAML frontmatter, stored in `~/.config/mor/memo
     meeting-notes-c3d4.md
 ```
 
-Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the memory folder is a git repo.
+Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the memory folder is a git repo. Enable `autosync` to sync automatically after every add, update, or remove:
+
+```json
+{
+  "autosync": true
+}
+```
 
 ## License
 

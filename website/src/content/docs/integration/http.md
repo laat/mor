@@ -44,15 +44,26 @@ Options can also be set in `~/.config/mor/config.json`:
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Health check |
-| `GET` | `/memories` | List all |
-| `GET` | `/memories/search?q=...&limit=N` | FTS search |
-| `GET` | `/memories/grep?q=...&limit=N&ignoreCase=1` | Literal substring search |
+| `GET` | `/memories?limit=N&offset=N` | List all (paginated) |
+| `GET` | `/memories/search?q=...&limit=N&offset=N` | FTS search |
+| `GET` | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search |
 | `GET` | `/memories/:query` | Read one |
 | `POST` | `/memories` | Create (`{title, content, tags?, type?}`) |
 | `PUT` | `/memories/:query` | Update (`{title?, content?, tags?, type?}`) |
 | `DELETE` | `/memories/:query` | Remove |
 | `POST` | `/reindex` | Rebuild search index |
 | `POST` | `/sync` | Git pull + commit + push |
+
+List, search, and grep endpoints return paginated responses:
+
+```json
+{
+  "data": [...],
+  "total": 42,
+  "offset": 0,
+  "limit": 20
+}
+```
 
 Authentication via `Authorization: Bearer <token>` header when token is configured.
 

@@ -8,7 +8,7 @@ description: All mor commands and their options
 | Command | Description |
 |---------|-------------|
 | `find <query>` | Full-text search (`-l` limit) |
-| `grep <pattern>` | Literal substring search (`-n` limit, `-i` case-insensitive, `-l` long) |
+| `grep <pattern>` | Substring or regex search (`-n` limit, `-i` case-insensitive, `-E` regex, `-l` long) |
 | `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`) |
 | `cat <query>` | Print content (`--raw` for frontmatter) |
 | `cp <query> <dest>` | Copy content to file |
@@ -119,3 +119,15 @@ mor sync
 ```
 
 This runs `git pull --rebase --autostash` first, then commits and pushes any local changes.
+
+### Autosync
+
+Enable automatic syncing after every add, update, or remove in `~/.config/mor/config.json`:
+
+```json
+{
+  "autosync": true
+}
+```
+
+Each mutation commits with a descriptive message (e.g. `add: Shopping List`) and pushes immediately.

@@ -23,19 +23,21 @@ A memory bank for AI assistants. Stores knowledge as markdown files with YAML fr
 The central abstraction is `Operations` in `operations.ts` with two implementations:
 
 - **LocalOperations** — filesystem + SQLite, used by CLI in local mode and by the HTTP server
-- **RemoteOperations** (`remote.ts`) — HTTP client that wraps a remote server
+- **RemoteOperations** (`operations-client.ts`) — HTTP client that wraps a remote server
 
 All three access surfaces use this interface:
 
 1. **CLI** (`cli.ts`) — Commander-based, calls `getOps(config)` to get local or remote ops
-2. **MCP Server** (`mcp.ts`) — Stdio transport, creates its own `LocalOperations`
-3. **HTTP Server** (`server.ts`) — Raw `http.createServer` with a custom router, creates `LocalOperations`
+2. **MCP Server** (`mcp.ts`) — Stdio and HTTP transports, creates its own `LocalOperations`
+3. **HTTP Server** (`operations-server.ts`) — Hono-based, creates `LocalOperations`
 
 ### Search & Query Resolution
 
-`query.ts:resolveQuery` resolves a user query by trying in order: full UUID → UUID prefix → filename → FTS search. `index.ts:searchAsync` does FTS5 search, optionally merged with vector cosine similarity (60/40 weighting).
+`resolveQuery` in `LocalOperations` resolves a user query by trying in order: full UUID → UUID prefix (8+ chars) → filename → FTS search. `search()` does FTS5 search, optionally merged with vector cosine similarity (60/40 weighting).
 
-`syncIndex` walks the memory directory and upserts changed files by content hash. `syncIndexIfNeeded` is a debounced wrapper (200ms, per-DB via WeakMap) used on read paths to avoid redundant scans.
+`syncIndex` walks the memory directory and upserts changed files by content hash. `syncIndexIfNeeded` is a debounced wrapper (200ms) used on read paths to avoid redundant scans.
+
+All listing APIs (`search`, `grep`, `list`) return paginated results via `Paginated<T>` with `data`, `total`, `offset`, and `limit` fields. `grep` accepts a `GrepOptions` object with `regex` support (JavaScript RegExp via a cached SQLite UDF).
 
 ### Storage Format
 

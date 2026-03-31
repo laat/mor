@@ -84,6 +84,14 @@ mor sync
 
 `mor sync` runs `git pull --rebase --autostash` then commits and pushes.
 
+Enable `autosync` in config to sync automatically after every add, update, or remove:
+
+```json
+{
+  "autosync": true
+}
+```
+
 ## Configuration
 
 `~/.config/mor/config.json` is auto-created on first run:

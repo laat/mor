@@ -20,19 +20,21 @@ mor find "retry http"
 
 When [embeddings](/embeddings/) are configured, `find` merges FTS and vector results with 60/40 weighting.
 
-## Literal search (`grep`)
+## Grep (`grep`)
 
-Uses SQL `LIKE` for exact substring matching.
+Searches by substring or regex.
 
 ```sh
 mor grep "Retry-After" -i
+mor grep -E "async\s+function" -i
 ```
 
-- **Exact match** — no stemming or tokenization
+- **Exact match** — no stemming or tokenization (default)
+- **Regex** — with `-E` flag, uses JavaScript regular expressions
 - **Case-insensitive** — with `-i` flag
 - **Searches title and content** — finds strings anywhere in the memory
 
-Use `grep` for code identifiers, URLs, special characters, or anything FTS might tokenize away.
+Use `grep` for code identifiers, URLs, special characters, patterns, or anything FTS might tokenize away.
 
 ## Query resolution (`cat`, `edit`, `rm`, etc.)
 

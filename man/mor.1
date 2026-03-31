@@ -30,7 +30,7 @@ Max results (default 20).
 .RE
 .TP
 .BI "grep " pattern
-Literal substring search across memory content.
+Search memory content by substring or regex.
 .RS
 .TP
 .BI \-n ", " \-\-limit " " n
@@ -38,6 +38,9 @@ Max results (default 20).
 .TP
 .BR \-i ", " \-\-ignore\-case
 Case-insensitive matching.
+.TP
+.BR \-E ", " \-\-regex
+Treat pattern as a JavaScript regular expression.
 .TP
 .BR \-l ", " \-\-long
 Show file paths.
@@ -267,6 +270,14 @@ Grep for an exact string:
 .RS
 .nf
 mor grep "createServer" \-i
+.fi
+.RE
+.PP
+Grep with a regex:
+.PP
+.RS
+.nf
+mor grep \-E "async\\s+function" \-i
 .fi
 .RE
 .PP
