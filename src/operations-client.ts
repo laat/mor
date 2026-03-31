@@ -1,5 +1,6 @@
 import type {
   Config,
+  GrepOptions,
   Memory,
   MemoryFilter,
   Operations,
@@ -127,12 +128,10 @@ export class RemoteOperations implements Operations {
 
   async grep(
     pattern: string,
-    limit = 20,
-    ignoreCase = false,
-    filter?: MemoryFilter,
-    offset = 0,
-    regex = false,
+    opts?: GrepOptions,
   ): Promise<Paginated<Memory>> {
+    const { limit = 20, ignoreCase = false, filter, offset = 0, regex = false } =
+      opts ?? {};
     const params = new URLSearchParams({
       q: pattern,
       limit: String(limit),

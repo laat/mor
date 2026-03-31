@@ -110,7 +110,6 @@ program
     }
   });
 
-
 addFilterOptions(
   program
     .command('find <query>')
@@ -167,14 +166,12 @@ addFilterOptions(
     try {
       const limitRaw = parseInt(opts.limit, 10);
       const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-      const page = await ops.grep(
-        pattern,
+      const page = await ops.grep(pattern, {
         limit,
-        opts.ignoreCase,
-        opts,
-        0,
-        opts.regex,
-      );
+        ignoreCase: opts.ignoreCase,
+        filter: opts,
+        regex: opts.regex,
+      });
       if (page.data.length === 0) {
         console.log('No memories found.');
         return;

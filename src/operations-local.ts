@@ -32,6 +32,7 @@ import {
 } from './memory.js';
 import type {
   Config,
+  GrepOptions,
   Memory,
   MemoryFilter,
   MemoryType,
@@ -350,12 +351,10 @@ export class LocalOperations implements Operations {
 
   async grep(
     pattern: string,
-    limit = 20,
-    ignoreCase = false,
-    filter?: MemoryFilter,
-    offset = 0,
-    regex = false,
+    opts?: GrepOptions,
   ): Promise<Paginated<Memory>> {
+    const { limit = 20, ignoreCase = false, filter, offset = 0, regex = false } =
+      opts ?? {};
     this.syncIndexIfNeeded();
     const rows = grepMemories(
       this.db,

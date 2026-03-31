@@ -86,14 +86,13 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ pattern, limit, offset, ignore_case, regex, tag }) => {
-      const page = await ops.grep(
-        pattern,
-        limit ?? 20,
-        ignore_case,
-        { tag },
-        offset ?? 0,
+      const page = await ops.grep(pattern, {
+        limit: limit ?? 20,
+        ignoreCase: ignore_case,
+        filter: { tag },
+        offset: offset ?? 0,
         regex,
-      );
+      });
       if (page.data.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],

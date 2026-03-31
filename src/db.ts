@@ -47,12 +47,21 @@ export function openDb(config: Config): DB {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
-  db.function('regexp', (pattern: string, value: string) => {
-    const flagMatch = pattern.match(/^\(\?([a-z]+)\)/);
-    const flags = flagMatch ? flagMatch[1] : '';
-    const re = flagMatch ? pattern.slice(flagMatch[0].length) : pattern;
-    return new RegExp(re, flags).test(value) ? 1 : 0;
-  });
+  db.function(
+    'regexp',
+    (() => {
+      let cached: { raw: string; re: RegExp } | null = null;
+      return (pattern: string, value: string): number => {
+        if (!cached || cached.raw !== pattern) {
+          const flagMatch = pattern.match(/^\(\?([a-z]+)\)/);
+          const flags = flagMatch ? flagMatch[1] : '';
+          const src = flagMatch ? pattern.slice(flagMatch[0].length) : pattern;
+          cached = { raw: pattern, re: new RegExp(src, flags) };
+        }
+        return cached.re.test(value) ? 1 : 0;
+      };
+    })(),
+  );
   return db;
 }
 
@@ -224,6 +233,13 @@ export function grepMemories(
   regex = false,
 ): Array<{ id: string; file_path: string }> {
   if (regex) {
+    try {
+      new RegExp(pattern);
+    } catch (e) {
+      throw new Error(
+        `Invalid regex: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
     const re = ignoreCase ? `(?i)${pattern}` : pattern;
     return all(
       db,

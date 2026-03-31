@@ -93,17 +93,13 @@ export function startServer(
   app.get('/memories/grep', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
-    const ignoreCase = c.req.query('ignoreCase') === '1';
-    const regex = c.req.query('regex') === '1';
     return c.json(
-      await ops.grep(
-        q,
-        parseLimit(c.req.query('limit')),
-        ignoreCase,
-        undefined,
-        parseOffset(c.req.query('offset')),
-        regex,
-      ),
+      await ops.grep(q, {
+        limit: parseLimit(c.req.query('limit')),
+        ignoreCase: c.req.query('ignoreCase') === '1',
+        regex: c.req.query('regex') === '1',
+        offset: parseOffset(c.req.query('offset')),
+      }),
     );
   });
 

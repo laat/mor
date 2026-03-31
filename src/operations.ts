@@ -77,6 +77,14 @@ export interface MemoryFilter {
   ext?: string;
 }
 
+export interface GrepOptions {
+  limit?: number;
+  ignoreCase?: boolean;
+  filter?: MemoryFilter;
+  offset?: number;
+  regex?: boolean;
+}
+
 export interface Paginated<T> {
   data: T[];
   total: number;
@@ -113,11 +121,7 @@ export interface Operations {
   remove(query: string): Promise<{ title: string; id: string }>;
   grep(
     pattern: string,
-    limit?: number,
-    ignoreCase?: boolean,
-    filter?: MemoryFilter,
-    offset?: number,
-    regex?: boolean,
+    opts?: GrepOptions,
   ): Promise<Paginated<Memory>>;
   list(
     filter?: MemoryFilter,
