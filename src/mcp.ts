@@ -5,7 +5,12 @@ import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
-import { MEMORY_TYPES, type Operations } from './operations.js';
+import {
+  MEMORY_TYPES,
+  type Memory,
+  type Operations,
+  type Paginated,
+} from './operations.js';
 import { unifiedDiff } from './utils/diff.js';
 
 function createOps(): Operations {
@@ -16,6 +21,36 @@ function createOps(): Operations {
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
+
+// ---- Response helpers ----
+
+function text(t: string) {
+  return { content: [{ type: 'text' as const, text: t }] };
+}
+
+function error(e: unknown) {
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: e instanceof Error ? e.message : String(e),
+      },
+    ],
+    isError: true,
+  };
+}
+
+function formatMemory(mem: Memory): string {
+  const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+  const desc = mem.description ? `\n  ${mem.description}` : '';
+  return `- ${mem.id}  ${mem.title}${tags}${desc}`;
+}
+
+function paginatedHeader<T>(page: Paginated<T>): string {
+  return `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
+}
+
+// ---- Server ----
 
 export function createMcpServer(ops: Operations): McpServer {
   const server = new McpServer({
@@ -48,29 +83,14 @@ export function createMcpServer(ops: Operations): McpServer {
         { tag, type },
         offset ?? 0,
       );
-      if (page.data.length === 0) {
-        return {
-          content: [{ type: 'text' as const, text: 'No memories found.' }],
-        };
-      }
-      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
+      if (page.data.length === 0) return text('No memories found.');
       const lines = page.data.map((r) => {
-        const tags =
-          r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
-        const desc = r.memory.description ? `\n  ${r.memory.description}` : '';
         const score = `  (${r.score.toFixed(2)})`;
-        return `- ${r.memory.id}  ${r.memory.title}${tags}${score}${desc}`;
+        return formatMemory(r.memory) + score;
       });
       const top = page.data[0];
       const topContent = `\n\n---\n\nTop result: ${top.memory.id}  ${top.memory.title}\n\n${top.memory.content}`;
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: header + lines.join('\n') + topContent,
-          },
-        ],
-      };
+      return text(paginatedHeader(page) + lines.join('\n') + topContent);
     },
   );
 
@@ -106,27 +126,11 @@ export function createMcpServer(ops: Operations): McpServer {
         offset: offset ?? 0,
         regex,
       });
-      if (page.data.length === 0) {
-        return {
-          content: [{ type: 'text' as const, text: 'No memories found.' }],
-        };
-      }
-      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
-      const lines = page.data.map((mem) => {
-        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-        const desc = mem.description ? `\n  ${mem.description}` : '';
-        return `- ${mem.id}  ${mem.title}${tags}${desc}`;
-      });
+      if (page.data.length === 0) return text('No memories found.');
+      const lines = page.data.map(formatMemory);
       const top = page.data[0];
       const topContent = `\n\n---\n\nTop result: ${top.id}  ${top.title}\n\n${top.content}`;
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: header + lines.join('\n') + topContent,
-          },
-        ],
-      };
+      return text(paginatedHeader(page) + lines.join('\n') + topContent);
     },
   );
 
@@ -139,12 +143,8 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ ids }) => {
-      if (ids.length === 0) {
-        return {
-          content: [{ type: 'text' as const, text: 'No id or ids provided.' }],
-          isError: true,
-        };
-      }
+      if (ids.length === 0)
+        return { ...text('No ids provided.'), isError: true };
       const sections: string[] = [];
       const notFound: string[] = [];
       for (const memId of ids) {
@@ -158,21 +158,16 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       if (sections.length === 0) {
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Memory not found: ${notFound.join(', ')}`,
-            },
-          ],
+          ...text(`Memory not found: ${notFound.join(', ')}`),
           isError: true,
         };
       }
-      const text =
+      const result =
         sections.join('\n\n---\n\n') +
         (notFound.length > 0
           ? `\n\n---\n\nNot found: ${notFound.join(', ')}`
           : '');
-      return { content: [{ type: 'text' as const, text }] };
+      return text(result);
     },
   );
 
@@ -201,24 +196,9 @@ export function createMcpServer(ops: Operations): McpServer {
           tags: tags ?? undefined,
           type: type ?? undefined,
         });
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Created: ${mem.title} (${mem.id})`,
-            },
-          ],
-        };
+        return text(`Created: ${mem.title} (${mem.id})`);
       } catch (e) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: e instanceof Error ? e.message : String(e),
-            },
-          ],
-          isError: true,
-        };
+        return error(e);
       }
     },
   );
@@ -235,24 +215,9 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ id }) => {
       try {
         const result = await ops.remove(id);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Removed: ${result.title} (${result.id})`,
-            },
-          ],
-        };
+        return text(`Removed: ${result.title} (${result.id})`);
       } catch (e) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: e instanceof Error ? e.message : String(e),
-            },
-          ],
-          isError: true,
-        };
+        return error(e);
       }
     },
   );
@@ -274,20 +239,9 @@ export function createMcpServer(ops: Operations): McpServer {
     },
     async ({ limit, offset, tag, type }) => {
       const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
-      if (page.data.length === 0) {
-        return {
-          content: [{ type: 'text' as const, text: 'No memories stored.' }],
-        };
-      }
-      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
-      const lines = page.data.map((mem) => {
-        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-        const desc = mem.description ? `\n  ${mem.description}` : '';
-        return `- ${mem.id}  ${mem.title}${tags}${desc}`;
-      });
-      return {
-        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
-      };
+      if (page.data.length === 0) return text('No memories stored.');
+      const lines = page.data.map(formatMemory);
+      return text(paginatedHeader(page) + lines.join('\n'));
     },
   );
 
@@ -334,24 +288,9 @@ export function createMcpServer(ops: Operations): McpServer {
           changes.push(unifiedDiff(before.content, content));
         }
         const diff = changes.length > 0 ? '\n\n' + changes.join('\n') : '';
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Updated: ${updated.title}${diff}`,
-            },
-          ],
-        };
+        return text(`Updated: ${updated.title}${diff}`);
       } catch (e) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: e instanceof Error ? e.message : String(e),
-            },
-          ],
-          isError: true,
-        };
+        return error(e);
       }
     },
   );
