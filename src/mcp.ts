@@ -1,6 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import path from 'node:path';
 import { z } from 'zod';
 import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
@@ -96,13 +95,14 @@ export function createMcpServer(ops: Operations): McpServer {
           .optional()
           .describe('Treat pattern as regex (default false)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        type: z.string().optional().describe('Filter by memory type'),
       },
     },
-    async ({ pattern, limit, offset, ignore_case, regex, tag }) => {
+    async ({ pattern, limit, offset, ignore_case, regex, tag, type }) => {
       const page = await ops.grep(pattern, {
         limit: limit ?? 20,
         ignoreCase: ignore_case,
-        filter: { tag },
+        filter: { tag, type },
         offset: offset ?? 0,
         regex,
       });
@@ -196,21 +196,33 @@ export function createMcpServer(ops: Operations): McpServer {
       },
     },
     async ({ title, description, content, tags, type }) => {
-      const mem = await ops.add({
-        title,
-        description,
-        content,
-        tags: tags ?? undefined,
-        type: type ?? undefined,
-      });
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Created memory: ${mem.title}\nID: ${mem.id}\nFile: ${path.basename(mem.filePath)}`,
-          },
-        ],
-      };
+      try {
+        const mem = await ops.add({
+          title,
+          description,
+          content,
+          tags: tags ?? undefined,
+          type: type ?? undefined,
+        });
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Created: ${mem.title} (${mem.id})`,
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: e instanceof Error ? e.message : String(e),
+            },
+          ],
+          isError: true,
+        };
+      }
     },
   );
 
@@ -270,7 +282,7 @@ export function createMcpServer(ops: Operations): McpServer {
           content: [{ type: 'text' as const, text: 'No memories stored.' }],
         };
       }
-      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} memories\n\n`;
+      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
       const lines = page.data.map((mem) => {
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
         const desc = mem.description ? `\n  ${mem.description}` : '';

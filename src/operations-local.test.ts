@@ -353,6 +353,19 @@ describe('grep', () => {
     expect(page.data).toHaveLength(1);
     expect(page.data[0].title).toBe('G A');
   });
+
+  it('filters by type', async () => {
+    await ops.add({
+      title: 'G Snippet',
+      content: 'shared-type',
+      type: 'snippet',
+    });
+    await ops.add({ title: 'G Knowledge', content: 'shared-type' });
+
+    const page = await ops.grep('shared-type', { filter: { type: 'snippet' } });
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].title).toBe('G Snippet');
+  });
 });
 
 describe('list', () => {
