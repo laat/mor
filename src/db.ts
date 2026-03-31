@@ -27,7 +27,9 @@ const SCHEMA = `
     updated TEXT NOT NULL,
     content TEXT NOT NULL,
     file_path TEXT NOT NULL UNIQUE,
-    content_hash TEXT NOT NULL
+    content_hash TEXT NOT NULL,
+    access_count INTEGER NOT NULL DEFAULT 0,
+    last_accessed TEXT
   );
 
   CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
@@ -50,19 +52,6 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
-  // Migrate: add access tracking columns
-  const cols = db.prepare("PRAGMA table_info('memories')").all() as Array<{
-    name: string;
-  }>;
-  const colNames = new Set(cols.map((c) => c.name));
-  if (!colNames.has('access_count')) {
-    db.exec(
-      'ALTER TABLE memories ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0',
-    );
-  }
-  if (!colNames.has('last_accessed')) {
-    db.exec('ALTER TABLE memories ADD COLUMN last_accessed TEXT');
-  }
   if (config.embedding && config.embedding.provider !== 'none') {
     const dims = config.embedding.dimensions;
     const exists = get<{ name: string }>(
