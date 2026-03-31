@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "postEdit": {
+      "chain": [
+        {
+          "command": "prettier --write {file}",
+          "description": "Format code"
+        },
+        {
+          "command": "eslint --fix {file}",
+          "description": "Fix linting issues",
+          "dependsOn": "prettier"
+        },
+        {
+          "command": "npm run test -- --findRelatedTests {file}",
+          "description": "Run tests",
+          "dependsOn": "eslint"
+        }
+      ]
+    }
+  }
+}
