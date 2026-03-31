@@ -401,6 +401,10 @@ const termLines = [
   { type: 'comment', text: '# jot down notes \u2014 opens $EDITOR' },
   { type: 'cmd', text: 'mor add -t "Meeting notes" --tags "meeting,project-x"' },
   { type: 'output', text: 'Created: 7b3e91f0  Meeting notes  [meeting, project-x]' },
+  { type: 'blank' },
+  { type: 'comment', text: '# your AI uses mor via MCP' },
+  { type: 'cmd', text: 'claude -p "add beer to my shopping list"' },
+  { type: 'output', text: 'Done \u2014 beer has been added to your shopping list.' },
 ];
 
 const term = document.getElementById('term');
