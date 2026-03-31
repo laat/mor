@@ -7,7 +7,7 @@ description: How mor stores memories on disk
 
 Memories are markdown files with YAML frontmatter:
 
-```markdown
+````markdown
 ---
 id: 405614a7-a382-49db-bb37-b3f549bfddd1
 title: retryWithBackoff.ts
@@ -21,12 +21,14 @@ repository: github.com/myorg/myapp
 created: '2026-03-29T16:00:50.050Z'
 updated: '2026-03-29T18:35:24.931Z'
 ---
+
 ```typescript
 export const retryWithBackoff = <T>(count: number) => {
   // ...
 };
 `` `
 ```
+````
 
 ## Directory structure
 
@@ -44,16 +46,16 @@ Override the base directory with the `MOR_HOME` environment variable.
 
 ## Frontmatter fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | yes | UUID, auto-generated |
-| `title` | yes | Display name |
-| `description` | no | Short one-line summary |
-| `tags` | yes | Array of strings (can be empty) |
-| `type` | yes | One of: `user`, `feedback`, `project`, `reference`, `knowledge`, `snippet`, `file` |
-| `repository` | no | Source repository (auto-detected from git) |
-| `created` | yes | ISO 8601 timestamp |
-| `updated` | yes | ISO 8601 timestamp |
+| Field         | Required | Description                                                                        |
+| ------------- | -------- | ---------------------------------------------------------------------------------- |
+| `id`          | yes      | UUID, auto-generated                                                               |
+| `title`       | yes      | Display name                                                                       |
+| `description` | no       | Short one-line summary                                                             |
+| `tags`        | yes      | Array of strings (can be empty)                                                    |
+| `type`        | yes      | One of: `user`, `feedback`, `project`, `reference`, `knowledge`, `snippet`, `file` |
+| `repository`  | no       | Source repository (auto-detected from git)                                         |
+| `created`     | yes      | ISO 8601 timestamp                                                                 |
+| `updated`     | yes      | ISO 8601 timestamp                                                                 |
 
 ## Filenames
 
@@ -102,5 +104,10 @@ Enable `autosync` in config to sync automatically after every add, update, or re
   "dbPath": "/home/user/.config/mor/index.db"
 }
 ```
+
+Other config options:
+
+- `threshold` — minimum relevance score for `find` results (default 0.3)
+- `autosync` — auto git sync after mutations (see above)
 
 See [HTTP Server](/integration/http/) for `serve` config and [Embeddings](/embeddings/) for embedding config.

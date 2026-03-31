@@ -41,22 +41,22 @@ mor ls -l
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `find <query>` | Full-text search (`-n` limit, `-l` long) |
-| `grep <pattern>` | Substring or regex search (`-n` limit, `-i` case-insensitive, `-E` regex, `-l` long) |
-| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`) |
-| `cat <query>` | Print content (`--raw` for frontmatter) |
-| `cp <query> <dest>` | Copy content to file |
-| `edit <query>` | Open in `$EDITOR` (`--raw` to edit frontmatter) |
-| `update <query>` | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content) |
-| `rm <query>` | Remove a memory |
-| `ls` | List all (`-n` limit, `-l` long) |
-| `sync` | Pull, commit, and push the memory folder via git |
-| `reindex` | Rebuild search index |
-| `import <dir>` | Import `.md` files from a directory |
-| `mcp` | Start MCP server (stdio) |
-| `serve` | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`) |
+| Command             | Description                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| `find <query>`      | Full-text search (`-n` limit, `-s` threshold, `-l` long)                                         |
+| `grep <pattern>`    | Substring or regex search (`-n` limit, `-i` case-insensitive, `-E` regex, `-l` long)             |
+| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)       |
+| `cat <query>`       | Print content (`--raw` for frontmatter)                                                          |
+| `cp <query> <dest>` | Copy content to file                                                                             |
+| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                  |
+| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content) |
+| `rm <query>`        | Remove a memory                                                                                  |
+| `ls`                | List all (`-n` limit, `-l` long)                                                                 |
+| `sync`              | Pull, commit, and push the memory folder via git                                                 |
+| `reindex`           | Rebuild search index                                                                             |
+| `import <dir>`      | Import `.md` files from a directory                                                              |
+| `mcp`               | Start MCP server (stdio)                                                                         |
+| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                     |
 
 Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
 
@@ -104,8 +104,8 @@ mor serve --port 7677
 {
   "server": {
     "url": "http://mybox.tail1234.ts.net:7677",
-    "token": "optional-secret"
-  }
+    "token": "optional-secret",
+  },
 }
 ```
 
@@ -113,16 +113,16 @@ All CLI commands and MCP tools transparently proxy over HTTP when `server` is co
 
 ### HTTP API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/memories?limit=N&offset=N` | List all |
-| `GET` | `/memories/search?q=...&limit=N&offset=N` | FTS search |
-| `GET` | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search |
-| `GET` | `/memories/:query` | Read one |
-| `POST` | `/memories` | Create (`{title, content, tags?, type?}`) |
-| `PUT` | `/memories/:query` | Update (`{title?, content?, tags?, type?}`) |
-| `DELETE` | `/memories/:query` | Remove |
+| Method   | Path                                                         | Description                                 |
+| -------- | ------------------------------------------------------------ | ------------------------------------------- |
+| `GET`    | `/health`                                                    | Health check                                |
+| `GET`    | `/memories?limit=N&offset=N`                                 | List all                                    |
+| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                  |
+| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                   |
+| `GET`    | `/memories/:query`                                           | Read one                                    |
+| `POST`   | `/memories`                                                  | Create (`{title, content, tags?, type?}`)   |
+| `PUT`    | `/memories/:query`                                           | Update (`{title?, content?, tags?, type?}`) |
+| `DELETE` | `/memories/:query`                                           | Remove                                      |
 
 Auth: `Authorization: Bearer <token>` header when token is configured.
 

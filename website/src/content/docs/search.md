@@ -16,7 +16,7 @@ mor find "retry http"
 - **Stemming** — "running" matches "run", "runs", "running"
 - **OR-ranked** — multi-word queries match any term, ranked by how many match
 - **Unicode-aware** — dots, hyphens, and other punctuation are token separators
-- **Scores** — results are ranked 0.0 to 1.0, best match first
+- **Scores** — results are ranked 0.0 to 1.0, best match first. Results below threshold are filtered out (default 0.3, configurable via `-s` or `threshold` in config)
 
 When [embeddings](/embeddings/) are configured, `find` merges FTS and vector results with 60/40 weighting.
 
