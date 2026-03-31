@@ -6,16 +6,20 @@ import path from 'node:path';
 import type { Config, FrontMatter, Memory, MemoryType } from './operations.js';
 import { normalizeGitUrl } from './utils/git.js';
 
+let _cachedRepo: string | null | undefined;
+
 export function detectRepository(): string | undefined {
+  if (_cachedRepo !== undefined) return _cachedRepo ?? undefined;
   try {
     const url = execSync('git remote get-url origin', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
-    return normalizeGitUrl(url);
+    _cachedRepo = normalizeGitUrl(url) ?? null;
   } catch {
-    return undefined;
+    _cachedRepo = null;
   }
+  return _cachedRepo ?? undefined;
 }
 
 export function generateFilename(title: string, id: string): string {
@@ -28,30 +32,22 @@ export function generateFilename(title: string, id: string): string {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'memory';
-  const hash = id.slice(0, 8).replace(/-/g, '').slice(0, 4);
+  const hash = id.slice(0, 4);
   return `${slug}-${hash}.md`;
 }
 
-function buildFrontmatter(fields: {
-  id: string;
-  title: string;
-  description?: string;
-  tags: string[];
-  type: MemoryType;
-  repository?: string;
-  created: string;
-  updated: string;
-}): FrontMatter {
-  return {
-    id: fields.id,
-    title: fields.title,
-    ...(fields.description ? { description: fields.description } : {}),
-    tags: fields.tags,
-    type: fields.type,
-    ...(fields.repository ? { repository: fields.repository } : {}),
-    created: fields.created,
-    updated: fields.updated,
+function buildFrontmatter(fm: FrontMatter): FrontMatter {
+  const out: FrontMatter = {
+    id: fm.id,
+    title: fm.title,
+    tags: fm.tags,
+    type: fm.type,
+    created: fm.created,
+    updated: fm.updated,
   };
+  if (fm.description) out.description = fm.description;
+  if (fm.repository) out.repository = fm.repository;
+  return out;
 }
 
 export function createMemory(
@@ -90,17 +86,20 @@ export function createMemory(
   };
 }
 
-export function readMemory(filePath: string): Memory {
+function readAndParse(filePath: string): { mem: Memory; raw: string } {
   const raw = fs.readFileSync(filePath, 'utf-8');
-  return parseMemory(raw, filePath);
+  return { mem: parseMemory(raw, filePath), raw };
 }
 
-export function readMemoryWithRaw(
+export function readMemory(filePath: string): Memory {
+  return readAndParse(filePath).mem;
+}
+
+export function tryReadMemory(
   filePath: string,
 ): { mem: Memory; raw: string } | undefined {
   try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return { mem: parseMemory(raw, filePath), raw };
+    return readAndParse(filePath);
   } catch (e) {
     process.stderr.write(
       `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
@@ -182,13 +181,12 @@ export function deleteMemory(filePath: string): void {
 }
 
 export function listMemoryFiles(config: Config): string[] {
-  if (!fs.existsSync(config.memoryDir)) return [];
-  return fs
-    .readdirSync(config.memoryDir)
-    .filter((f) => f.endsWith('.md'))
-    .map((f) => path.join(config.memoryDir, f));
-}
-
-export function safeReadMemory(filePath: string): Memory | undefined {
-  return readMemoryWithRaw(filePath)?.mem;
+  try {
+    return fs
+      .readdirSync(config.memoryDir)
+      .filter((f) => f.endsWith('.md'))
+      .map((f) => path.join(config.memoryDir, f));
+  } catch {
+    return [];
+  }
 }

@@ -14,6 +14,7 @@ const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
 
 function log(msg: string): void {
+  if (process.env.NODE_ENV === 'test') return;
   const ts = new Date().toISOString();
   process.stderr.write(`${ts} [mor] ${msg}\n`);
 }

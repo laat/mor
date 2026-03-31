@@ -3,8 +3,8 @@ import { spawnSync } from 'node:child_process';
 import {
   clearDb,
   deleteMemoryFromDb,
+  getAllContentHashes,
   getAllMemoryIds,
-  getContentHash,
   getEmbeddingCount,
   getEmbeddingModel,
   getMemoriesByIds,
@@ -29,8 +29,7 @@ import {
   deleteMemory,
   listMemoryFiles,
   readMemory,
-  readMemoryWithRaw,
-  safeReadMemory,
+  tryReadMemory,
   updateMemory,
 } from './memory.js';
 import type {
@@ -121,18 +120,17 @@ export class LocalOperations implements Operations {
   private syncIndex(): void {
     const files = listMemoryFiles(this.config);
     const dbIds = getAllMemoryIds(this.db);
+    const hashes = getAllContentHashes(this.db);
     const seenIds = new Set<string>();
     const changed: Memory[] = [];
 
     for (const filePath of files) {
-      const result = readMemoryWithRaw(filePath);
+      const result = tryReadMemory(filePath);
       if (!result) continue;
       const { mem, raw } = result;
 
       seenIds.add(mem.id);
-      const existingHash = getContentHash(this.db, mem.id);
-
-      if (existingHash !== hashContent(raw)) {
+      if (hashes.get(mem.id) !== hashContent(raw)) {
         this.upsertFromMemory(mem, raw);
         changed.push(mem);
       }
@@ -403,7 +401,7 @@ export class LocalOperations implements Operations {
     );
     const all = applyMemoryFilter(
       rows
-        .map((row) => safeReadMemory(row.file_path))
+        .map((row) => tryReadMemory(row.file_path)?.mem)
         .filter((m): m is Memory => m !== undefined),
       filter,
     );
@@ -424,7 +422,7 @@ export class LocalOperations implements Operations {
     const files = listMemoryFiles(this.config);
     const all = applyMemoryFilter(
       files
-        .map((f) => safeReadMemory(f))
+        .map((f) => tryReadMemory(f)?.mem)
         .filter((m): m is Memory => m !== undefined),
       filter,
     );
@@ -443,7 +441,7 @@ export class LocalOperations implements Operations {
 
     let count = 0;
     for (const filePath of files) {
-      const result = readMemoryWithRaw(filePath);
+      const result = tryReadMemory(filePath);
       if (!result) continue;
       const { mem, raw } = result;
 

@@ -14,7 +14,6 @@ import {
   recordAccess,
   getAccessCount,
   getAllMemoryIds,
-  getContentHash,
   grepMemories,
   getEmbeddingModel,
   getEmbeddingCount,
@@ -378,19 +377,5 @@ describe('clearDb', () => {
     clearDb(db, config);
     expect(getAllMemoryIds(db).size).toBe(0);
     expect(searchFts(db, 'test')).toHaveLength(0);
-  });
-});
-
-describe('getContentHash', () => {
-  it('returns stored hash', () => {
-    const m = mem({ contentHash: 'deadbeef' });
-    upsertMemoryChecked(db, m);
-    expect(getContentHash(db, m.id)).toBe('deadbeef');
-  });
-
-  it('returns undefined for non-existent', () => {
-    expect(
-      getContentHash(db, '00000000-0000-0000-0000-000000000000'),
-    ).toBeUndefined();
   });
 });

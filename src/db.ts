@@ -254,12 +254,12 @@ export function getAllMemoryIds(db: DB): Set<string> {
   return new Set(rows.map((r) => r.id));
 }
 
-export function getContentHash(db: DB, id: string): string | undefined {
-  const row = get<{ content_hash: string }>(
+export function getAllContentHashes(db: DB): Map<string, string> {
+  const rows = all<{ id: string; content_hash: string }>(
     db,
-    sql`SELECT content_hash FROM memories WHERE id = ${id}`,
+    sql`SELECT id, content_hash FROM memories`,
   );
-  return row?.content_hash;
+  return new Map(rows.map((r) => [r.id, r.content_hash]));
 }
 
 export function grepMemories(
