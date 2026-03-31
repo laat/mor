@@ -119,4 +119,3 @@ describe('listMemoryFiles', () => {
     expect(files.every((f) => f.endsWith('.md'))).toBe(true);
   });
 });
-

@@ -38,9 +38,7 @@ async function mcpCall(
       const data = JSON.parse(line.slice(6));
       if (data.result) return data.result;
       if (data.error)
-        throw new Error(
-          data.error.message ?? JSON.stringify(data.error),
-        );
+        throw new Error(data.error.message ?? JSON.stringify(data.error));
     }
   }
   const json = JSON.parse(text);

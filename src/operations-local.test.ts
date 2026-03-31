@@ -122,7 +122,11 @@ describe('update', () => {
   });
 
   it('updates tags', async () => {
-    const mem = await ops.add({ title: 'Tag Update', content: 'x', tags: ['a'] });
+    const mem = await ops.add({
+      title: 'Tag Update',
+      content: 'x',
+      tags: ['a'],
+    });
     const updated = await ops.update(mem.id, { tags: ['b', 'c'] });
     expect(updated.tags).toEqual(['b', 'c']);
   });
@@ -153,9 +157,9 @@ describe('update', () => {
 
   it('rejects non-UUID query', async () => {
     await ops.add({ title: 'Strict Test', content: 'x' });
-    await expect(
-      ops.update('Strict Test', { content: 'y' }),
-    ).rejects.toThrow('not found');
+    await expect(ops.update('Strict Test', { content: 'y' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws on non-existent ID', async () => {

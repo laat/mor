@@ -133,12 +133,9 @@ export function createMcpServer(ops: Operations): McpServer {
   server.registerTool(
     'memory_read',
     {
-      description:
-        'Read full content of one or more memories by ID.',
+      description: 'Read full content of one or more memories by ID.',
       inputSchema: {
-        ids: z
-          .array(z.string())
-          .describe('UUIDs of the memories to read'),
+        ids: z.array(z.string()).describe('UUIDs of the memories to read'),
       },
     },
     async ({ ids }) => {
