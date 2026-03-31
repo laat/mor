@@ -29,45 +29,14 @@ function filterParams(filter?: MemoryFilter): Record<string, string> {
 
 export class RemoteOperations implements Operations {
   private baseUrl: string;
-  private token?: string;
+  private headers: Record<string, string>;
 
   constructor(config: Config) {
     if (!config.server?.url) throw new Error('No server URL configured');
     this.baseUrl = config.server.url.replace(/\/+$/, '');
-    this.token = config.server.token;
-  }
-
-  private headers(): Record<string, string> {
-    const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (this.token) h['Authorization'] = `Bearer ${this.token}`;
-    return h;
-  }
-
-  private async fetch(
-    method: string,
-    path: string,
-    body?: unknown,
-  ): Promise<unknown> {
-    const url = `${this.baseUrl}${path}`;
-    const res = await fetch(url, {
-      method,
-      headers: this.headers(),
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    });
-    const json = (await res.json()) as { error?: string };
-    if (!res.ok) {
-      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
-    }
-    return json;
-  }
-
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-  ): Promise<T> {
-    const json = (await this.fetch(method, path, body)) as { data: T };
-    return json.data;
+    this.headers = { 'Content-Type': 'application/json' };
+    if (config.server.token)
+      this.headers['Authorization'] = `Bearer ${config.server.token}`;
   }
 
   async search(
@@ -82,22 +51,25 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    return (await this.fetch(
-      'GET',
-      `/memories/search?${params}`,
-    )) as Paginated<SearchResult>;
+    const res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
+      headers: this.headers,
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json;
   }
 
   async read(query: string): Promise<Memory | undefined> {
-    try {
-      return await this.request<Memory>(
-        'GET',
-        `/memories/${encodeURIComponent(query)}`,
-      );
-    } catch (e) {
-      if (e instanceof HttpError && e.status === 404) return undefined;
-      throw e;
-    }
+    const res = await fetch(
+      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      { headers: this.headers },
+    );
+    if (res.status === 404) return undefined;
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
   async add(opts: {
@@ -108,7 +80,15 @@ export class RemoteOperations implements Operations {
     type?: string;
     repository?: string;
   }): Promise<Memory> {
-    return this.request<Memory>('POST', '/memories', opts);
+    const res = await fetch(`${this.baseUrl}/memories`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(opts),
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
   async update(
@@ -121,18 +101,25 @@ export class RemoteOperations implements Operations {
       type?: string;
     },
   ): Promise<Memory> {
-    return this.request<Memory>(
-      'PUT',
-      `/memories/${encodeURIComponent(query)}`,
-      updates,
+    const res = await fetch(
+      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      { method: 'PUT', headers: this.headers, body: JSON.stringify(updates) },
     );
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
   async remove(query: string): Promise<{ title: string; id: string }> {
-    return this.request<{ title: string; id: string }>(
-      'DELETE',
-      `/memories/${encodeURIComponent(query)}`,
+    const res = await fetch(
+      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      { method: 'DELETE', headers: this.headers },
     );
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
   async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
@@ -151,10 +138,13 @@ export class RemoteOperations implements Operations {
       ...(regex ? { regex: '1' } : {}),
       ...filterParams(filter),
     });
-    return (await this.fetch(
-      'GET',
-      `/memories/grep?${params}`,
-    )) as Paginated<Memory>;
+    const res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
+      headers: this.headers,
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json;
   }
 
   async list(
@@ -167,29 +157,36 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    return (await this.fetch(
-      'GET',
-      `/memories?${params}`,
-    )) as Paginated<Memory>;
+    const res = await fetch(`${this.baseUrl}/memories?${params}`, {
+      headers: this.headers,
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json;
   }
 
   async reindex() {
-    return this.request<{
-      count: number;
-      embedding?: {
-        provider: string;
-        model: string;
-        dimensions: number;
-        baseUrl?: string;
-      };
-    }>('POST', '/reindex');
+    const res = await fetch(`${this.baseUrl}/reindex`, {
+      method: 'POST',
+      headers: this.headers,
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
   async sync(_commitMessage?: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>('POST', '/sync');
+    const res = await fetch(`${this.baseUrl}/sync`, {
+      method: 'POST',
+      headers: this.headers,
+    });
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
   }
 
-  close(): void {
-    // no-op for remote
-  }
+  close(): void {}
 }
