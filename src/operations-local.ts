@@ -107,6 +107,7 @@ export class LocalOperations implements Operations {
     const files = listMemoryFiles(this.config);
     const dbIds = getAllMemoryIds(this.db);
     const seenIds = new Set<string>();
+    const changed: Memory[] = [];
 
     for (const filePath of files) {
       const result = readMemoryWithRaw(filePath);
@@ -118,6 +119,7 @@ export class LocalOperations implements Operations {
 
       if (existingHash !== hashContent(raw)) {
         this.upsertFromMemory(mem, raw);
+        changed.push(mem);
       }
     }
 
@@ -126,6 +128,10 @@ export class LocalOperations implements Operations {
         deleteMemoryFromDb(this.db, id);
       }
     }
+
+    if (changed.length > 0) {
+      this.computeEmbeddingsInBackground(changed);
+    }
   }
 
   private syncIndexIfNeeded(): void {
@@ -133,6 +139,19 @@ export class LocalOperations implements Operations {
     if (now - this.lastSyncTime < 200) return;
     this.lastSyncTime = now;
     this.syncIndex();
+  }
+
+  private computeEmbeddingsInBackground(memories: Memory[]): void {
+    if (this.provider.name === 'none') return;
+    (async () => {
+      for (const mem of memories) {
+        await this.computeEmbedding(mem);
+      }
+    })().catch((e) => {
+      process.stderr.write(
+        `Warning: background embedding failed: ${e instanceof Error ? e.message : e}\n`,
+      );
+    });
   }
 
   private upsertFromMemory(mem: Memory, raw: string): void {

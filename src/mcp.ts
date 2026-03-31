@@ -55,20 +55,22 @@ export function createMcpServer(ops: Operations): McpServer {
         };
       }
       const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
-      const lines = page.data.map((r, i) => {
+      const lines = page.data.map((r) => {
         const tags =
           r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
         const desc = r.memory.description ? `\n  ${r.memory.description}` : '';
         const score = `  (${r.score.toFixed(2)})`;
-        const preview =
-          i > 0 && !r.memory.description
-            ? `\n  ${r.memory.content.split('\n')[0].slice(0, 100)}`
-            : '';
-        const body = i === 0 ? `\n\n${r.memory.content}` : '';
-        return `- ${r.memory.id}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
+        return `- ${r.memory.id}  ${r.memory.title}${tags}${score}${desc}`;
       });
+      const top = page.data[0];
+      const topContent = `\n\n---\n\nTop result: ${top.memory.id}  ${top.memory.title}\n\n${top.memory.content}`;
       return {
-        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
+        content: [
+          {
+            type: 'text' as const,
+            text: header + lines.join('\n') + topContent,
+          },
+        ],
       };
     },
   );
@@ -110,18 +112,20 @@ export function createMcpServer(ops: Operations): McpServer {
         };
       }
       const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
-      const lines = page.data.map((mem, i) => {
+      const lines = page.data.map((mem) => {
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
         const desc = mem.description ? `\n  ${mem.description}` : '';
-        const preview =
-          i > 0 && !mem.description
-            ? `\n  ${mem.content.split('\n')[0].slice(0, 100)}`
-            : '';
-        const body = i === 0 ? `\n\n${mem.content}` : '';
-        return `- ${mem.id}  ${mem.title}${tags}${desc}${preview}${body}`;
+        return `- ${mem.id}  ${mem.title}${tags}${desc}`;
       });
+      const top = page.data[0];
+      const topContent = `\n\n---\n\nTop result: ${top.id}  ${top.title}\n\n${top.content}`;
       return {
-        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
+        content: [
+          {
+            type: 'text' as const,
+            text: header + lines.join('\n') + topContent,
+          },
+        ],
       };
     },
   );
