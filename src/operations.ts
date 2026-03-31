@@ -14,6 +14,7 @@ export interface Config {
   memoryDir: string;
   dbPath: string;
   autosync?: boolean;
+  threshold?: number;
   embedding?: EmbeddingConfig;
   server?: ServerConfig;
   serve?: ServeConfig;

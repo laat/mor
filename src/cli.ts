@@ -115,11 +115,11 @@ addFilterOptions(
     .command('find <query>')
     .description('Search memories by query')
     .option('-l, --limit <n>', 'Max results', '20')
-    .option('-s, --threshold <n>', 'Minimum score (0-1)', '0.1'),
+    .option('-s, --threshold <n>', 'Minimum score (0-1)'),
 ).action(
   async (
     query: string,
-    opts: { limit: string; threshold: string } & MemoryFilter,
+    opts: { limit: string; threshold?: string } & MemoryFilter,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -130,7 +130,9 @@ addFilterOptions(
         Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
         opts,
       );
-      const threshold = parseFloat(opts.threshold) || 0.1;
+      const threshold = opts.threshold
+        ? parseFloat(opts.threshold)
+        : (config.threshold ?? 0.3);
       const results = page.data.filter((r) => r.score >= threshold);
       if (results.length === 0) {
         console.log('No memories found.');
