@@ -96,18 +96,4 @@ Enable `autosync` in config to sync automatically after every add, update, or re
 
 ## Configuration
 
-`~/.config/mor/config.json` is auto-created on first run:
-
-```json
-{
-  "memoryDir": "/home/user/.config/mor/memories",
-  "dbPath": "/home/user/.config/mor/index.db"
-}
-```
-
-Other config options:
-
-- `threshold` — minimum relevance score for `find` results (default 0.3)
-- `autosync` — auto git sync after mutations (see above)
-
-See [HTTP Server](/integration/http/) for `serve` config and [Embeddings](/embeddings/) for embedding config.
+See [Configuration](/docs/config/) for all `config.json` options.
