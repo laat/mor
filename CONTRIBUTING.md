@@ -14,7 +14,7 @@ This is a personal project. I maintain it for my own use and share it because ot
 
 **Feature PRs** — I'm unlikely to merge unsolicited feature work. The project reflects my own workflow and opinions. If you have an idea, start a discussion first.
 
-**Issues** — Issue tracking is disabled. If something is broken, mention it in Discussions or submit a fix.
+**Issues** — Issue tracking is disabled. If something is broken, submit a PR.
 
 ## Fork freely
 
