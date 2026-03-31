@@ -154,7 +154,7 @@ export function searchFts(
   const ftsQuery = escapeFtsQuery(query);
   const rows = all<{ id: string; rank: number }>(
     db,
-    SQL`SELECT m.id, rank
+    SQL`SELECT m.id, bm25(memories_fts, 10.0, 5.0, 1.0) AS rank
         FROM memories_fts f
         JOIN memories m ON m.rowid = f.rowid
         WHERE memories_fts MATCH ${ftsQuery}
