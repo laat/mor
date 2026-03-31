@@ -46,6 +46,7 @@ export function openDb(config: Config): DB {
   const db = new Database(config.dbPath);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
+  db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
   db.function(
     'regexp',
@@ -253,11 +254,12 @@ export function grepMemories(
   const escaped = escapeLike(pattern);
   const like = `%${escaped}%`;
   if (ignoreCase) {
+    const lowerLike = `%${escapeLike(pattern.toLowerCase())}%`;
     return all(
       db,
       SQL`SELECT id, file_path FROM memories
-          WHERE (content LIKE ${like} ESCAPE '\\' COLLATE NOCASE)
-             OR (title LIKE ${like} ESCAPE '\\' COLLATE NOCASE)
+          WHERE (LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
+             OR (LOWER(title) LIKE ${lowerLike} ESCAPE '\\')
           LIMIT ${limit}`,
     );
   }

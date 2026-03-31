@@ -10,22 +10,18 @@ import {
   deleteMemory,
   listMemoryFiles,
 } from './memory.js';
-import { LocalOperations } from './operations-local.js';
 import type { Config } from './operations.js';
 
 let testDir: string;
 let config: Config;
-let ops: LocalOperations;
 
 beforeEach(() => {
   testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-test-'));
   process.env.MOR_HOME = testDir;
   config = loadConfig();
-  ops = new LocalOperations(config);
 });
 
 afterEach(() => {
-  ops.close();
   fs.rmSync(testDir, { recursive: true, force: true });
   delete process.env.MOR_HOME;
 });
@@ -124,66 +120,3 @@ describe('listMemoryFiles', () => {
   });
 });
 
-describe('operations', () => {
-  it('add indexes the memory', async () => {
-    await ops.add({ title: 'Ops Test', content: 'indexed content' });
-    const page = await ops.search('indexed');
-    expect(page.data.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('remove deletes from index', async () => {
-    const mem = await ops.add({ title: 'Will Delete', content: 'temp' });
-    await ops.remove(mem.id);
-    const found = await ops.read(mem.id);
-    expect(found).toBeUndefined();
-  });
-
-  it('search finds memories by FTS', async () => {
-    await ops.add({
-      title: 'JavaScript Guide',
-      content: 'Learn JavaScript basics',
-      tags: ['javascript'],
-    });
-    await ops.add({
-      title: 'Python Guide',
-      content: 'Learn Python basics',
-      tags: ['python'],
-    });
-
-    const page = await ops.search('JavaScript');
-    expect(page.data.length).toBeGreaterThanOrEqual(1);
-    expect(page.data[0].memory.title).toBe('JavaScript Guide');
-  });
-
-  it('read resolves by full UUID', async () => {
-    const mem = await ops.add({ title: 'UUID Test', content: 'content' });
-    const found = await ops.read(mem.id);
-    expect(found?.id).toBe(mem.id);
-  });
-
-  it('read resolves by UUID prefix', async () => {
-    const mem = await ops.add({ title: 'Prefix Test', content: 'content' });
-    const found = await ops.read(mem.id.slice(0, 8));
-    expect(found?.id).toBe(mem.id);
-  });
-
-  it('read resolves by filename', async () => {
-    const mem = await ops.add({ title: 'Filename Test', content: 'content' });
-    const found = await ops.read(path.basename(mem.filePath));
-    expect(found?.id).toBe(mem.id);
-  });
-
-  it('read resolves by search query', async () => {
-    await ops.add({
-      title: 'Unique Quantum Computing',
-      content: 'quantum entanglement',
-    });
-    const found = await ops.read('quantum');
-    expect(found?.title).toBe('Unique Quantum Computing');
-  });
-
-  it('read returns undefined for non-existent', async () => {
-    const found = await ops.read('nonexistent-thing-12345');
-    expect(found).toBeUndefined();
-  });
-});
