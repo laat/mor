@@ -22,7 +22,9 @@ markdown content.
 .SS Search
 .TP
 .BI "find " query
-Full-text search using FTS5 (tokenized, stemmed).
+Full-text search using FTS5 (tokenized, stemmed). When embeddings are configured,
+results are merged using Reciprocal Rank Fusion. Frequently accessed memories
+get a small ranking boost.
 .RS
 .TP
 .BI \-l ", " \-\-limit " " n
