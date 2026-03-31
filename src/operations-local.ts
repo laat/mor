@@ -276,14 +276,22 @@ export class LocalOperations implements Operations {
           .map((r) => [r.id, 1 - r.distance / 2]),
       );
 
-      const allIds = new Set([...ftsMap.keys(), ...vectorMap.keys()]);
+      // Reciprocal Rank Fusion (k=60)
+      const RRF_K = 60;
+      const ftsRanks = new Map(ftsResults.map((r, i) => [r.id, i + 1]));
+      const vecRanked = [...vectorMap.entries()].sort((a, b) => b[1] - a[1]);
+      const vecRanks = new Map(vecRanked.map(([id], i) => [id, i + 1]));
+
+      const allIds = new Set([...ftsRanks.keys(), ...vecRanks.keys()]);
       const merged: Array<{ id: string; score: number }> = [];
       for (const id of allIds) {
-        const ftsScore = ftsMap.get(id) ?? 0;
-        const vecScore = vectorMap.get(id) ?? 0;
-        merged.push({ id, score: ftsScore * 0.6 + vecScore * 0.4 });
+        let score = 0;
+        if (ftsRanks.has(id)) score += 1 / (RRF_K + ftsRanks.get(id)!);
+        if (vecRanks.has(id)) score += 1 / (RRF_K + vecRanks.get(id)!);
+        merged.push({ id, score });
       }
       merged.sort((a, b) => b.score - a.score);
+      const best = merged[0]?.score || 1;
 
       const results: SearchResult[] = [];
       for (const r of merged) {
@@ -291,7 +299,7 @@ export class LocalOperations implements Operations {
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score,
+          score: r.score / best,
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
