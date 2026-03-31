@@ -301,7 +301,7 @@ describe('memory_read', () => {
   });
 
   it('returns error for empty ids', async () => {
-    const { text, isError } = await callTool('memory_read', { ids: [] });
+    const { isError } = await callTool('memory_read', { ids: [] });
     expect(isError).toBe(true);
   });
 });

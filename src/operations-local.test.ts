@@ -403,8 +403,8 @@ describe('list', () => {
   });
 
   it('sorts by updated descending', async () => {
-    const a = await ops.add({ title: 'First', content: 'a' });
-    const b = await ops.add({ title: 'Second', content: 'b' });
+    await ops.add({ title: 'First', content: 'a' });
+    await ops.add({ title: 'Second', content: 'b' });
 
     const page = await ops.list();
     expect(page.data[0].title).toBe('Second');
