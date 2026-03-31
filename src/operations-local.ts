@@ -262,7 +262,6 @@ export class LocalOperations implements Operations {
     // Fetch enough to cover offset + limit after filtering
     const fetchLimit = offset + limit + 50;
     const ftsResults = searchFts(this.db, query, fetchLimit);
-    const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));
 
     let all: SearchResult[];
 
