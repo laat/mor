@@ -224,7 +224,7 @@ export class LocalOperations implements Operations {
     return undefined;
   }
 
-  private resolveQuery(query: string): Memory | undefined {
+  private async resolveQuery(query: string): Promise<Memory | undefined> {
     const byId = this.resolveById(query);
     if (byId) return byId;
 
@@ -237,13 +237,10 @@ export class LocalOperations implements Operations {
     }
 
     try {
-      const results = searchFts(this.db, query, 1);
-      if (results.length > 0) {
-        const row = getMemoryById(this.db, results[0].id);
-        if (row) return readMemory(row.file_path);
-      }
+      const page = await this.search(query, 1);
+      if (page.data.length > 0) return page.data[0].memory;
     } catch {
-      // FTS query syntax error
+      // search error
     }
 
     return undefined;
@@ -333,7 +330,7 @@ export class LocalOperations implements Operations {
   }
 
   async read(query: string): Promise<Memory | undefined> {
-    const mem = this.resolveQuery(query);
+    const mem = await this.resolveQuery(query);
     if (mem) recordAccess(this.db, mem.id);
     return mem;
   }
