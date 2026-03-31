@@ -45,13 +45,16 @@ import type {
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const UUID_PREFIX_RE = /^[0-9a-f]{4,}$/i;
+const UUID_PREFIX_RE = /^[0-9a-f]{8,}$/i;
+const FILTER_BUFFER = 50;
+const ACCESS_BOOST_CAP = 50;
+const ACCESS_BOOST_WEIGHT = 0.001;
+
+import { matchGlob } from './utils/glob.js';
 
 function hashContent(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
-
-import { matchGlob } from './utils/glob.js';
 
 function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
   if (filter.type) {
@@ -72,22 +75,14 @@ function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
   return true;
 }
 
-function applyMemoryFilter(
-  memories: Memory[],
+function applyFilter<T>(
+  items: T[],
+  getMem: (item: T) => Memory,
   filter?: MemoryFilter,
-): Memory[] {
+): T[] {
   if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
-    return memories;
-  return memories.filter((mem) => matchMemory(mem, filter));
-}
-
-function applyResultFilter(
-  results: SearchResult[],
-  filter?: MemoryFilter,
-): SearchResult[] {
-  if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
-    return results;
-  return results.filter((r) => matchMemory(r.memory, filter));
+    return items;
+  return items.filter((item) => matchMemory(getMem(item), filter));
 }
 
 export class LocalOperations implements Operations {
@@ -114,8 +109,6 @@ export class LocalOperations implements Operations {
       );
     }
   }
-
-  // ---- Index management ----
 
   private syncIndex(): void {
     const files = listMemoryFiles(this.config);
@@ -204,8 +197,6 @@ export class LocalOperations implements Operations {
     }
   }
 
-  // ---- Query resolution ----
-
   private resolveById(id: string): Memory | undefined {
     this.syncIndexIfNeeded();
 
@@ -214,7 +205,7 @@ export class LocalOperations implements Operations {
       if (row) return readMemory(row.file_path);
     }
 
-    if (UUID_PREFIX_RE.test(id) && id.length >= 8) {
+    if (UUID_PREFIX_RE.test(id)) {
       const row = getMemoryByPrefix(this.db, id);
       if (row) return readMemory(row.file_path);
     }
@@ -244,8 +235,6 @@ export class LocalOperations implements Operations {
     return undefined;
   }
 
-  // ---- Operations interface ----
-
   async search(
     query: string,
     limit = 20,
@@ -255,7 +244,7 @@ export class LocalOperations implements Operations {
     this.syncIndexIfNeeded();
 
     // Fetch enough to cover offset + limit after filtering
-    const fetchLimit = offset + limit + 50;
+    const fetchLimit = offset + limit + FILTER_BUFFER;
     const ftsResults = searchFts(this.db, query, fetchLimit);
 
     let all: SearchResult[];
@@ -286,7 +275,7 @@ export class LocalOperations implements Operations {
         if (ftsRanks.has(id)) score += 1 / (RRF_K + ftsRanks.get(id)!);
         if (vecRanks.has(id)) score += 1 / (RRF_K + vecRanks.get(id)!);
         const accesses = memRows.get(id)?.access_count ?? 0;
-        score *= 1 + Math.min(accesses, 50) * 0.001;
+        score *= 1 + Math.min(accesses, ACCESS_BOOST_CAP) * ACCESS_BOOST_WEIGHT;
         merged.push({ id, score });
       }
       merged.sort((a, b) => b.score - a.score);
@@ -302,7 +291,7 @@ export class LocalOperations implements Operations {
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
-      all = applyResultFilter(results, filter);
+      all = applyFilter(results, (r) => r.memory, filter);
     } else {
       const ids = ftsResults.map((r) => r.id);
       const memRows = getMemoriesByIds(this.db, ids);
@@ -312,12 +301,16 @@ export class LocalOperations implements Operations {
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score * (1 + Math.min(row.access_count, 50) * 0.001),
+          score:
+            r.score *
+            (1 +
+              Math.min(row.access_count, ACCESS_BOOST_CAP) *
+                ACCESS_BOOST_WEIGHT),
           matchType: 'fts',
         });
       }
       results.sort((a, b) => b.score - a.score);
-      all = applyResultFilter(results, filter);
+      all = applyFilter(results, (r) => r.memory, filter);
     }
 
     return {
@@ -395,14 +388,15 @@ export class LocalOperations implements Operations {
     const rows = grepMemories(
       this.db,
       pattern,
-      offset + limit + 50,
+      offset + limit + FILTER_BUFFER,
       ignoreCase,
       regex,
     );
-    const all = applyMemoryFilter(
+    const all = applyFilter(
       rows
         .map((row) => tryReadMemory(row.file_path)?.mem)
         .filter((m): m is Memory => m !== undefined),
+      (m) => m,
       filter,
     );
     return {
@@ -418,12 +412,13 @@ export class LocalOperations implements Operations {
     limit = 100,
     offset = 0,
   ): Promise<Paginated<Memory>> {
-    this.syncIndex();
+    this.syncIndexIfNeeded();
     const files = listMemoryFiles(this.config);
-    const all = applyMemoryFilter(
+    const all = applyFilter(
       files
         .map((f) => tryReadMemory(f)?.mem)
         .filter((m): m is Memory => m !== undefined),
+      (m) => m,
       filter,
     );
     all.sort((a, b) => b.updated.localeCompare(a.updated));
