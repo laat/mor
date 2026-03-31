@@ -299,6 +299,14 @@ export function searchVec(
     .all(buffer, limit) as Array<{ id: string; distance: number }>;
 }
 
+export function getEmbeddingModel(db: DB): string | undefined {
+  const row = get<{ model: string }>(
+    db,
+    SQL`SELECT model FROM embeddings LIMIT 1`,
+  );
+  return row?.model;
+}
+
 export function getEmbeddingCount(db: DB): number {
   const row = get<{ count: number }>(
     db,

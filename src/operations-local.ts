@@ -6,6 +6,7 @@ import {
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
+  getEmbeddingModel,
   getMemoryByFilename,
   getMemoryById,
   getMemoryByPrefix,
@@ -93,11 +94,24 @@ export class LocalOperations implements Operations {
   private db: DB;
   private provider: EmbeddingProvider;
   private lastSyncTime = 0;
+  private autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoSyncMessages: string[] = [];
 
   constructor(config: Config) {
     this.config = config;
     this.db = openDb(config);
     this.provider = createProvider(config.embedding);
+    this.checkEmbeddingModel();
+  }
+
+  private checkEmbeddingModel(): void {
+    if (this.provider.name === 'none') return;
+    const storedModel = getEmbeddingModel(this.db);
+    if (storedModel && storedModel !== this.provider.model) {
+      process.stderr.write(
+        `Warning: embeddings were generated with "${storedModel}" but current model is "${this.provider.model}". Run "mor reindex" to rebuild.\n`,
+      );
+    }
   }
 
   // ---- Index management ----
@@ -319,7 +333,7 @@ export class LocalOperations implements Operations {
     const { mem, raw } = createMemory(this.config, opts);
     this.upsertFromMemory(mem, raw);
     await this.computeEmbedding(mem);
-    await this.autoSync(`add: ${mem.title}`);
+    this.autoSync(`add: ${mem.title}`);
     return mem;
   }
 
@@ -341,7 +355,7 @@ export class LocalOperations implements Operations {
     const { mem, raw } = updateMemory(existing.filePath, updates);
     this.upsertFromMemory(mem, raw);
     await this.computeEmbedding(mem);
-    await this.autoSync(`update: ${mem.title}`);
+    this.autoSync(`update: ${mem.title}`);
     return mem;
   }
 
@@ -353,7 +367,7 @@ export class LocalOperations implements Operations {
       );
     deleteMemory(mem.filePath);
     deleteMemoryFromDb(this.db, mem.id);
-    await this.autoSync(`remove: ${mem.title}`);
+    this.autoSync(`remove: ${mem.title}`);
     return { title: mem.title, id: mem.id };
   }
 
@@ -484,18 +498,31 @@ export class LocalOperations implements Operations {
     };
   }
 
-  private async autoSync(commitMessage: string): Promise<void> {
+  private autoSync(commitMessage: string): void {
     if (!this.config.autosync) return;
-    try {
-      await this.sync(commitMessage);
-    } catch (e) {
+    this.autoSyncMessages.push(commitMessage);
+    if (this.autoSyncTimer) clearTimeout(this.autoSyncTimer);
+    this.autoSyncTimer = setTimeout(() => this.flushAutoSync(), 2000);
+  }
+
+  private flushAutoSync(): void {
+    if (this.autoSyncMessages.length === 0) return;
+    const messages = this.autoSyncMessages.splice(0);
+    this.autoSyncTimer = null;
+    const commitMessage =
+      messages.length === 1 ? messages[0] : messages.join(', ');
+    this.sync(commitMessage).catch((e) => {
       process.stderr.write(
         `Warning: autosync failed: ${e instanceof Error ? e.message : e}\n`,
       );
-    }
+    });
   }
 
   close(): void {
+    if (this.autoSyncTimer) {
+      clearTimeout(this.autoSyncTimer);
+      this.flushAutoSync();
+    }
     this.db.close();
   }
 }
