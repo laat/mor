@@ -96,7 +96,7 @@ Run the server on one machine, access from anywhere:
 
 ```sh
 # Server
-mor serve --port 7677
+mor serve --port 7677 --token optional-secret
 ```
 
 ```jsonc
