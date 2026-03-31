@@ -6,8 +6,8 @@ import {
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
-  getAccessCount,
   getEmbeddingModel,
+  getMemoriesByIds,
   recordAccess,
   getMemoryByFilename,
   getMemoryById,
@@ -280,14 +280,14 @@ export class LocalOperations implements Operations {
       const vecRanked = [...vectorMap.entries()].sort((a, b) => b[1] - a[1]);
       const vecRanks = new Map(vecRanked.map(([id], i) => [id, i + 1]));
 
-      const allIds = new Set([...ftsRanks.keys(), ...vecRanks.keys()]);
+      const allIds = [...new Set([...ftsRanks.keys(), ...vecRanks.keys()])];
+      const memRows = getMemoriesByIds(this.db, allIds);
       const merged: Array<{ id: string; score: number }> = [];
       for (const id of allIds) {
         let score = 0;
         if (ftsRanks.has(id)) score += 1 / (RRF_K + ftsRanks.get(id)!);
         if (vecRanks.has(id)) score += 1 / (RRF_K + vecRanks.get(id)!);
-        // Small access-based tiebreaker (max ~5% boost)
-        const accesses = getAccessCount(this.db, id);
+        const accesses = memRows.get(id)?.access_count ?? 0;
         score *= 1 + Math.min(accesses, 50) * 0.001;
         merged.push({ id, score });
       }
@@ -296,7 +296,7 @@ export class LocalOperations implements Operations {
 
       const results: SearchResult[] = [];
       for (const r of merged) {
-        const row = getMemoryById(this.db, r.id);
+        const row = memRows.get(r.id);
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
@@ -306,14 +306,15 @@ export class LocalOperations implements Operations {
       }
       all = applyResultFilter(results, filter);
     } else {
+      const ids = ftsResults.map((r) => r.id);
+      const memRows = getMemoriesByIds(this.db, ids);
       const results: SearchResult[] = [];
       for (const r of ftsResults) {
-        const row = getMemoryById(this.db, r.id);
+        const row = memRows.get(r.id);
         if (!row) continue;
-        const accesses = getAccessCount(this.db, r.id);
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score * (1 + Math.min(accesses, 50) * 0.001),
+          score: r.score * (1 + Math.min(row.access_count, 50) * 0.001),
           matchType: 'fts',
         });
       }
