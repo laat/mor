@@ -114,34 +114,45 @@ addFilterOptions(
   program
     .command('find <query>')
     .description('Search memories by query')
-    .option('-l, --limit <n>', 'Max results', '20'),
-).action(async (query: string, opts: { limit: string } & MemoryFilter) => {
-  const config = loadConfig();
-  const ops = getOps(config);
-  try {
-    const limitRaw = parseInt(opts.limit, 10);
-    const page = await ops.search(
-      query,
-      Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
-      opts,
-    );
-    if (page.data.length === 0) {
-      console.log('No memories found.');
-      return;
+    .option('-l, --limit <n>', 'Max results', '20')
+    .option('-s, --threshold <n>', 'Minimum score (0-1)', '0.1'),
+).action(
+  async (
+    query: string,
+    opts: { limit: string; threshold: string } & MemoryFilter,
+  ) => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      const limitRaw = parseInt(opts.limit, 10);
+      const page = await ops.search(
+        query,
+        Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
+        opts,
+      );
+      const threshold = parseFloat(opts.threshold) || 0.1;
+      const results = page.data.filter((r) => r.score >= threshold);
+      if (results.length === 0) {
+        console.log('No memories found.');
+        return;
+      }
+      for (const r of results) {
+        const tags =
+          r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
+        const score = `  (${r.score.toFixed(2)})`;
+        console.log(
+          `${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${score}`,
+        );
+        console.log(`         ${path.basename(r.memory.filePath)}`);
+      }
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      ops.close();
     }
-    for (const r of page.data) {
-      const tags =
-        r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
-      console.log(`${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}`);
-      console.log(`         ${path.basename(r.memory.filePath)}`);
-    }
-  } catch (e) {
-    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-    process.exit(1);
-  } finally {
-    ops.close();
-  }
-});
+  },
+);
 
 addFilterOptions(
   program
