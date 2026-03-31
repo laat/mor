@@ -1,0 +1,300 @@
+.TH MOR 1 "2026-03-31" "mor 0.7.1" "User Commands"
+.SH NAME
+mor \- a shared memory store for humans and AI
+.SH SYNOPSIS
+.B mor
+.I command
+.RI [ options ]
+.RI [ arguments ]
+.SH DESCRIPTION
+.B mor
+stores knowledge as markdown files with YAML frontmatter, indexed by SQLite
+FTS5 with optional vector embeddings. It provides a CLI, MCP server, and HTTP
+API for managing memories.
+.PP
+Memories are stored in
+.I ~/.config/mor/memories/
+(overridable via
+.BR MOR_HOME ).
+Each memory has an ID (UUID), title, optional description, tags, type, and
+markdown content.
+.SH COMMANDS
+.SS Search
+.TP
+.BI "find " query
+Full-text search using FTS5 (tokenized, stemmed).
+.RS
+.TP
+.BI \-l ", " \-\-limit " " n
+Max results (default 20).
+.RE
+.TP
+.BI "grep " pattern
+Literal substring search across memory content.
+.RS
+.TP
+.BI \-n ", " \-\-limit " " n
+Max results (default 20).
+.TP
+.BR \-i ", " \-\-ignore\-case
+Case-insensitive matching.
+.TP
+.BR \-l ", " \-\-long
+Show file paths.
+.RE
+.SS Create and Edit
+.TP
+.BI "add " "[file|url]"
+Add a memory from a file, URL, stdin, or \fB$EDITOR\fR. Without arguments,
+opens the editor.
+.RS
+.TP
+.BI \-t ", " \-\-title " " title
+Memory title.
+.TP
+.BI \-d ", " \-\-description " " text
+Short description.
+.TP
+.BI \-\-tags " " tags
+Comma-separated tags.
+.TP
+.BI \-\-type " " type
+Memory type (see \fBTYPES\fR).
+.RE
+.TP
+.BI "edit " query
+Open a memory in \fB$EDITOR\fR.
+.RS
+.TP
+.B \-\-raw
+Edit frontmatter too.
+.RE
+.TP
+.BI "update " query
+Update metadata or content of an existing memory.
+.RS
+.TP
+.BI \-t ", " \-\-title " " title
+New title.
+.TP
+.BI \-d ", " \-\-description " " text
+New description.
+.TP
+.BI \-\-tags " " tags
+New tags (comma-separated).
+.TP
+.BI \-\-type " " type
+New type.
+.TP
+.BI \-\-content\-from " " source
+Read new content from file or \fB\-\fR for stdin.
+.RE
+.SS Read and Export
+.TP
+.BI "cat " query
+Print memory content to stdout.
+.RS
+.TP
+.B \-\-raw
+Include YAML frontmatter.
+.RE
+.TP
+.BI "cp " "query dest"
+Copy memory content to a file.
+.RS
+.TP
+.B \-\-raw
+Include YAML frontmatter.
+.RE
+.SS Manage
+.TP
+.BI "rm " id
+Remove a memory by UUID or UUID prefix (8+ characters).
+.TP
+.B ls
+List all memories, sorted by last updated.
+.RS
+.TP
+.BI \-n ", " \-\-limit " " n
+Max results.
+.TP
+.BR \-l ", " \-\-long
+Show type, date, tags, and file path.
+.TP
+.B \-\-tags
+List all tags with counts.
+.TP
+.B \-\-types
+List all types with counts.
+.RE
+.TP
+.B sync
+Pull remote changes via git, commit and push local changes.
+.TP
+.B reindex
+Rebuild the search index from memory files.
+.TP
+.BI "import " dir
+Import \fI.md\fR files from a directory.
+.SS Server
+.TP
+.B mcp
+Start an MCP server over stdio. Used by AI assistants.
+.TP
+.B serve
+Start an HTTP server for remote access.
+.RS
+.TP
+.BI \-p ", " \-\-port " " port
+Listen port (default 7677).
+.TP
+.BI \-H ", " \-\-host " " host
+Listen host (default 127.0.0.1).
+.TP
+.BI \-\-token " " token
+Require Bearer token authentication.
+.TP
+.B \-\-mcp
+Enable MCP endpoint at \fI/mcp\fR.
+.RE
+.TP
+.B version
+Show version information.
+.SH FILTER OPTIONS
+The following options are available for
+.BR find ,
+.BR grep ,
+and
+.BR ls :
+.TP
+.BI \-\-type " " type
+Filter by memory type (comma-separated, glob patterns).
+.TP
+.BI \-\-tag " " pattern
+Filter by tag (glob pattern).
+.TP
+.BI \-\-repo " " pattern
+Filter by repository (glob pattern).
+.TP
+.BI \-\-ext " " ext
+Filter by file extension.
+.SH TYPES
+.TP
+.B knowledge
+General knowledge (default).
+.TP
+.B snippet
+Code snippet.
+.TP
+.B file
+Saved file.
+.TP
+.B user
+User preferences and profile.
+.TP
+.B feedback
+Workflow feedback and corrections.
+.TP
+.B project
+Project context and decisions.
+.TP
+.B reference
+Pointers to external resources.
+.SH QUERY RESOLUTION
+When a command accepts a
+.IR query ,
+it is resolved in order: full UUID, UUID prefix (8+ characters), filename,
+then full-text search.
+.SH ENVIRONMENT
+.TP
+.B MOR_HOME
+Override the configuration directory (default \fI~/.config/mor\fR).
+.TP
+.B EDITOR
+Editor used by
+.B add
+and
+.BR edit .
+.SH FILES
+.TP
+.I ~/.config/mor/config.json
+Configuration file.
+.TP
+.I ~/.config/mor/memories/
+Memory storage directory.
+.TP
+.I ~/.config/mor/index.db
+SQLite search index.
+.SH CONFIGURATION
+The configuration file supports:
+.TP
+.B memoryDir
+Path to memory storage directory.
+.TP
+.B dbPath
+Path to SQLite database.
+.TP
+.B autosync
+Automatically git sync after add, update, and remove (boolean).
+.TP
+.B embedding
+Embedding provider configuration (openai, azure-openai, ollama, none).
+.TP
+.B server
+Remote server connection (url, token).
+.TP
+.B serve
+HTTP server defaults (port, host, token, mcp).
+.SH EXAMPLES
+Add a memory from a file:
+.PP
+.RS
+.nf
+mor add src/utils.ts
+.fi
+.RE
+.PP
+Search for memories:
+.PP
+.RS
+.nf
+mor find "authentication flow"
+.fi
+.RE
+.PP
+Grep for an exact string:
+.PP
+.RS
+.nf
+mor grep "createServer" \-i
+.fi
+.RE
+.PP
+List memories tagged with "config":
+.PP
+.RS
+.nf
+mor ls \-\-tag config
+.fi
+.RE
+.PP
+Update tags on a memory:
+.PP
+.RS
+.nf
+mor update 8da8d8f2 \-\-tags "go,concurrency"
+.fi
+.RE
+.PP
+Start the HTTP server with auth and MCP:
+.PP
+.RS
+.nf
+mor serve \-\-token secret \-\-mcp
+.fi
+.RE
+.SH AUTHORS
+Sigurd Fosseng <sigurd@fosseng.net>
+.SH SEE ALSO
+.UR https://github.com/laat/mor
+.UE
