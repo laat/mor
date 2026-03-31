@@ -180,7 +180,7 @@ footer .footer-sub{margin-top:1rem;font-size:0.75rem;color:rgba(122,158,130,0.4)
     <div class="card">
       <span class="card-icon">&#x1F50D;</span>
       <h3>Full-text search</h3>
-      <p>SQLite FTS5 with porter stemming. OR-ranked multi-word queries. Literal substring grep. Optional vector embeddings.</p>
+      <p>SQLite FTS5 with porter stemming. OR-ranked multi-word queries. Grep with regex support. Optional vector embeddings.</p>
     </div>
     <div class="card">
       <span class="card-icon">&#x1F916;</span>
@@ -387,15 +387,16 @@ const termLines = [
   { type: 'output', html: '<span class="hl">405614a7</span>  retryWithBackoff.ts  [rxjs, fetch]  (1.00)' },
   { type: 'output', text: 'c937cadb  rxjs.svelte.ts  [rxjs, svelte]  (0.31)' },
   { type: 'blank' },
+  { type: 'comment', text: '# regex search across all memories' },
+  { type: 'cmd', text: 'mor grep -E "async\\s+function" -i' },
+  { type: 'output', text: 'd8555419  rxjs.dom.ts' },
+  { type: 'output', text: '405614a7  retryWithBackoff.ts' },
+  { type: 'blank' },
   { type: 'comment', text: '# browse by tag' },
   { type: 'cmd', text: 'mor ls --tag "rxjs"' },
   { type: 'output', text: '405614a7  retryWithBackoff.ts  \u2014 RxJS retry with exponential backoff' },
   { type: 'output', text: 'd8555419  rxjs.dom.ts  \u2014 Visibility and media query observables' },
   { type: 'output', text: '010fb8f5  rxjs.subjects.ts  \u2014 LocalStorage-backed BehaviorSubject' },
-  { type: 'blank' },
-  { type: 'comment', text: '# literal substring search' },
-  { type: 'cmd', text: 'mor grep "Retry-After" -i' },
-  { type: 'output', text: '405614a7  retryWithBackoff.ts' },
 ];
 
 const term = document.getElementById('term');
