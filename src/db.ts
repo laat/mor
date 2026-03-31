@@ -238,6 +238,7 @@ export function grepMemories(
     } catch (e) {
       throw new Error(
         `Invalid regex: ${e instanceof Error ? e.message : String(e)}`,
+        { cause: e },
       );
     }
     const re = ignoreCase ? `(?i)${pattern}` : pattern;
