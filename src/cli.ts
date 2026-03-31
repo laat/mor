@@ -526,6 +526,13 @@ program
     try {
       const result = await ops.reindex();
       console.log(`Reindexed ${result.count} memories.`);
+      if (result.embedding) {
+        const e = result.embedding;
+        const url = e.baseUrl ?? e.provider;
+        console.log(
+          `Embeddings: ${e.provider} (${e.model}, ${e.dimensions}d) via ${url}`,
+        );
+      }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);

@@ -409,7 +409,7 @@ export class LocalOperations implements Operations {
     };
   }
 
-  async reindex(): Promise<{ count: number }> {
+  async reindex() {
     clearDb(this.db, this.config);
     const files = listMemoryFiles(this.config);
 
@@ -423,7 +423,19 @@ export class LocalOperations implements Operations {
       await this.computeEmbedding(mem);
       count++;
     }
-    return { count };
+    const emb = this.config.embedding;
+    return {
+      count,
+      embedding:
+        emb && emb.provider !== 'none'
+          ? {
+              provider: emb.provider,
+              model: emb.model,
+              dimensions: emb.dimensions,
+              baseUrl: emb.baseUrl,
+            }
+          : undefined,
+    };
   }
 
   async sync(commitMessage?: string): Promise<{ message: string }> {

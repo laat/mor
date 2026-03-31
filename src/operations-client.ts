@@ -173,8 +173,16 @@ export class RemoteOperations implements Operations {
     )) as Paginated<Memory>;
   }
 
-  async reindex(): Promise<{ count: number }> {
-    return this.request<{ count: number }>('POST', '/reindex');
+  async reindex() {
+    return this.request<{
+      count: number;
+      embedding?: {
+        provider: string;
+        model: string;
+        dimensions: number;
+        baseUrl?: string;
+      };
+    }>('POST', '/reindex');
   }
 
   async sync(_commitMessage?: string): Promise<{ message: string }> {

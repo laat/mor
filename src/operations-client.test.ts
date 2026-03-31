@@ -91,4 +91,11 @@ describe('RemoteOperations client', () => {
     const gone = await ops.read(mem.id);
     expect(gone).toBeUndefined();
   });
+
+  it('reindex returns count and no embedding when not configured', async () => {
+    await ops.add({ title: 'Reindex Test', content: 'x' });
+    const result = await ops.reindex();
+    expect(result.count).toBe(1);
+    expect(result.embedding).toBeUndefined();
+  });
 });

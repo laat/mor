@@ -125,7 +125,15 @@ export interface Operations {
     limit?: number,
     offset?: number,
   ): Promise<Paginated<Memory>>;
-  reindex(): Promise<{ count: number }>;
+  reindex(): Promise<{
+    count: number;
+    embedding?: {
+      provider: string;
+      model: string;
+      dimensions: number;
+      baseUrl?: string;
+    };
+  }>;
   sync(commitMessage?: string): Promise<{ message: string }>;
   close(): void;
 }

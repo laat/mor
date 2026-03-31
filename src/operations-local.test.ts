@@ -445,6 +445,12 @@ describe('reindex', () => {
     expect(result.count).toBe(2);
   });
 
+  it('returns undefined embedding when not configured', async () => {
+    await ops.add({ title: 'No Embed', content: 'x' });
+    const result = await ops.reindex();
+    expect(result.embedding).toBeUndefined();
+  });
+
   it('picks up external file changes', async () => {
     await ops.add({ title: 'External', content: 'original' });
 
