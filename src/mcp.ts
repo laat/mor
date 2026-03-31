@@ -34,13 +34,21 @@ export function createMcpServer(ops: Operations): McpServer {
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
-        offset: z.number().optional().describe('Skip first N results (default 0)'),
+        offset: z
+          .number()
+          .optional()
+          .describe('Skip first N results (default 0)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
     async ({ query, limit, offset, tag, type }) => {
-      const page = await ops.search(query, limit ?? 20, { tag, type }, offset ?? 0);
+      const page = await ops.search(
+        query,
+        limit ?? 20,
+        { tag, type },
+        offset ?? 0,
+      );
       if (page.data.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
@@ -73,7 +81,10 @@ export function createMcpServer(ops: Operations): McpServer {
       inputSchema: {
         pattern: z.string().describe('Substring or regex pattern'),
         limit: z.number().optional().describe('Max results (default 20)'),
-        offset: z.number().optional().describe('Skip first N results (default 0)'),
+        offset: z
+          .number()
+          .optional()
+          .describe('Skip first N results (default 0)'),
         ignore_case: z
           .boolean()
           .optional()
@@ -214,7 +225,10 @@ export function createMcpServer(ops: Operations): McpServer {
         'List all memories with titles, IDs, and tags. Use tag/type params to filter.',
       inputSchema: {
         limit: z.number().optional().describe('Max results (default 100)'),
-        offset: z.number().optional().describe('Skip first N results (default 0)'),
+        offset: z
+          .number()
+          .optional()
+          .describe('Skip first N results (default 0)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
@@ -232,7 +246,9 @@ export function createMcpServer(ops: Operations): McpServer {
         const desc = mem.description ? `\n  ${mem.description}` : '';
         return `- ${mem.id}  ${mem.title}${tags}${desc}`;
       });
-      return { content: [{ type: 'text' as const, text: header + lines.join('\n') }] };
+      return {
+        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
+      };
     },
   );
 

@@ -349,12 +349,14 @@ export class LocalOperations implements Operations {
     return { title: mem.title, id: mem.id };
   }
 
-  async grep(
-    pattern: string,
-    opts?: GrepOptions,
-  ): Promise<Paginated<Memory>> {
-    const { limit = 20, ignoreCase = false, filter, offset = 0, regex = false } =
-      opts ?? {};
+  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
+    const {
+      limit = 20,
+      ignoreCase = false,
+      filter,
+      offset = 0,
+      regex = false,
+    } = opts ?? {};
     this.syncIndexIfNeeded();
     const rows = grepMemories(
       this.db,

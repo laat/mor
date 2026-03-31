@@ -119,10 +119,7 @@ export interface Operations {
     },
   ): Promise<Memory>;
   remove(query: string): Promise<{ title: string; id: string }>;
-  grep(
-    pattern: string,
-    opts?: GrepOptions,
-  ): Promise<Paginated<Memory>>;
+  grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>>;
   list(
     filter?: MemoryFilter,
     limit?: number,

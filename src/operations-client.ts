@@ -126,12 +126,14 @@ export class RemoteOperations implements Operations {
     );
   }
 
-  async grep(
-    pattern: string,
-    opts?: GrepOptions,
-  ): Promise<Paginated<Memory>> {
-    const { limit = 20, ignoreCase = false, filter, offset = 0, regex = false } =
-      opts ?? {};
+  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
+    const {
+      limit = 20,
+      ignoreCase = false,
+      filter,
+      offset = 0,
+      regex = false,
+    } = opts ?? {};
     const params = new URLSearchParams({
       q: pattern,
       limit: String(limit),
