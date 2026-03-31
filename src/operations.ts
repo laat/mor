@@ -77,12 +77,20 @@ export interface MemoryFilter {
   ext?: string;
 }
 
+export interface Paginated<T> {
+  data: T[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
 export interface Operations {
   search(
     query: string,
     limit?: number,
     filter?: MemoryFilter,
-  ): Promise<SearchResult[]>;
+    offset?: number,
+  ): Promise<Paginated<SearchResult>>;
   read(query: string): Promise<Memory | undefined>;
   add(opts: {
     title: string;
@@ -108,8 +116,13 @@ export interface Operations {
     limit?: number,
     ignoreCase?: boolean,
     filter?: MemoryFilter,
-  ): Promise<Memory[]>;
-  list(filter?: MemoryFilter): Promise<Memory[]>;
+    offset?: number,
+  ): Promise<Paginated<Memory>>;
+  list(
+    filter?: MemoryFilter,
+    limit?: number,
+    offset?: number,
+  ): Promise<Paginated<Memory>>;
   reindex(): Promise<{ count: number }>;
   sync(commitMessage?: string): Promise<{ message: string }>;
   close(): void;

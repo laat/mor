@@ -3,6 +3,7 @@ import type {
   Memory,
   MemoryFilter,
   Operations,
+  Paginated,
   SearchResult,
 } from './operations.js';
 
@@ -63,13 +64,18 @@ export class RemoteOperations implements Operations {
     query: string,
     limit = 20,
     filter?: MemoryFilter,
-  ): Promise<SearchResult[]> {
+    offset = 0,
+  ): Promise<Paginated<SearchResult>> {
     const params = new URLSearchParams({
       q: query,
       limit: String(limit),
+      offset: String(offset),
       ...filterParams(filter),
     });
-    return this.request<SearchResult[]>('GET', `/memories/search?${params}`);
+    return this.request<Paginated<SearchResult>>(
+      'GET',
+      `/memories/search?${params}`,
+    );
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -124,20 +130,29 @@ export class RemoteOperations implements Operations {
     limit = 20,
     ignoreCase = false,
     filter?: MemoryFilter,
-  ): Promise<Memory[]> {
+    offset = 0,
+  ): Promise<Paginated<Memory>> {
     const params = new URLSearchParams({
       q: pattern,
       limit: String(limit),
+      offset: String(offset),
       ...(ignoreCase ? { ignoreCase: '1' } : {}),
       ...filterParams(filter),
     });
-    return this.request<Memory[]>('GET', `/memories/grep?${params}`);
+    return this.request<Paginated<Memory>>('GET', `/memories/grep?${params}`);
   }
 
-  async list(filter?: MemoryFilter): Promise<Memory[]> {
-    const params = new URLSearchParams(filterParams(filter));
-    const qs = params.toString();
-    return this.request<Memory[]>('GET', `/memories${qs ? `?${qs}` : ''}`);
+  async list(
+    filter?: MemoryFilter,
+    limit = 100,
+    offset = 0,
+  ): Promise<Paginated<Memory>> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      ...filterParams(filter),
+    });
+    return this.request<Paginated<Memory>>('GET', `/memories?${params}`);
   }
 
   async reindex(): Promise<{ count: number }> {

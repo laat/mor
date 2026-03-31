@@ -120,16 +120,16 @@ addFilterOptions(
   const ops = getOps(config);
   try {
     const limitRaw = parseInt(opts.limit, 10);
-    const results = await ops.search(
+    const page = await ops.search(
       query,
       Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
       opts,
     );
-    if (results.length === 0) {
+    if (page.data.length === 0) {
       console.log('No memories found.');
       return;
     }
-    for (const r of results) {
+    for (const r of page.data) {
       const tags =
         r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
       console.log(`${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}`);
@@ -164,12 +164,12 @@ addFilterOptions(
     try {
       const limitRaw = parseInt(opts.limit, 10);
       const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-      const memories = await ops.grep(pattern, limit, opts.ignoreCase, opts);
-      if (memories.length === 0) {
+      const page = await ops.grep(pattern, limit, opts.ignoreCase, opts);
+      if (page.data.length === 0) {
         console.log('No memories found.');
         return;
       }
-      for (const mem of memories) {
+      for (const mem of page.data) {
         if (opts.long) {
           const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
           console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
@@ -583,14 +583,22 @@ addFilterOptions(
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      let memories = await ops.list(opts);
-      if (memories.length === 0) {
+      // For --tags/--types we need all memories, otherwise use limit
+      const needAll = opts.tags || opts.types;
+      const limitRaw = opts.limit ? parseInt(opts.limit, 10) : undefined;
+      const limit = needAll
+        ? 10000
+        : limitRaw && !Number.isNaN(limitRaw) && limitRaw >= 1
+          ? limitRaw
+          : 100;
+      const page = await ops.list(opts, limit);
+      if (page.data.length === 0) {
         console.log('No memories stored.');
         return;
       }
-      if (opts.tags || opts.types) {
+      if (needAll) {
         const counts = new Map<string, number>();
-        for (const mem of memories) {
+        for (const mem of page.data) {
           if (opts.types) {
             counts.set(mem.type, (counts.get(mem.type) ?? 0) + 1);
           } else {
@@ -605,13 +613,7 @@ addFilterOptions(
         }
         return;
       }
-      if (opts.limit) {
-        const limitRaw = parseInt(opts.limit, 10);
-        const limit =
-          Number.isNaN(limitRaw) || limitRaw < 1 ? memories.length : limitRaw;
-        memories = memories.slice(0, limit);
-      }
-      for (const mem of memories) {
+      for (const mem of page.data) {
         if (opts.long) {
           const date = mem.updated.slice(0, 10);
           const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';

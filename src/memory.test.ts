@@ -127,8 +127,8 @@ describe('listMemoryFiles', () => {
 describe('operations', () => {
   it('add indexes the memory', async () => {
     await ops.add({ title: 'Ops Test', content: 'indexed content' });
-    const results = await ops.search('indexed');
-    expect(results.length).toBeGreaterThanOrEqual(1);
+    const page = await ops.search('indexed');
+    expect(page.data.length).toBeGreaterThanOrEqual(1);
   });
 
   it('remove deletes from index', async () => {
@@ -150,9 +150,9 @@ describe('operations', () => {
       tags: ['python'],
     });
 
-    const results = await ops.search('JavaScript');
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    expect(results[0].memory.title).toBe('JavaScript Guide');
+    const page = await ops.search('JavaScript');
+    expect(page.data.length).toBeGreaterThanOrEqual(1);
+    expect(page.data[0].memory.title).toBe('JavaScript Guide');
   });
 
   it('read resolves by full UUID', async () => {

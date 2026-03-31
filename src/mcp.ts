@@ -34,18 +34,20 @@ export function createMcpServer(ops: Operations): McpServer {
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
+        offset: z.number().optional().describe('Skip first N results (default 0)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
-    async ({ query, limit, tag, type }) => {
-      const results = await ops.search(query, limit ?? 20, { tag, type });
-      if (results.length === 0) {
+    async ({ query, limit, offset, tag, type }) => {
+      const page = await ops.search(query, limit ?? 20, { tag, type }, offset ?? 0);
+      if (page.data.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
         };
       }
-      const lines = results.map((r, i) => {
+      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
+      const lines = page.data.map((r, i) => {
         const tags =
           r.memory.tags.length > 0 ? `  [${r.memory.tags.join(', ')}]` : '';
         const desc = r.memory.description ? `\n  ${r.memory.description}` : '';
@@ -58,7 +60,7 @@ export function createMcpServer(ops: Operations): McpServer {
         return `- ${r.memory.id}  ${r.memory.title}${tags}${score}${desc}${preview}${body}`;
       });
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
       };
     },
   );
@@ -71,6 +73,7 @@ export function createMcpServer(ops: Operations): McpServer {
       inputSchema: {
         pattern: z.string().describe('Literal substring to search for'),
         limit: z.number().optional().describe('Max results (default 20)'),
+        offset: z.number().optional().describe('Skip first N results (default 0)'),
         ignore_case: z
           .boolean()
           .optional()
@@ -78,16 +81,21 @@ export function createMcpServer(ops: Operations): McpServer {
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
       },
     },
-    async ({ pattern, limit, ignore_case, tag }) => {
-      const memories = await ops.grep(pattern, limit ?? 20, ignore_case, {
-        tag,
-      });
-      if (memories.length === 0) {
+    async ({ pattern, limit, offset, ignore_case, tag }) => {
+      const page = await ops.grep(
+        pattern,
+        limit ?? 20,
+        ignore_case,
+        { tag },
+        offset ?? 0,
+      );
+      if (page.data.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories found.' }],
         };
       }
-      const lines = memories.map((mem, i) => {
+      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} results\n\n`;
+      const lines = page.data.map((mem, i) => {
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
         const desc = mem.description ? `\n  ${mem.description}` : '';
         const preview =
@@ -98,7 +106,7 @@ export function createMcpServer(ops: Operations): McpServer {
         return `- ${mem.id}  ${mem.title}${tags}${desc}${preview}${body}`;
       });
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: header + lines.join('\n') }],
       };
     },
   );
@@ -201,23 +209,26 @@ export function createMcpServer(ops: Operations): McpServer {
       description:
         'List all memories with titles, IDs, and tags. Use tag/type params to filter.',
       inputSchema: {
+        limit: z.number().optional().describe('Max results (default 100)'),
+        offset: z.number().optional().describe('Skip first N results (default 0)'),
         tag: z.string().optional().describe('Filter by tag (glob pattern)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
-    async ({ tag, type }) => {
-      const memories = await ops.list({ tag, type });
-      if (memories.length === 0) {
+    async ({ limit, offset, tag, type }) => {
+      const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
+      if (page.data.length === 0) {
         return {
           content: [{ type: 'text' as const, text: 'No memories stored.' }],
         };
       }
-      const lines = memories.map((mem) => {
+      const header = `Showing ${page.offset + 1}–${page.offset + page.data.length} of ${page.total} memories\n\n`;
+      const lines = page.data.map((mem) => {
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
         const desc = mem.description ? `\n  ${mem.description}` : '';
         return `- ${mem.id}  ${mem.title}${tags}${desc}`;
       });
-      return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+      return { content: [{ type: 'text' as const, text: header + lines.join('\n') }] };
     },
   );
 

@@ -22,9 +22,14 @@ function isLoopbackHost(host: string): boolean {
   return ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(hostname);
 }
 
-function parseLimit(raw: string | undefined): number {
-  const n = parseInt(raw ?? '20', 10);
-  return Number.isNaN(n) || n < 1 ? 20 : n;
+function parseLimit(raw: string | undefined, defaultLimit = 20): number {
+  const n = parseInt(raw ?? String(defaultLimit), 10);
+  return Number.isNaN(n) || n < 1 ? defaultLimit : n;
+}
+
+function parseOffset(raw: string | undefined): number {
+  const n = parseInt(raw ?? '0', 10);
+  return Number.isNaN(n) || n < 0 ? 0 : n;
 }
 
 export function startServer(
@@ -74,21 +79,40 @@ export function startServer(
   app.get('/memories/search', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
-    return c.json({
-      data: await ops.search(q, parseLimit(c.req.query('limit'))),
-    });
+    return c.json(
+      await ops.search(
+        q,
+        parseLimit(c.req.query('limit')),
+        undefined,
+        parseOffset(c.req.query('offset')),
+      ),
+    );
   });
 
   app.get('/memories/grep', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
     const ignoreCase = c.req.query('ignoreCase') === '1';
-    return c.json({
-      data: await ops.grep(q, parseLimit(c.req.query('limit')), ignoreCase),
-    });
+    return c.json(
+      await ops.grep(
+        q,
+        parseLimit(c.req.query('limit')),
+        ignoreCase,
+        undefined,
+        parseOffset(c.req.query('offset')),
+      ),
+    );
   });
 
-  app.get('/memories', async (c) => c.json({ data: await ops.list() }));
+  app.get('/memories', async (c) =>
+    c.json(
+      await ops.list(
+        undefined,
+        parseLimit(c.req.query('limit'), 100),
+        parseOffset(c.req.query('offset')),
+      ),
+    ),
+  );
 
   app.post('/memories', async (c) => {
     const body = await c.req.json();

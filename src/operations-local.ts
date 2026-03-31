@@ -36,6 +36,7 @@ import type {
   MemoryFilter,
   MemoryType,
   Operations,
+  Paginated,
   SearchResult,
 } from './operations.js';
 
@@ -219,11 +220,16 @@ export class LocalOperations implements Operations {
     query: string,
     limit = 20,
     filter?: MemoryFilter,
-  ): Promise<SearchResult[]> {
+    offset = 0,
+  ): Promise<Paginated<SearchResult>> {
     this.syncIndexIfNeeded();
 
-    const ftsResults = searchFts(this.db, query, limit);
+    // Fetch enough to cover offset + limit after filtering
+    const fetchLimit = offset + limit + 50;
+    const ftsResults = searchFts(this.db, query, fetchLimit);
     const ftsMap = new Map(ftsResults.map((r) => [r.id, r.score]));
+
+    let all: SearchResult[];
 
     if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
       const queryEmbedding = await this.provider.embed(query);
@@ -244,7 +250,7 @@ export class LocalOperations implements Operations {
       }
 
       vectorScores.sort((a, b) => b.score - a.score);
-      const topVector = vectorScores.slice(0, limit);
+      const topVector = vectorScores.slice(0, fetchLimit);
       const vectorMap = new Map(topVector.map((r) => [r.id, r.score]));
 
       const allIds = new Set([...ftsMap.keys(), ...vectorMap.keys()]);
@@ -257,7 +263,7 @@ export class LocalOperations implements Operations {
       merged.sort((a, b) => b.score - a.score);
 
       const results: SearchResult[] = [];
-      for (const r of merged.slice(0, limit)) {
+      for (const r of merged) {
         const row = getMemoryById(this.db, r.id);
         if (!row) continue;
         results.push({
@@ -266,20 +272,27 @@ export class LocalOperations implements Operations {
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
-      return applyResultFilter(results, filter);
+      all = applyResultFilter(results, filter);
+    } else {
+      const results: SearchResult[] = [];
+      for (const r of ftsResults) {
+        const row = getMemoryById(this.db, r.id);
+        if (!row) continue;
+        results.push({
+          memory: readMemory(row.file_path),
+          score: r.score,
+          matchType: 'fts',
+        });
+      }
+      all = applyResultFilter(results, filter);
     }
 
-    const results: SearchResult[] = [];
-    for (const r of ftsResults) {
-      const row = getMemoryById(this.db, r.id);
-      if (!row) continue;
-      results.push({
-        memory: readMemory(row.file_path),
-        score: r.score,
-        matchType: 'fts',
-      });
-    }
-    return applyResultFilter(results, filter);
+    return {
+      data: all.slice(offset, offset + limit),
+      total: all.length,
+      offset,
+      limit,
+    };
   }
 
   async read(query: string): Promise<Memory | undefined> {
@@ -340,23 +353,44 @@ export class LocalOperations implements Operations {
     limit = 20,
     ignoreCase = false,
     filter?: MemoryFilter,
-  ): Promise<Memory[]> {
+    offset = 0,
+  ): Promise<Paginated<Memory>> {
     this.syncIndexIfNeeded();
-    const rows = grepMemories(this.db, pattern, limit, ignoreCase);
-    const memories = rows
-      .map((row) => safeReadMemory(row.file_path))
-      .filter((m): m is Memory => m !== undefined);
-    return applyMemoryFilter(memories, filter);
+    const rows = grepMemories(this.db, pattern, offset + limit + 50, ignoreCase);
+    const all = applyMemoryFilter(
+      rows
+        .map((row) => safeReadMemory(row.file_path))
+        .filter((m): m is Memory => m !== undefined),
+      filter,
+    );
+    return {
+      data: all.slice(offset, offset + limit),
+      total: all.length,
+      offset,
+      limit,
+    };
   }
 
-  async list(filter?: MemoryFilter): Promise<Memory[]> {
+  async list(
+    filter?: MemoryFilter,
+    limit = 100,
+    offset = 0,
+  ): Promise<Paginated<Memory>> {
     this.syncIndex();
     const files = listMemoryFiles(this.config);
-    const memories = files
-      .map((f) => safeReadMemory(f))
-      .filter((m): m is Memory => m !== undefined);
-    memories.sort((a, b) => b.updated.localeCompare(a.updated));
-    return applyMemoryFilter(memories, filter);
+    const all = applyMemoryFilter(
+      files
+        .map((f) => safeReadMemory(f))
+        .filter((m): m is Memory => m !== undefined),
+      filter,
+    );
+    all.sort((a, b) => b.updated.localeCompare(a.updated));
+    return {
+      data: all.slice(offset, offset + limit),
+      total: all.length,
+      offset,
+      limit,
+    };
   }
 
   async reindex(): Promise<{ count: number }> {
