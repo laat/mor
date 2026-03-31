@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { SQL, type SQLStatement } from 'sql-template-strings';
+import * as sqliteVec from 'sqlite-vec';
 import type { Config } from './operations.js';
 
 export type DB = Database.Database;
@@ -44,10 +45,23 @@ const SCHEMA = `
 
 export function openDb(config: Config): DB {
   const db = new Database(config.dbPath);
+  sqliteVec.load(db);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
+  if (config.embedding && config.embedding.provider !== 'none') {
+    const dims = config.embedding.dimensions;
+    const exists = get<{ name: string }>(
+      db,
+      SQL`SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings_vec'`,
+    );
+    if (!exists) {
+      db.exec(
+        `CREATE VIRTUAL TABLE embeddings_vec USING vec0(id TEXT PRIMARY KEY, embedding float[${dims}] distance_metric=cosine)`,
+      );
+    }
+  }
   db.function(
     'regexp',
     (() => {
@@ -272,6 +286,19 @@ export function grepMemories(
   );
 }
 
+export function searchVec(
+  db: DB,
+  queryEmbedding: number[],
+  limit: number,
+): Array<{ id: string; distance: number }> {
+  const buffer = Buffer.from(new Float32Array(queryEmbedding).buffer);
+  return db
+    .prepare(
+      'SELECT id, distance FROM embeddings_vec WHERE embedding MATCH ? ORDER BY distance LIMIT ?',
+    )
+    .all(buffer, limit) as Array<{ id: string; distance: number }>;
+}
+
 export function getEmbeddingCount(db: DB): number {
   const row = get<{ count: number }>(
     db,
@@ -300,10 +327,32 @@ export function upsertEmbedding(
         ON CONFLICT(id) DO UPDATE SET
           embedding=excluded.embedding, model=excluded.model, dimensions=excluded.dimensions`,
   );
+  const hasVec = get<{ name: string }>(
+    db,
+    SQL`SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings_vec'`,
+  );
+  if (hasVec) {
+    db.prepare('DELETE FROM embeddings_vec WHERE id = ?').run(id);
+    db.prepare('INSERT INTO embeddings_vec (id, embedding) VALUES (?, ?)').run(
+      id,
+      embedding,
+    );
+  }
 }
 
-export function clearDb(db: DB): void {
+export function clearDb(db: DB, config: Config): void {
   db.exec('DELETE FROM embeddings');
+  // Drop and recreate vec table to handle dimension changes
+  const hasVec = get<{ name: string }>(
+    db,
+    SQL`SELECT name FROM sqlite_master WHERE type='table' AND name='embeddings_vec'`,
+  );
+  if (hasVec) db.exec('DROP TABLE embeddings_vec');
+  if (config.embedding && config.embedding.provider !== 'none') {
+    db.exec(
+      `CREATE VIRTUAL TABLE embeddings_vec USING vec0(id TEXT PRIMARY KEY, embedding float[${config.embedding.dimensions}] distance_metric=cosine)`,
+    );
+  }
   db.exec('DELETE FROM memories');
   db.exec("INSERT INTO memories_fts(memories_fts) VALUES('delete-all')");
 }

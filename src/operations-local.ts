@@ -3,7 +3,6 @@ import { spawnSync } from 'node:child_process';
 import {
   clearDb,
   deleteMemoryFromDb,
-  getAllEmbeddings,
   getAllMemoryIds,
   getContentHash,
   getEmbeddingCount,
@@ -13,6 +12,7 @@ import {
   grepMemories,
   openDb,
   searchFts,
+  searchVec,
   upsertEmbedding,
   upsertMemoryChecked,
   type DB,
@@ -50,7 +50,6 @@ function hashContent(content: string): string {
 }
 
 import { matchGlob } from './utils/glob.js';
-import { cosineSimilarity } from './utils/similarity.js';
 
 function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
   if (filter.type) {
@@ -254,24 +253,14 @@ export class LocalOperations implements Operations {
     if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
       const queryEmbedding = await this.provider.embed(query);
 
-      const MIN_COSINE_SIMILARITY = 0.15;
-      const vectorScores: Array<{ id: string; score: number }> = [];
-      for (const row of getAllEmbeddings(this.db)) {
-        const stored = new Float32Array(
-          row.embedding.buffer,
-          row.embedding.byteOffset,
-          row.embedding.byteLength / 4,
-        );
-        if (queryEmbedding.length !== stored.length) continue;
-        const sim = cosineSimilarity(queryEmbedding, Array.from(stored));
-        if (sim >= MIN_COSINE_SIMILARITY) {
-          vectorScores.push({ id: row.id, score: (sim + 1) / 2 });
-        }
-      }
-
-      vectorScores.sort((a, b) => b.score - a.score);
-      const topVector = vectorScores.slice(0, fetchLimit);
-      const vectorMap = new Map(topVector.map((r) => [r.id, r.score]));
+      // KNN search via sqlite-vec (cosine distance: 0 = identical, 2 = opposite)
+      const MAX_COSINE_DISTANCE = 1.7;
+      const vecResults = searchVec(this.db, queryEmbedding, fetchLimit);
+      const vectorMap = new Map(
+        vecResults
+          .filter((r) => r.distance <= MAX_COSINE_DISTANCE)
+          .map((r) => [r.id, 1 - r.distance / 2]),
+      );
 
       const allIds = new Set([...ftsMap.keys(), ...vectorMap.keys()]);
       const merged: Array<{ id: string; score: number }> = [];
@@ -421,7 +410,7 @@ export class LocalOperations implements Operations {
   }
 
   async reindex(): Promise<{ count: number }> {
-    clearDb(this.db);
+    clearDb(this.db, this.config);
     const files = listMemoryFiles(this.config);
 
     let count = 0;
