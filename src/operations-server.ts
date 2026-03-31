@@ -14,7 +14,8 @@ const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
 
 function log(msg: string): void {
-  process.stderr.write(`[mor] ${msg}\n`);
+  const ts = new Date().toISOString();
+  process.stderr.write(`${ts} [mor] ${msg}\n`);
 }
 
 function isLoopbackHost(host: string): boolean {
