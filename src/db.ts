@@ -48,7 +48,10 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
   db.function('regexp', (pattern: string, value: string) => {
-    return new RegExp(pattern).test(value) ? 1 : 0;
+    const flagMatch = pattern.match(/^\(\?([a-z]+)\)/);
+    const flags = flagMatch ? flagMatch[1] : '';
+    const re = flagMatch ? pattern.slice(flagMatch[0].length) : pattern;
+    return new RegExp(re, flags).test(value) ? 1 : 0;
   });
   return db;
 }
