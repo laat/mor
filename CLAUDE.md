@@ -33,7 +33,7 @@ All three access surfaces use this interface:
 
 ### Search & Query Resolution
 
-`resolveQuery` in `LocalOperations` resolves a user query by trying in order: full UUID → UUID prefix (8+ chars) → filename → FTS search. `search()` does FTS5 search, optionally merged with vector cosine similarity (60/40 weighting).
+`resolveQuery` in `LocalOperations` resolves a user query by trying in order: full UUID → UUID prefix (8+ chars) → filename → FTS search. `search()` does FTS5 search, optionally merged with vector similarity via Reciprocal Rank Fusion (RRF). Frequently accessed memories get a small ranking boost.
 
 `syncIndex` walks the memory directory and upserts changed files by content hash. `syncIndexIfNeeded` is a debounced wrapper (200ms) used on read paths to avoid redundant scans.
 

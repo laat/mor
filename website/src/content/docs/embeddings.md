@@ -7,7 +7,7 @@ sidebar:
     variant: caution
 ---
 
-Optionally augment FTS search with vector similarity. When configured, `mor find` merges FTS results (60% weight) with cosine similarity from embeddings (40% weight).
+Optionally augment FTS search with vector similarity. When configured, `mor find` merges FTS and vector results using Reciprocal Rank Fusion (RRF) — combining rankings without manual weight tuning.
 
 ## Configuration
 
@@ -80,18 +80,20 @@ Default base URL is `http://localhost:11434`. No API key needed.
 ## How it works
 
 1. On `add`/`update`, the memory's title + tags + content are concatenated and sent to the embedding provider
-2. The resulting vector is stored as a Float32Array blob in the `embeddings` table
-3. On `find`, the query is embedded and compared against all stored vectors via cosine similarity
-4. Results below a 0.15 cosine similarity threshold are discarded
-5. FTS and vector scores are merged: `ftsScore * 0.6 + vectorScore * 0.4`
+2. The resulting vector is stored in the `embeddings` table and indexed via sqlite-vec for fast KNN search
+3. On `find`, the query is embedded and compared against stored vectors using cosine distance
+4. FTS and vector rankings are combined using Reciprocal Rank Fusion (RRF)
+5. Frequently accessed memories get a small ranking boost (~5% max)
 
 ## When to use embeddings
 
 Embeddings help when:
+
 - You search for concepts rather than exact words ("error handling" finds `retryWithBackoff.ts`)
 - FTS tokenization misses your query (searching "correct" finds `AwaitTaskCorrect`)
 
 Embeddings may not help when:
+
 - Your memory store is small (FTS + grep cover most cases)
 - You search for exact strings (use `grep` instead)
 - Score distributions are flat (all results score similarly)

@@ -17,8 +17,9 @@ mor find "retry http"
 - **OR-ranked** — multi-word queries match any term, ranked by how many match
 - **Unicode-aware** — dots, hyphens, and other punctuation are token separators
 - **Scores** — results are ranked 0.0 to 1.0, best match first. Results below threshold are filtered out (default 0.3, configurable via `-s` or `threshold` in config)
+- **Access boost** — frequently accessed memories get a small ranking boost (max ~5%), helping surface practical information over time
 
-When [embeddings](/embeddings/) are configured, `find` merges FTS and vector results with 60/40 weighting.
+When [embeddings](/docs/embeddings/) are configured, `find` merges FTS and vector results using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf) — no manual weight tuning needed.
 
 ## Grep (`grep`)
 
