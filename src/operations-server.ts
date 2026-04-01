@@ -7,7 +7,7 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { createRequire } from 'node:module';
 import { createMcpServer } from './mcp.js';
-import { LocalOperations } from './operations-local.js';
+import { LocalOperations, NotFoundError } from './operations-local.js';
 import type { Config } from './operations.js';
 
 const require = createRequire(import.meta.url);
@@ -44,7 +44,7 @@ function parseFilter(c: { req: { query(k: string): string | undefined } }) {
 
 function errMsg(e: unknown): { msg: string; status: 404 | 500 } {
   const msg = e instanceof Error ? e.message : String(e);
-  return { msg, status: msg.includes('not found') ? 404 : 500 };
+  return { msg, status: e instanceof NotFoundError ? 404 : 500 };
 }
 
 const SESSION_NOT_FOUND = {
@@ -65,7 +65,7 @@ export function startServer(
 
   const app = new Hono();
 
-  app.use(logger((msg) => log(msg)));
+  app.use(logger((msg) => log(msg.replace(/[?&]token=[^\s&]*/g, ''))));
 
   if (opts.token) {
     app.use(async (c, next) => {
@@ -73,12 +73,15 @@ export function startServer(
         c.req.header('authorization')?.replace(/^Bearer\s+/i, '') ??
         c.req.query('token') ??
         '';
-      const expectedBuf = Buffer.from(opts.token!);
-      const providedBuf = Buffer.from(provided);
-      if (
-        expectedBuf.byteLength !== providedBuf.byteLength ||
-        !crypto.timingSafeEqual(providedBuf, expectedBuf)
-      ) {
+      const expectedHash = crypto
+        .createHash('sha256')
+        .update(opts.token!)
+        .digest();
+      const providedHash = crypto
+        .createHash('sha256')
+        .update(provided)
+        .digest();
+      if (!crypto.timingSafeEqual(providedHash, expectedHash)) {
         return c.json({ error: 'Unauthorized' }, 401);
       }
       await next();
@@ -100,39 +103,54 @@ export function startServer(
   app.get('/memories/search', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
-    return c.json(
-      await ops.search(
-        q,
-        parseLimit(c.req.query('limit')),
-        parseFilter(c),
-        parseOffset(c.req.query('offset')),
-      ),
-    );
+    try {
+      return c.json(
+        await ops.search(
+          q,
+          parseLimit(c.req.query('limit')),
+          parseFilter(c),
+          parseOffset(c.req.query('offset')),
+        ),
+      );
+    } catch (e) {
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
+    }
   });
 
   app.get('/memories/grep', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
-    return c.json(
-      await ops.grep(q, {
-        limit: parseLimit(c.req.query('limit')),
-        ignoreCase: c.req.query('ignoreCase') === '1',
-        regex: c.req.query('regex') === '1',
-        offset: parseOffset(c.req.query('offset')),
-        filter: parseFilter(c),
-      }),
-    );
+    try {
+      return c.json(
+        await ops.grep(q, {
+          limit: parseLimit(c.req.query('limit')),
+          ignoreCase: c.req.query('ignoreCase') === '1',
+          regex: c.req.query('regex') === '1',
+          offset: parseOffset(c.req.query('offset')),
+          filter: parseFilter(c),
+        }),
+      );
+    } catch (e) {
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
+    }
   });
 
-  app.get('/memories', async (c) =>
-    c.json(
-      await ops.list(
-        parseFilter(c),
-        parseLimit(c.req.query('limit'), 100),
-        parseOffset(c.req.query('offset')),
-      ),
-    ),
-  );
+  app.get('/memories', async (c) => {
+    try {
+      return c.json(
+        await ops.list(
+          parseFilter(c),
+          parseLimit(c.req.query('limit'), 100),
+          parseOffset(c.req.query('offset')),
+        ),
+      );
+    } catch (e) {
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
+    }
+  });
 
   app.post('/memories', async (c) => {
     const body = await c.req.json();

@@ -159,6 +159,30 @@ describe('HTTP Server', () => {
     expect(status).toBe(400);
   });
 
+  it('returns 404 on PUT for non-existent memory', async () => {
+    const { status, json } = await req(
+      'PUT',
+      '/memories/00000000-0000-0000-0000-000000000000',
+      { content: 'x' },
+    );
+    expect(status).toBe(404);
+    expect(json.error).toContain('not found');
+  });
+
+  it('returns 404 on DELETE for non-existent memory', async () => {
+    const { status, json } = await req(
+      'DELETE',
+      '/memories/00000000-0000-0000-0000-000000000000',
+    );
+    expect(status).toBe(404);
+    expect(json.error).toContain('not found');
+  });
+
+  it('returns JSON error for search failures', async () => {
+    const { status } = await req('GET', '/memories/search');
+    expect(status).toBe(400);
+  });
+
   it('round-trip: add → search → read → update → delete', async () => {
     // Add
     const { json: addRes } = await req('POST', '/memories', {
@@ -225,6 +249,25 @@ describe('HTTP Server Auth', () => {
     const res = await fetch(`${authUrl}/health`, {
       headers: { Authorization: 'Bearer secret123' },
     });
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects wrong token', async () => {
+    const res = await fetch(`${authUrl}/health`, {
+      headers: { Authorization: 'Bearer wrong' },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects token with wrong length', async () => {
+    const res = await fetch(`${authUrl}/health`, {
+      headers: { Authorization: 'Bearer x' },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('accepts token via query param', async () => {
+    const res = await fetch(`${authUrl}/health?token=secret123`);
     expect(res.status).toBe(200);
   });
 });

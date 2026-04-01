@@ -43,6 +43,13 @@ import type {
   SearchResult,
 } from './operations.js';
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID_PREFIX_RE = /^[0-9a-f]{8,}$/i;
@@ -247,7 +254,7 @@ export class LocalOperations implements Operations {
     const fetchLimit = offset + limit + FILTER_BUFFER;
     const ftsResults = searchFts(this.db, query, fetchLimit);
 
-    let all: SearchResult[];
+    let filtered: SearchResult[];
 
     if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
       const queryEmbedding = await this.provider.embed(query);
@@ -291,7 +298,7 @@ export class LocalOperations implements Operations {
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
-      all = applyFilter(results, (r) => r.memory, filter);
+      filtered = applyFilter(results, (r) => r.memory, filter);
     } else {
       const ids = ftsResults.map((r) => r.id);
       const memRows = getMemoriesByIds(this.db, ids);
@@ -310,12 +317,12 @@ export class LocalOperations implements Operations {
         });
       }
       results.sort((a, b) => b.score - a.score);
-      all = applyFilter(results, (r) => r.memory, filter);
+      filtered = applyFilter(results, (r) => r.memory, filter);
     }
 
     return {
-      data: all.slice(offset, offset + limit),
-      total: all.length,
+      data: filtered.slice(offset, offset + limit),
+      total: filtered.length,
       offset,
       limit,
     };
@@ -354,7 +361,7 @@ export class LocalOperations implements Operations {
   ): Promise<Memory> {
     const existing = this.resolveById(query);
     if (!existing)
-      throw new Error(
+      throw new NotFoundError(
         `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
     const { mem, raw } = updateMemory(existing.filePath, updates);
@@ -367,7 +374,7 @@ export class LocalOperations implements Operations {
   async remove(query: string): Promise<{ title: string; id: string }> {
     const mem = this.resolveById(query);
     if (!mem)
-      throw new Error(
+      throw new NotFoundError(
         `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
     deleteMemory(mem.filePath);
@@ -392,7 +399,7 @@ export class LocalOperations implements Operations {
       ignoreCase,
       regex,
     );
-    const all = applyFilter(
+    const filtered = applyFilter(
       rows
         .map((row) => tryReadMemory(row.file_path)?.mem)
         .filter((m): m is Memory => m !== undefined),
@@ -400,8 +407,8 @@ export class LocalOperations implements Operations {
       filter,
     );
     return {
-      data: all.slice(offset, offset + limit),
-      total: all.length,
+      data: filtered.slice(offset, offset + limit),
+      total: filtered.length,
       offset,
       limit,
     };
@@ -414,17 +421,17 @@ export class LocalOperations implements Operations {
   ): Promise<Paginated<Memory>> {
     this.syncIndexIfNeeded();
     const files = listMemoryFiles(this.config);
-    const all = applyFilter(
+    const filtered = applyFilter(
       files
         .map((f) => tryReadMemory(f)?.mem)
         .filter((m): m is Memory => m !== undefined),
       (m) => m,
       filter,
     );
-    all.sort((a, b) => b.updated.localeCompare(a.updated));
+    filtered.sort((a, b) => b.updated.localeCompare(a.updated));
     return {
-      data: all.slice(offset, offset + limit),
-      total: all.length,
+      data: filtered.slice(offset, offset + limit),
+      total: filtered.length,
       offset,
       limit,
     };
@@ -468,8 +475,8 @@ export class LocalOperations implements Operations {
         encoding: 'utf-8',
       });
 
-    const status = git(['status', '--porcelain']);
-    if (status.status !== 0) {
+    const preStatus = git(['status', '--porcelain']);
+    if (preStatus.status !== 0) {
       throw new Error('Memory folder is not a git repository');
     }
 
@@ -483,7 +490,8 @@ export class LocalOperations implements Operations {
       this.syncIndex();
     }
 
-    if (status.stdout.trim()) {
+    const postStatus = git(['status', '--porcelain']);
+    if (postStatus.stdout.trim()) {
       const add = git(['add', '-A']);
       if (add.status !== 0)
         throw new Error(`git add failed: ${add.stderr.trim()}`);
@@ -528,7 +536,20 @@ export class LocalOperations implements Operations {
   close(): void {
     if (this.autoSyncTimer) {
       clearTimeout(this.autoSyncTimer);
-      this.flushAutoSync();
+      this.autoSyncTimer = null;
+    }
+    if (this.autoSyncMessages.length > 0) {
+      const messages = this.autoSyncMessages.splice(0);
+      const commitMessage =
+        messages.length === 1 ? messages[0] : messages.join(', ');
+      try {
+        // sync() uses spawnSync internally, so this completes before db.close()
+        this.sync(commitMessage);
+      } catch (e) {
+        process.stderr.write(
+          `Warning: autosync on close failed: ${e instanceof Error ? e.message : e}\n`,
+        );
+      }
     }
     this.db.close();
   }
