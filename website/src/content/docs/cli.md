@@ -7,7 +7,7 @@ description: All mor commands and their options
 
 | Command             | Description                                                                                                     |
 | ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `find <query>`      | Full-text search (`-l` limit, `-s` threshold)                                                                   |
+| `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
 | `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
 | `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
 | `cat <query>`       | Print content (`--raw` for frontmatter)                                                                         |

@@ -11,6 +11,7 @@ Uses SQLite FTS5 with the `porter unicode61` tokenizer.
 
 ```sh
 mor find "retry http"
+mor find "retry http" --json    # JSON output with content
 ```
 
 - **Stemming** — "running" matches "run", "runs", "running"
@@ -18,6 +19,7 @@ mor find "retry http"
 - **Unicode-aware** — dots, hyphens, and other punctuation are token separators
 - **Scores** — results are ranked 0.0 to 1.0, best match first. Results below threshold are filtered out (default 0.3, configurable via `-s` or `threshold` in config)
 - **Access boost** — frequently accessed memories get a small ranking boost (max ~5%), helping surface practical information over time
+- **JSON output** — `--json` returns an array of `{id, title, description, tags, score, content}` for programmatic use (e.g. hooks, scripts)
 
 When [embeddings](/docs/embeddings/) are configured, `find` merges FTS and vector results using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf) — no manual weight tuning needed.
 

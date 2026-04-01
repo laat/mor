@@ -22,15 +22,15 @@ Add to your Claude Code or Claude Desktop MCP config:
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
-| `memory_search` | Full-text search. Returns top result with full content, summaries for rest. |
-| `memory_grep` | Substring or regex search. For exact strings, code identifiers, and patterns. |
-| `memory_read` | Read full content of a memory by ID. |
-| `memory_create` | Create a new memory with title, content, optional tags and type. |
-| `memory_update` | Update a memory by ID. Returns a diff of changes. |
-| `memory_remove` | Delete a memory by ID. |
-| `memory_list` | List all memories with titles, IDs, and tags. Supports pagination. |
+| Tool            | Description                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| `memory_search` | Full-text search. Returns top result with full content, summaries for rest.   |
+| `memory_grep`   | Substring or regex search. For exact strings, code identifiers, and patterns. |
+| `memory_read`   | Read full content of a memory by ID.                                          |
+| `memory_create` | Create a new memory with title, content, optional tags and type.              |
+| `memory_update` | Update a memory by ID. Returns a diff of changes.                             |
+| `memory_remove` | Delete a memory by ID.                                                        |
+| `memory_list`   | List all memories with titles, IDs, and tags. Supports pagination.            |
 
 ### Filtering
 
@@ -67,6 +67,33 @@ notes. Always check mor before saying something wasn't found.
 - The **top result** includes full content — no extra round trip for the best match
 - **Other results** show title, tags, description, and score — enough to decide whether to `memory_read`
 - **Scores** help the AI decide if the top result is confident or if it should refine the query
+
+## Memberberry hook
+
+You can auto-surface relevant memories on each Claude Code prompt via a `UserPromptSubmit` hook. Instead of injecting full content, it outputs lightweight hints (title, ID, description) so Claude can decide whether to read more via MCP tools.
+
+Save this as e.g. `~/.claude/hooks/memberberry.sh` and make it executable:
+
+<!-- @include hooks/memberberry.sh -->
+
+Then add to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "command": "~/.claude/hooks/memberberry.sh"
+      }
+    ]
+  }
+}
+```
+
+- Searches top 3 memories per prompt
+- Deduplicates within a session (won't re-surface the same memory)
+- Skips short prompts (<10 chars) and slash commands
+- Requires `jq` and `mor` on PATH
 
 ## Remote MCP
 

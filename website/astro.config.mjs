@@ -1,11 +1,15 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import remarkInclude from './remark-include.mjs';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://mor.yapping.no',
   base: '/docs',
+  markdown: {
+    remarkPlugins: [remarkInclude],
+  },
   integrations: [
     starlight({
       title: 'mor',
