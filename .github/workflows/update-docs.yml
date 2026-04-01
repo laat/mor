@@ -31,35 +31,27 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--model claude-sonnet-4-6 --max-turns 20 --allowedTools 'Read,Glob,Grep,Edit,Write,Bash(pnpm build),Bash(pnpm test),Bash(git diff*),Bash(git log*)'"
+          claude_args: '--model claude-sonnet-4-6 --max-turns 30'
           prompt: |
-            You are updating documentation for the mor CLI tool.
+            Update documentation to match the current source code. Be efficient — read only what you need.
 
-            First, understand what changed recently:
-            ```
-            git log --oneline -10
-            ```
+            Step 1: Run `git log --oneline -5` to see recent changes.
+            Step 2: Read src/cli.ts (the command definitions, lines 60-120 are the command table).
+            Step 3: Read src/operations-server.ts (grep for app.get/app.post to find HTTP endpoints).
+            Step 4: For each doc file below, check if it matches the code. Only edit files with actual discrepancies.
 
-            Then read the source code to understand the current state:
-            - src/cli.ts — CLI commands and options
-            - src/mcp.ts — MCP tools and response format
-            - src/operations.ts — Operations interface
-            - src/operations-server.ts — HTTP endpoints
-            - src/db.ts — database schema
-
-            Compare against these documentation files and fix discrepancies:
-            - README.md — commands table, quick start examples, HTTP API table
-            - CLAUDE.md — architecture section, database tables
-            - man/mor.1 — command descriptions, options, examples, version
+            Doc files:
+            - README.md — commands table, HTTP API table, examples
+            - CLAUDE.md — database tables description
+            - man/mor.1 — commands, options, version number in header
             - website/src/content/docs/cli.md — commands table, examples
             - website/src/content/docs/getting-started.md — quick start examples
-            - website/src/content/docs/storage.md — file format, database tables
-            - website/src/content/docs/integration/mcp.md — tools table, filtering
+            - website/src/content/docs/storage.md — database tables list
+            - website/src/content/docs/integration/mcp.md — tools table
             - website/src/content/docs/integration/http.md — REST API table
 
             Rules:
             - Only fix factual inaccuracies — wrong flags, missing commands, outdated examples
-            - Do NOT rewrite prose, add new sections, or change tone/style
-            - Do NOT touch source code files
-            - Verify with: pnpm build && pnpm test
-            - If all docs are already correct, make no changes
+            - Do NOT rewrite prose, add sections, or change tone
+            - Do NOT edit any file under src/
+            - If docs are already correct, make no changes and stop early
