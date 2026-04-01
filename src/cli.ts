@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { Command } from 'commander';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -19,9 +18,7 @@ import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
 import { parseRawGitHubUrl } from './utils/github.js';
 import { colorizeMarkdown, truncate } from './utils/ansi.js';
 import { wrapCodeFence, stripCodeFence } from './utils/markdown.js';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const { version } = require('../package.json');
+import { version } from './version.js';
 
 function openInEditor(file: string): void {
   const editor = process.env.EDITOR ?? 'vi';

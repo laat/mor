@@ -6,15 +6,12 @@ import path from 'node:path';
 import type http from 'node:http';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
-import { createRequire } from 'node:module';
 import { createMcpServer } from './mcp.js';
 import { createOAuthRoutes } from './oauth.js';
 import { LocalOperations, NotFoundError } from './operations-local.js';
 import type { Config } from './operations.js';
 import { isLoopbackHost } from './utils/net.js';
-
-const require = createRequire(import.meta.url);
-const { version } = require('../package.json');
+import { version } from './version.js';
 
 function log(msg: string): void {
   if (process.env.NODE_ENV === 'test') return;

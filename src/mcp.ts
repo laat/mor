@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { createRequire } from 'node:module';
 import { isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
@@ -19,8 +18,7 @@ function createOps(): Operations {
   return new LocalOperations(config);
 }
 
-const require = createRequire(import.meta.url);
-const { version } = require('../package.json');
+import { version } from './version.js';
 
 // ---- Response helpers ----
 
