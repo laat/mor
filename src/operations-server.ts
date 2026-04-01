@@ -222,7 +222,7 @@ export function startServer(
         404,
       );
     }
-    return c.json({ data: ops.getLinks(mem.id) });
+    return c.json({ data: await ops.getLinks(mem.id) });
   });
 
   app.put('/memories/:query', async (c) => {
