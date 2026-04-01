@@ -309,18 +309,10 @@
       .personal-notice {
         position: relative;
         z-index: 3;
-        max-width: 640px;
-        margin: 0 auto;
-        padding: 0.75rem 1.5rem;
-        border-radius: 10px;
-        border: 1px solid rgba(234, 179, 8, 0.3);
-        background: rgba(234, 179, 8, 0.08);
-        color: #fde68a;
-        font-size: 0.8rem;
-        line-height: 1.6;
+        margin: 1rem auto 0;
+        color: var(--dim);
+        font-size: 0.75rem;
         text-align: center;
-        backdrop-filter: blur(8px);
-        margin-bottom: 1.5rem;
       }
       .personal-notice strong {
         color: #fbbf24;
@@ -812,10 +804,6 @@
       <div class="grid-bg"></div>
       <div class="particles" id="particles"></div>
 
-      <div class="personal-notice">
-        <strong>&#9888; Personal project</strong> — MIT licensed, fork freely.
-      </div>
-
       <div class="logo-wrap">
         <div class="logo">mor</div>
       </div>
@@ -842,6 +830,9 @@
         <span
           >your AI forgets everything between sessions. this fixes that.</span
         >
+      </div>
+      <div class="personal-notice">
+        Personal project — MIT licensed, fork freely.
       </div>
       <div class="scroll-hint"><span></span></div>
     </div>
