@@ -98,4 +98,37 @@ describe('RemoteOperations client', () => {
     expect(result.count).toBe(1);
     expect(result.embedding).toBeUndefined();
   });
+
+  it('getLinks returns forward and backlinks', async () => {
+    const target = await ops.add({ title: 'Target', content: 'target body' });
+    await ops.add({
+      title: 'Source',
+      content: `See [Target](mor:${target.id})`,
+    });
+
+    const links = await ops.getLinks(target.id);
+    expect(links.forward).toHaveLength(0);
+    expect(links.back).toHaveLength(1);
+    expect(links.back[0].title).toBe('Source');
+  });
+
+  it('getLinks returns forward links', async () => {
+    const target = await ops.add({ title: 'Target', content: 'x' });
+    const source = await ops.add({
+      title: 'Source',
+      content: `See [Target](mor:${target.id})`,
+    });
+
+    const links = await ops.getLinks(source.id);
+    expect(links.forward).toHaveLength(1);
+    expect(links.forward[0].title).toBe('Target');
+    expect(links.back).toHaveLength(0);
+  });
+
+  it('getLinks returns empty arrays for memory with no links', async () => {
+    const mem = await ops.add({ title: 'No Links', content: 'alone' });
+    const links = await ops.getLinks(mem.id);
+    expect(links.forward).toHaveLength(0);
+    expect(links.back).toHaveLength(0);
+  });
 });

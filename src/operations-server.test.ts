@@ -185,6 +185,57 @@ describe('HTTP Server', () => {
     expect(status).toBe(400);
   });
 
+  it('GET /memories/:id/links returns forward and backlinks', async () => {
+    const { json: target } = await req('POST', '/memories', {
+      title: 'Link Target',
+      content: 'target body',
+    });
+    const { json: source } = await req('POST', '/memories', {
+      title: 'Link Source',
+      content: `See [Link Target](mor:${target.data.id})`,
+    });
+
+    // Forward links from source
+    const { status: srcStatus, json: srcLinks } = await req(
+      'GET',
+      `/memories/${source.data.id}/links`,
+    );
+    expect(srcStatus).toBe(200);
+    expect(srcLinks.data.forward).toHaveLength(1);
+    expect(srcLinks.data.forward[0].title).toBe('Link Target');
+    expect(srcLinks.data.back).toHaveLength(0);
+
+    // Backlinks on target
+    const { status: tgtStatus, json: tgtLinks } = await req(
+      'GET',
+      `/memories/${target.data.id}/links`,
+    );
+    expect(tgtStatus).toBe(200);
+    expect(tgtLinks.data.forward).toHaveLength(0);
+    expect(tgtLinks.data.back).toHaveLength(1);
+    expect(tgtLinks.data.back[0].title).toBe('Link Source');
+  });
+
+  it('GET /memories/:id/links returns empty arrays for unlinked memory', async () => {
+    const { json: mem } = await req('POST', '/memories', {
+      title: 'No Links',
+      content: 'standalone',
+    });
+
+    const { status, json } = await req('GET', `/memories/${mem.data.id}/links`);
+    expect(status).toBe(200);
+    expect(json.data.forward).toHaveLength(0);
+    expect(json.data.back).toHaveLength(0);
+  });
+
+  it('GET /memories/:id/links returns 404 for unknown memory', async () => {
+    const { status } = await req(
+      'GET',
+      '/memories/00000000-0000-0000-0000-000000000000/links',
+    );
+    expect(status).toBe(404);
+  });
+
   it('round-trip: add → search → read → update → delete', async () => {
     // Add
     const { json: addRes } = await req('POST', '/memories', {
