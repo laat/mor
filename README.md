@@ -24,13 +24,13 @@ mor add notes.md -t "Meeting notes" --tags "meeting,project-x"
 mor add https://raw.githubusercontent.com/owner/repo/main/config.ts
 
 # Search (FTS5 — tokenized, stemmed)
-mor find "python naming"
+mor find python naming
 
 # Grep (literal substring or regex)
-mor grep "snake_case"
-mor grep -i "todo"
+mor grep snake_case
+mor grep -i todo
 mor grep -E "async\s+function"
-mor grep -w "Beer" -n -C 2
+mor grep -w Beer -n -C 2
 
 # Read, edit, copy, remove
 mor cat python naming
@@ -64,7 +64,7 @@ mor ls -l
 | `serve`           | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
 | `login`           | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
-Queries resolve in order: full UUID, UUID prefix (8+ chars), filename, FTS search.
+Queries resolve in order: full UUID, UUID prefix (8+ chars), filename, FTS search. Multi-word queries don't need quoting — options go before the query: `mor find --limit 5 python naming`.
 
 `find`, `grep`, and `ls` support shared filters: `--type`, `--tag`, `--repo`, `--ext` (all support glob patterns).
 

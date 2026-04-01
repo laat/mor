@@ -61,7 +61,7 @@ Queries resolve in order:
 mor ls --type file
 
 # Find typescript memories about http
-mor find "http" --tag "typescript"
+mor find --tag typescript http
 
 # List all rxjs snippets
 mor ls --tag "rxjs*"
@@ -96,16 +96,16 @@ mor add file.py -t "Custom title" -d "Description" --tags "python,ml" --type fil
 
 ```sh
 # Update metadata only
-mor update "retry" -t "New title" --tags "rxjs,http"
+mor update -t "New title" --tags "rxjs,http" retry
 
 # Update content from file
-mor update "retry" --content-from ./updated-retry.ts
+mor update --content-from ./updated-retry.ts retry
 
 # Update content from URL
-mor update "retry" --content-from https://raw.githubusercontent.com/.../retry.ts
+mor update --content-from https://raw.githubusercontent.com/.../retry.ts retry
 
 # Update content from stdin
-echo "new content" | mor update "retry" --content-from -
+echo "new content" | mor update --content-from - retry
 ```
 
 ## Tag browsing
@@ -157,11 +157,11 @@ Links are extracted from content automatically — the `links` table is a derive
 ### Viewing links
 
 ```sh
-# Show all links for a memory (→ forward, ← backlinks)
-mor links 0cad2b1c
+# Show all links for a memory (→ forward, ← backlinks, ↔ bidirectional)
+mor links fastify chaos plugin
 
 # Show links inline with content
-mor cat 0cad2b1c --links
+mor cat --links fastify chaos plugin
 
 # Find all memories with broken references
 mor links --broken
