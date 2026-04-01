@@ -56,4 +56,4 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-For Claude Code-specific setup (CLAUDE.md instruction, memberberry hook), see [Claude Code integration](/integration/claude-code/).
+For Claude Code-specific setup (CLAUDE.md instruction, memberberry hook), see [Claude Code integration](/docs/integration/claude-code/).
