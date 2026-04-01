@@ -366,6 +366,23 @@ describe('memory_remove', () => {
 });
 
 describe('memory_list', () => {
+  it('uses short 8-char IDs in output', async () => {
+    const mem = await ops.add({ title: 'Short ID Test', content: 'x' });
+    const shortId = mem.id.slice(0, 8);
+
+    const list = await callTool('memory_list', {});
+    expect(list.text).toContain(shortId);
+    expect(list.text).not.toContain(mem.id);
+
+    const search = await callTool('memory_search', { query: 'Short ID' });
+    expect(search.text).toContain(shortId);
+    expect(search.text).not.toContain(mem.id);
+
+    const grep = await callTool('memory_grep', { pattern: 'Short ID Test' });
+    expect(grep.text).toContain(shortId);
+    expect(grep.text).not.toContain(mem.id);
+  });
+
   it('lists memories', async () => {
     await ops.add({ title: 'List A', content: 'a' });
     await ops.add({ title: 'List B', content: 'b' });

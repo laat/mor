@@ -38,10 +38,14 @@ function error(e: unknown) {
   };
 }
 
+function shortId(id: string): string {
+  return id.slice(0, 8);
+}
+
 function formatMemory(mem: Memory): string {
   const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
   const desc = mem.description ? `\n  ${mem.description}` : '';
-  return `- ${mem.id}  ${mem.title}${tags}${desc}`;
+  return `- ${shortId(mem.id)}  ${mem.title}${tags}${desc}`;
 }
 
 function paginatedHeader<T>(page: Paginated<T>): string {
@@ -90,7 +94,7 @@ export function createMcpServer(ops: Operations): McpServer {
         return formatMemory(r.memory) + score;
       });
       const top = page.data[0];
-      const topContent = `\n\n---\n\nTop result: ${top.memory.id}  ${top.memory.title}\n\n${top.memory.content}`;
+      const topContent = `\n\n---\n\nTop result: ${shortId(top.memory.id)}  ${top.memory.title}\n\n${top.memory.content}`;
       return text(paginatedHeader(page) + lines.join('\n') + topContent);
     },
   );
@@ -133,7 +137,7 @@ export function createMcpServer(ops: Operations): McpServer {
       if (page.data.length === 0) return text('No memories found.');
       const lines = page.data.map(formatMemory);
       const top = page.data[0];
-      const topContent = `\n\n---\n\nTop result: ${top.id}  ${top.title}\n\n${top.content}`;
+      const topContent = `\n\n---\n\nTop result: ${shortId(top.id)}  ${top.title}\n\n${top.content}`;
       return text(paginatedHeader(page) + lines.join('\n') + topContent);
     },
   );
