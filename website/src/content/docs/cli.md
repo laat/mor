@@ -21,6 +21,7 @@ description: All mor commands and their options
 | `import <dir>`      | Import `.md` files from a directory                                                                             |
 | `mcp`               | Start MCP server (stdio)                                                                                        |
 | `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
+| `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
 ## Query resolution
 

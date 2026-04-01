@@ -68,7 +68,37 @@ List, search, and grep endpoints return paginated responses:
 }
 ```
 
-Authentication via `Authorization: Bearer <token>` header when token is configured.
+## Authentication
+
+When `--token` is set, all routes require authentication. Two methods work on every endpoint:
+
+- **Bearer token** — `Authorization: Bearer <passphrase>` or `?token=<passphrase>`
+- **OAuth access token** — obtained via the OAuth flow (see below)
+
+Unauthenticated requests receive a `401` with a `WWW-Authenticate` header pointing to the OAuth discovery endpoint.
+
+### OAuth flow
+
+The server implements [MCP-spec OAuth 2.0](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization) so clients can connect with just a URL — no secret in the config. The flow:
+
+1. Client hits a protected endpoint, gets `401` with `WWW-Authenticate`
+2. Client discovers OAuth metadata at `/.well-known/oauth-authorization-server`
+3. Client registers via dynamic client registration at `/oauth/register`
+4. User authorizes in the browser (enters the server passphrase)
+5. Client exchanges the auth code for access and refresh tokens
+
+MCP clients (Claude Code, Claude Desktop, claude.ai) handle this automatically. For the CLI, use `mor login`.
+
+OAuth state (clients, tokens, auth codes) is persisted in a separate `oauth.db` SQLite database and survives server restarts.
+
+| Endpoint                                        | Description                            |
+| ----------------------------------------------- | -------------------------------------- |
+| `GET /.well-known/oauth-authorization-server`   | OAuth AS metadata (RFC 8414)           |
+| `GET /.well-known/oauth-protected-resource/mcp` | Protected resource metadata (RFC 9728) |
+| `POST /oauth/register`                          | Dynamic client registration            |
+| `GET /oauth/authorize`                          | Authorization (serves passphrase form) |
+| `POST /oauth/token`                             | Token exchange (auth code + PKCE)      |
+| `POST /oauth/revoke`                            | Token revocation                       |
 
 ## MCP over HTTP
 
@@ -77,11 +107,11 @@ When `--mcp` is enabled, the server exposes a [streamable HTTP MCP transport](ht
 The MCP endpoint:
 
 - Uses session-based transport (each client gets a session ID)
-- Shares the same bearer token auth as the REST API
 - Supports POST (requests), GET (SSE streams), and DELETE (session cleanup)
 
 ## Security
 
 - **Bearer token** — timing-safe comparison, required on all endpoints when configured
+- **OAuth** — PKCE (S256), atomic token consumption prevents replay, tokens stored in SQLite with TTL-based cleanup
 - **DNS rebinding protection** — when bound to loopback (127.0.0.1/localhost), rejects requests with non-loopback Host headers
 - **MCP opt-in** — the `/mcp` endpoint is disabled unless explicitly enabled with `--mcp`

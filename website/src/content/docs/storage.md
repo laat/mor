@@ -34,7 +34,9 @@ export const retryWithBackoff = <T>(count: number) => {
 ```
 ~/.config/mor/
   config.json          # Configuration
+  credentials.json     # OAuth tokens (created by `mor login`)
   index.db             # SQLite FTS + embeddings index
+  oauth.db             # OAuth clients and tokens (server-side)
   memories/
     retry-with-backoff-4056.md
     python-naming-a1b2.md

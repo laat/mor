@@ -10,22 +10,52 @@ Run a central memory server on one machine and access it from any other.
 On the machine that stores your memories, bind to the network interface you want to expose:
 
 ```sh
-mor serve --port 7677 --host 100.64.0.1 --token your-secret
+mor serve --port 7677 --host 100.64.0.1 --token your-passphrase --mcp
 ```
 
 :::caution
 Avoid `--host 0.0.0.0` — this exposes the server on all interfaces. Bind to a specific IP instead, such as your Tailscale/VPN address.
 :::
 
-## Client setup
+## MCP clients
 
-On any other machine, configure `~/.config/mor/config.json`:
+Point your MCP client at the server URL — no secret needed in the config:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "type": "url",
+      "url": "http://100.64.0.1:7677/mcp"
+    }
+  }
+}
+```
+
+The client discovers auth automatically via OAuth: `WWW-Authenticate` → metadata → browser passphrase flow. This works with Claude Code, Claude Desktop, claude.ai, and other MCP clients that support OAuth.
+
+## CLI client
+
+The recommended way to authenticate the CLI is `mor login`:
+
+```sh
+# Authenticates via OAuth, saves server URL and credentials
+mor login -s http://100.64.0.1:7677
+
+# All commands now proxy to the remote server
+mor find "python naming"
+mor ls --tags
+```
+
+`mor login` opens a browser where you enter the server passphrase. On success, it saves the OAuth credentials to `~/.config/mor/credentials.json` and writes the server URL to `config.json`. Tokens auto-refresh on expiry.
+
+Alternatively, configure a direct token:
 
 ```json
 {
   "server": {
     "url": "http://100.64.0.1:7677",
-    "token": "your-secret"
+    "token": "your-passphrase"
   }
 }
 ```
@@ -40,13 +70,3 @@ The `Operations` interface has two implementations:
 - **RemoteOperations** — HTTP client that wraps all operations as API calls
 
 When `server.url` is set in config, the CLI and MCP server automatically use `RemoteOperations`. No code changes needed — everything just works remotely.
-
-## Remote MCP for claude.ai
-
-Enable the MCP HTTP transport on the server:
-
-```sh
-mor serve --port 7677 --host 100.64.0.1 --token secret --mcp
-```
-
-Then connect claude.ai (or any remote MCP client) to `http://100.64.0.1:7677/mcp` with bearer token auth.

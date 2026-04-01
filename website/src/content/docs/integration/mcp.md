@@ -56,4 +56,23 @@ Add to your Claude Code or Claude Desktop MCP config:
 
 ## Remote MCP
 
-For accessing mor from claude.ai or other remote MCP clients, see [HTTP Server](/integration/http/) with the `--mcp` flag.
+To access mor from claude.ai or other remote MCP clients, start the server with `--mcp` and `--token`:
+
+```sh
+mor serve --port 7677 --host 100.64.0.1 --token your-passphrase --mcp
+```
+
+Then add just the URL to your MCP client config — no secret needed:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "type": "url",
+      "url": "http://100.64.0.1:7677/mcp"
+    }
+  }
+}
+```
+
+The client authenticates automatically via OAuth (browser passphrase flow). See [Remote Access](/integration/remote/) and [HTTP Server](/integration/http/) for details.
