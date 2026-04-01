@@ -211,6 +211,67 @@ export function startServer(
     }
   });
 
+  // Memberberry hook — Claude Code HTTP hook for surfacing relevant memories
+  const SESSION_TTL = 60 * 60 * 1000; // 1 hour
+  const SWEEP_INTERVAL = 10 * 60 * 1000; // 10 minutes
+  const memberberrySessions = new Map<
+    string,
+    { seen: Set<string>; lastUsed: number }
+  >();
+  const sweepTimer = setInterval(() => {
+    const cutoff = Date.now() - SESSION_TTL;
+    for (const [id, session] of memberberrySessions) {
+      if (session.lastUsed < cutoff) memberberrySessions.delete(id);
+    }
+  }, SWEEP_INTERVAL);
+  sweepTimer.unref();
+
+  app.post('/hooks/memberberry', async (c) => {
+    const body = await c.req.json();
+    const { session_id, prompt } = body;
+
+    if (!prompt || prompt.length < 10 || prompt.startsWith('/')) {
+      return c.json({});
+    }
+
+    try {
+      const results = await ops.search(prompt, 3);
+
+      // Get or create session
+      let session = memberberrySessions.get(session_id);
+      if (!session) {
+        session = { seen: new Set(), lastUsed: Date.now() };
+        memberberrySessions.set(session_id, session);
+      }
+      session.lastUsed = Date.now();
+
+      // Filter out already-surfaced memories
+      const newResults = results.data.filter(
+        (r) => !session!.seen.has(r.memory.id),
+      );
+      if (newResults.length === 0) return c.json({});
+
+      // Record surfaced IDs
+      for (const r of newResults) session.seen.add(r.memory.id);
+
+      // Format hints
+      const lines = newResults.map((r) => {
+        const desc = r.memory.description ? ` — ${r.memory.description}` : '';
+        return `  - ${r.memory.title} [${r.memory.id.slice(0, 8)}]${desc}`;
+      });
+      const context = `[mor] Potentially relevant memories (use mor MCP tools to read if needed):\n${lines.join('\n')}`;
+
+      return c.json({
+        hookSpecificOutput: {
+          hookEventName: 'UserPromptSubmit',
+          additionalContext: context,
+        },
+      });
+    } catch {
+      return c.json({});
+    }
+  });
+
   app.post('/reindex', async (c) => {
     try {
       return c.json({ data: await ops.reindex() });
@@ -286,6 +347,8 @@ export function startServer(
 
   const shutdown = () => {
     log('Shutting down...');
+    clearInterval(sweepTimer);
+    memberberrySessions.clear();
     for (const transport of mcpTransports.values()) {
       transport.close().catch(() => {});
     }

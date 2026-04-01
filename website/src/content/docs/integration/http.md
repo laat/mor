@@ -19,12 +19,14 @@ mor serve --port 7677 --token secret --mcp
 
 ### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-p, --port` | Port to listen on | `7677` |
-| `-H, --host` | Host to bind to | `127.0.0.1` |
-| `--token` | Bearer token for authentication | none |
-| `--mcp` | Enable MCP protocol endpoint at `/mcp` | disabled |
+| Option       | Description                                                    | Default     |
+| ------------ | -------------------------------------------------------------- | ----------- |
+| `-p, --port` | Port to listen on                                              | `7677`      |
+| `-H, --host` | Host to bind to                                                | `127.0.0.1` |
+| `--token`    | Bearer token for authentication (also via `MOR_TOKEN` env var) | none        |
+| `--mcp`      | Enable MCP protocol endpoint at `/mcp`                         | disabled    |
+
+Token precedence: `--token` flag > `MOR_TOKEN` env var > config file.
 
 Options can also be set in `~/.config/mor/config.json`:
 
@@ -41,18 +43,19 @@ Options can also be set in `~/.config/mor/config.json`:
 
 ## REST API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/memories?limit=N&offset=N` | List all (paginated) |
-| `GET` | `/memories/search?q=...&limit=N&offset=N` | FTS search |
-| `GET` | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search |
-| `GET` | `/memories/:query` | Read one |
-| `POST` | `/memories` | Create (`{title, content, tags?, type?}`) |
-| `PUT` | `/memories/:query` | Update (`{title?, content?, tags?, type?}`) |
-| `DELETE` | `/memories/:query` | Remove |
-| `POST` | `/reindex` | Rebuild search index |
-| `POST` | `/sync` | Git pull + commit + push |
+| Method   | Path                                                         | Description                                  |
+| -------- | ------------------------------------------------------------ | -------------------------------------------- |
+| `GET`    | `/health`                                                    | Health check                                 |
+| `GET`    | `/memories?limit=N&offset=N`                                 | List all (paginated)                         |
+| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                   |
+| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                    |
+| `GET`    | `/memories/:query`                                           | Read one                                     |
+| `POST`   | `/memories`                                                  | Create (`{title, content, tags?, type?}`)    |
+| `PUT`    | `/memories/:query`                                           | Update (`{title?, content?, tags?, type?}`)  |
+| `DELETE` | `/memories/:query`                                           | Remove                                       |
+| `POST`   | `/reindex`                                                   | Rebuild search index                         |
+| `POST`   | `/sync`                                                      | Git pull + commit + push                     |
+| `POST`   | `/hooks/memberberry`                                         | Claude Code hook — surface relevant memories |
 
 List, search, and grep endpoints return paginated responses:
 

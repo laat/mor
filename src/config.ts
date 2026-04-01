@@ -38,6 +38,12 @@ export function loadConfig(): Config {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }
 
+  // MOR_TOKEN env var overrides config file token (cli flag > env > config)
+  if (process.env.MOR_TOKEN) {
+    if (config.server) config.server.token = process.env.MOR_TOKEN;
+    if (config.serve) config.serve.token = process.env.MOR_TOKEN;
+  }
+
   // Resolve paths relative to configDir when they use ~
   config.memoryDir = expandHome(config.memoryDir);
   config.dbPath = expandHome(config.dbPath);

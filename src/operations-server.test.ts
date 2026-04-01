@@ -221,6 +221,92 @@ describe('HTTP Server', () => {
   });
 });
 
+describe('Memberberry Hook', () => {
+  it('returns empty JSON for short prompts', async () => {
+    const { status, json } = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-1',
+      prompt: 'hi',
+    });
+    expect(status).toBe(200);
+    expect(json).toEqual({});
+  });
+
+  it('returns empty JSON for slash commands', async () => {
+    const { status, json } = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-1',
+      prompt: '/commit push all changes',
+    });
+    expect(status).toBe(200);
+    expect(json).toEqual({});
+  });
+
+  it('returns additionalContext with matching memories', async () => {
+    await req('POST', '/memories', {
+      title: 'TypeScript Generics Guide',
+      description: 'How to use generics in TS',
+      content: 'Generics allow you to write reusable typed functions',
+    });
+
+    const { status, json } = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-2',
+      prompt: 'help me with typescript generics',
+    });
+    expect(status).toBe(200);
+    expect(json.hookSpecificOutput).toBeDefined();
+    expect(json.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+    expect(json.hookSpecificOutput.additionalContext).toContain(
+      'TypeScript Generics Guide',
+    );
+    expect(json.hookSpecificOutput.additionalContext).toContain('[mor]');
+  });
+
+  it('deduplicates within same session_id', async () => {
+    await req('POST', '/memories', {
+      title: 'React Hooks Tutorial',
+      content: 'useState and useEffect are the most common hooks',
+    });
+
+    const first = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-3',
+      prompt: 'explain react hooks to me',
+    });
+    expect(first.json.hookSpecificOutput?.additionalContext).toContain(
+      'React Hooks Tutorial',
+    );
+
+    const second = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-3',
+      prompt: 'tell me more about react hooks',
+    });
+    // Same memory should not appear again
+    const ctx = second.json.hookSpecificOutput?.additionalContext ?? '';
+    expect(ctx).not.toContain('React Hooks Tutorial');
+  });
+
+  it('different session_ids get independent dedup', async () => {
+    await req('POST', '/memories', {
+      title: 'Docker Compose Setup',
+      content: 'docker compose up to start all services',
+    });
+
+    const first = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-4',
+      prompt: 'how to use docker compose',
+    });
+    expect(first.json.hookSpecificOutput?.additionalContext).toContain(
+      'Docker Compose Setup',
+    );
+
+    const second = await req('POST', '/hooks/memberberry', {
+      session_id: 'sess-5',
+      prompt: 'how to use docker compose',
+    });
+    expect(second.json.hookSpecificOutput?.additionalContext).toContain(
+      'Docker Compose Setup',
+    );
+  });
+});
+
 describe('HTTP Server Auth', () => {
   let authServer: http.Server;
   let authUrl: string;

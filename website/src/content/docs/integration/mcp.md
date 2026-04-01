@@ -72,18 +72,42 @@ notes. Always check mor before saying something wasn't found.
 
 You can auto-surface relevant memories on each Claude Code prompt via a `UserPromptSubmit` hook. Instead of injecting full content, it outputs lightweight hints (title, ID, description) so Claude can decide whether to read more via MCP tools.
 
-Save this as e.g. `~/.claude/hooks/memberberry.sh` and make it executable:
-
-<!-- @include hooks/memberberry.sh -->
-
-Then add to `~/.claude/settings.json`:
+Add to `~/.claude/settings.json` (requires `mor serve` running):
 
 ```json
 {
   "hooks": {
     "UserPromptSubmit": [
       {
-        "command": "~/.claude/hooks/memberberry.sh"
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://localhost:7677/hooks/memberberry"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+If you configured `mor serve` with a bearer token, add the `Authorization` header:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://localhost:7677/hooks/memberberry",
+            "headers": {
+              "Authorization": "Bearer $MOR_TOKEN"
+            },
+            "allowedEnvVars": ["MOR_TOKEN"]
+          }
+        ]
       }
     ]
   }
@@ -93,7 +117,6 @@ Then add to `~/.claude/settings.json`:
 - Searches top 3 memories per prompt
 - Deduplicates within a session (won't re-surface the same memory)
 - Skips short prompts (<10 chars) and slash commands
-- Requires `jq` and `mor` on PATH
 
 ## Remote MCP
 
