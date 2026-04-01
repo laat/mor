@@ -315,7 +315,18 @@ describe('memory_update', () => {
       content: 'new',
     });
     expect(text).toContain('Updated: Update Me');
-    expect(text).toContain('content changed');
+    expect(text).toContain('--- content diff ---');
+  });
+
+  it('reports no changes when fields match', async () => {
+    const mem = await ops.add({ title: 'Same', content: 'same' });
+
+    const { text } = await callTool('memory_update', {
+      id: mem.id,
+      content: 'same',
+    });
+    expect(text).toContain('No changes: Same');
+    expect(text).toContain('fields match current values');
   });
 
   it('updates title', async () => {

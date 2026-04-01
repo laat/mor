@@ -285,25 +285,30 @@ export function createMcpServer(ops: Operations): McpServer {
           tags,
           type,
         });
-        const changes: string[] = [];
+        const meta: string[] = [];
         if (title && title !== before.title)
-          changes.push(`title: ${before.title} → ${title}`);
+          meta.push(`title: ${before.title} → ${title}`);
         if (description && description !== before.description)
-          changes.push(
+          meta.push(
             `description: ${before.description ?? '(none)'} → ${description}`,
           );
         if (tags && JSON.stringify(tags) !== JSON.stringify(before.tags))
-          changes.push(
-            `tags: [${before.tags.join(', ')}] → [${tags.join(', ')}]`,
-          );
+          meta.push(`tags: [${before.tags.join(', ')}] → [${tags.join(', ')}]`);
         if (type && type !== before.type)
-          changes.push(`type: ${before.type} → ${type}`);
-        if (content && content !== before.content) {
-          changes.push('content changed:');
-          changes.push(unifiedDiff(before.content, content));
+          meta.push(`type: ${before.type} → ${type}`);
+        const contentChanged = content && content !== before.content;
+        if (meta.length === 0 && !contentChanged) {
+          return text(
+            `No changes: ${before.title} (fields match current values)`,
+          );
         }
-        const diff = changes.length > 0 ? '\n\n' + changes.join('\n') : '';
-        return text(`Updated: ${updated.title}${diff}`);
+        const parts = [`Updated: ${updated.title}`];
+        if (meta.length > 0) parts.push(meta.join('\n'));
+        if (contentChanged) {
+          parts.push('--- content diff ---');
+          parts.push(unifiedDiff(before.content, content));
+        }
+        return text(parts.join('\n\n'));
       } catch (e) {
         return error(e);
       }
