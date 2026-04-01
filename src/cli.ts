@@ -494,8 +494,8 @@ program
           for (const link of forward) {
             const title = link.title || chalk.dim('(not found)');
             const arrow = backIds.has(link.id)
-              ? chalk.magenta('↔')
-              : chalk.green('→');
+              ? chalk.cyan('↔')
+              : chalk.yellow('→');
             console.log(
               `${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
             );
@@ -503,7 +503,7 @@ program
           for (const link of back) {
             if (!forwardIds.has(link.id)) {
               console.log(
-                `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+                `${chalk.green('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
               );
             }
           }
@@ -563,14 +563,14 @@ program
       for (const link of forward) {
         const title = link.title || chalk.dim('(not found)');
         const arrow = backIds.has(link.id)
-          ? chalk.magenta('↔')
-          : chalk.green('→');
+          ? chalk.cyan('↔')
+          : chalk.yellow('→');
         console.log(`${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`);
       }
       for (const link of back) {
         if (!forwardIds.has(link.id)) {
           console.log(
-            `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+            `${chalk.green('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
           );
         }
       }
