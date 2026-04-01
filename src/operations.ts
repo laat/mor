@@ -126,6 +126,10 @@ export interface Operations {
     limit?: number,
     offset?: number,
   ): Promise<Paginated<Memory>>;
+  getLinks(memId: string): Promise<{
+    forward: Array<{ id: string; title: string }>;
+    back: Array<{ id: string; title: string }>;
+  }>;
   reindex(): Promise<{
     count: number;
     embedding?: {

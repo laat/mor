@@ -366,10 +366,10 @@ export class LocalOperations implements Operations {
     return mem;
   }
 
-  getLinks(memId: string): {
+  async getLinks(memId: string): Promise<{
     forward: Array<{ id: string; title: string }>;
     back: Array<{ id: string; title: string }>;
-  } {
+  }> {
     return {
       forward: getForwardLinks(this.db, memId),
       back: getBacklinks(this.db, memId),

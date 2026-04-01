@@ -228,6 +228,25 @@ export class RemoteOperations implements Operations {
     return json;
   }
 
+  async getLinks(memId: string): Promise<{
+    forward: Array<{ id: string; title: string }>;
+    back: Array<{ id: string; title: string }>;
+  }> {
+    let res = await fetch(
+      `${this.baseUrl}/memories/${encodeURIComponent(memId)}/links`,
+      { headers: this.headers },
+    );
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(
+        `${this.baseUrl}/memories/${encodeURIComponent(memId)}/links`,
+        { headers: this.headers },
+      );
+    }
+    if (!res.ok) return { forward: [], back: [] };
+    const json = await res.json();
+    return json.data ?? { forward: [], back: [] };
+  }
+
   async reindex() {
     let res = await fetch(`${this.baseUrl}/reindex`, {
       method: 'POST',

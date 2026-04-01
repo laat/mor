@@ -479,8 +479,8 @@ program
       if (!opts.raw && process.stdout.isTTY) output = colorizeMarkdown(output);
       process.stdout.write(output);
       if (!opts.raw) process.stdout.write('\n');
-      if (!opts.raw && opts.links !== false && ops instanceof LocalOperations) {
-        const { forward, back } = ops.getLinks(mem.id);
+      if (!opts.raw && opts.links !== false) {
+        const { forward, back } = await ops.getLinks(mem.id);
         if (forward.length > 0 || back.length > 0) {
           console.log(chalk.dim('---'));
           console.log(chalk.bold('Links:'));
@@ -512,16 +512,12 @@ program
   .action(async (query: string | undefined, opts: { broken?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
-    if (!(ops instanceof LocalOperations)) {
-      console.error('Error: links command requires local operations');
-      process.exit(1);
-    }
     try {
       if (opts.broken) {
         const page = await ops.list(undefined, 10000);
         let found = false;
         for (const mem of page.data) {
-          const { forward } = ops.getLinks(mem.id);
+          const { forward } = await ops.getLinks(mem.id);
           const broken = forward.filter((l) => !l.title);
           if (broken.length > 0) {
             found = true;
@@ -545,7 +541,7 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      const { forward, back } = ops.getLinks(mem.id);
+      const { forward, back } = await ops.getLinks(mem.id);
       if (forward.length === 0 && back.length === 0) {
         console.log('No links.');
         return;

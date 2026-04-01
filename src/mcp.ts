@@ -42,8 +42,11 @@ function paginatedHeader<T>(page: Paginated<T>): string {
 
 // ---- Server ----
 
-function formatLinks(ops: LocalOperations, memId: string): string | undefined {
-  const { forward, back } = ops.getLinks(memId);
+async function formatLinks(
+  ops: LocalOperations,
+  memId: string,
+): Promise<string | undefined> {
+  const { forward, back } = await ops.getLinks(memId);
   if (forward.length === 0 && back.length === 0) return undefined;
   const lines: string[] = ['Links:'];
   for (const link of forward) {
@@ -183,7 +186,7 @@ export function createMcpServer(ops: LocalOperations): McpServer {
         }
         blocks.push({ type: 'text', text: formatMetadata(mem) });
         blocks.push({ type: 'text', text: mem.content });
-        const links = formatLinks(ops, mem.id);
+        const links = await formatLinks(ops, mem.id);
         if (links) blocks.push({ type: 'text', text: links });
       }
       if (blocks.length === 0) {

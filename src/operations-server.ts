@@ -214,6 +214,17 @@ export function startServer(
     return c.json({ data: mem });
   });
 
+  app.get('/memories/:query/links', async (c) => {
+    const mem = await ops.read(c.req.param('query'));
+    if (!mem) {
+      return c.json(
+        { error: `Memory not found: ${c.req.param('query')}` },
+        404,
+      );
+    }
+    return c.json({ data: ops.getLinks(mem.id) });
+  });
+
   app.put('/memories/:query', async (c) => {
     try {
       const { title, description, content, tags, type } = await c.req.json();
