@@ -31,10 +31,10 @@ export default defineConfig({
         {
           label: 'Integration',
           items: [
-            { label: 'Claude Code', slug: 'integration/claude-code' },
             { label: 'MCP Server', slug: 'integration/mcp' },
             { label: 'HTTP Server', slug: 'integration/http' },
             { label: 'Remote Access', slug: 'integration/remote' },
+            { label: 'Claude Code', slug: 'integration/claude-code' },
           ],
         },
         { label: 'Search', slug: 'search' },
