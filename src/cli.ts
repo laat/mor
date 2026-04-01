@@ -465,7 +465,7 @@ program
   .command('cat <query>')
   .description('Print memory content')
   .option('--raw', 'Include frontmatter')
-  .option('--no-links', 'Hide links')
+  .option('--links', 'Show links')
   .action(async (query: string, opts: { raw?: boolean; links?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -479,7 +479,7 @@ program
       if (!opts.raw && process.stdout.isTTY) output = colorizeMarkdown(output);
       process.stdout.write(output);
       if (!opts.raw) process.stdout.write('\n');
-      if (!opts.raw && opts.links !== false) {
+      if (!opts.raw && opts.links) {
         const { forward, back } = await ops.getLinks(mem.id);
         if (forward.length > 0 || back.length > 0) {
           console.log(chalk.dim('---'));
