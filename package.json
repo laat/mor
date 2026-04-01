@@ -1,7 +1,7 @@
 {
   "name": "mor",
   "version": "0.14.2",
-  "description": "A shared memory store for humans and AI",
+  "description": "AI-accessible knowledge you actually own",
   "type": "module",
   "license": "MIT",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",

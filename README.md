@@ -3,9 +3,9 @@
 > [!WARNING]
 > This is a personal project. I maintain it for my own use and share it because others might find it useful. Feature PRs are unlikely to be merged — if you have an idea, [start a discussion](https://github.com/laat/mor/discussions) first. Fork freely — it's MIT licensed.
 
-A shared memory store for humans and AI. Plain markdown files with SQLite full-text search.
+AI-accessible knowledge you actually own. Plain markdown files on your disk, searchable by AI via MCP.
 
-Use it as a **CLI**, an **MCP server** (Claude Code, Claude Desktop, Cursor, etc.), or an **HTTP server** for accessing memories across machines.
+Your notes are plain markdown with YAML frontmatter — readable without mor, portable to any tool, git-syncable across machines. The MCP server gives AI assistants (Claude Code, Claude Desktop, Cursor, etc.) persistent memory that survives context windows. You also get a CLI and HTTP API.
 
 ## Install
 

@@ -68,7 +68,7 @@ function parseFilterOpts(opts: Record<string, any>): MemoryFilter {
 
 program
   .name(path.basename(process.argv[1]))
-  .description('A shared memory store for humans and AI');
+  .description('AI-accessible knowledge you actually own');
 
 program
   .command('version')

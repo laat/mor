@@ -1,6 +1,6 @@
 .TH MOR 1 "2026-04-01" "mor 0.14.2" "User Commands"
 .SH NAME
-mor \- a shared memory store for humans and AI
+mor \- AI-accessible knowledge you actually own
 .SH SYNOPSIS
 .B mor
 .I command
@@ -8,9 +8,9 @@ mor \- a shared memory store for humans and AI
 .RI [ query... ]
 .SH DESCRIPTION
 .B mor
-stores knowledge as markdown files with YAML frontmatter, indexed by SQLite
-FTS5 with optional vector embeddings. It provides a CLI, MCP server, and HTTP
-API for managing memories.
+stores knowledge as plain markdown files with YAML frontmatter on your disk,
+indexed by SQLite FTS5 with optional vector embeddings. AI assistants access
+your knowledge via MCP. You also get a CLI and HTTP API.
 .PP
 Memories are stored in
 .I ~/.config/mor/memories/

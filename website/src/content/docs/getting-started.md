@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install mor and start remembering things
+description: AI-accessible knowledge you actually own
 ---
 
 :::caution[Personal project]
