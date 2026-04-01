@@ -48,7 +48,7 @@ Use `grep` for code identifiers, URLs, special characters, patterns, or anything
 Commands that take a `<query>` argument resolve it in order:
 
 1. **Full UUID** — exact match
-2. **UUID prefix** — 4+ character prefix, must be unique
+2. **UUID prefix** — 8+ character prefix, must be unique
 3. **Filename** — matches the `.md` filename in the memory folder
 4. **FTS search** — falls back to full-text search, returns the top hit
 

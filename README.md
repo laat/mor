@@ -50,9 +50,9 @@ mor ls -l
 | `cat <query>`       | Print content (`--raw` for frontmatter)                                                                         |
 | `cp <query> <dest>` | Copy content to file                                                                                            |
 | `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
-| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content)                |
+| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
 | `rm <query>`        | Remove a memory                                                                                                 |
-| `ls`                | List all (`-n` limit, `-l` long)                                                                                |
+| `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
 | `sync`              | Pull, commit, and push the memory folder via git                                                                |
 | `reindex`           | Rebuild search index                                                                                            |
 | `import <dir>`      | Import `.md` files from a directory                                                                             |
@@ -60,7 +60,7 @@ mor ls -l
 | `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
 | `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
-Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
+Queries resolve in order: full UUID, UUID prefix (8+ chars), filename, FTS search.
 
 `find`, `grep`, and `ls` support shared filters: `--type`, `--tag`, `--repo`, `--ext` (all support glob patterns).
 
@@ -153,17 +153,17 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 
 ### HTTP API
 
-| Method   | Path                                                         | Description                                 |
-| -------- | ------------------------------------------------------------ | ------------------------------------------- |
-| `GET`    | `/health`                                                    | Health check                                |
-| `GET`    | `/memories?limit=N&offset=N`                                 | List all                                    |
-| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                  |
-| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                   |
-| `GET`    | `/memories/:query`                                           | Read one                                    |
-| `POST`   | `/memories`                                                  | Create (`{title, content, tags?, type?}`)   |
-| `PUT`    | `/memories/:query`                                           | Update (`{title?, content?, tags?, type?}`) |
-| `DELETE` | `/memories/:query`                                           | Remove                                      |
-| `POST`   | `/mcp`                                                       | MCP protocol (streamable HTTP)              |
+| Method   | Path                                                         | Description                                                          |
+| -------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `GET`    | `/health`                                                    | Health check                                                         |
+| `GET`    | `/memories?limit=N&offset=N`                                 | List all                                                             |
+| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
+| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
+| `GET`    | `/memories/:query`                                           | Read one                                                             |
+| `POST`   | `/memories`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
+| `PUT`    | `/memories/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
+| `DELETE` | `/memories/:query`                                           | Remove                                                               |
+| `POST`   | `/mcp`                                                       | MCP protocol (streamable HTTP)                                       |
 
 ## Embeddings (experimental)
 

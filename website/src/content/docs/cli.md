@@ -15,7 +15,7 @@ description: All mor commands and their options
 | `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`    | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
 | `rm <query>`        | Remove a memory                                                                                                 |
-| `ls`                | List all (`-n` limit, `-l` long, `--tags` for tag counts)                                                       |
+| `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
 | `sync`              | Pull, commit, and push the memory folder via git                                                                |
 | `reindex`           | Rebuild search index                                                                                            |
 | `import <dir>`      | Import `.md` files from a directory                                                                             |
@@ -28,7 +28,7 @@ description: All mor commands and their options
 Queries resolve in order:
 
 1. Full UUID
-2. UUID prefix (4+ chars)
+2. UUID prefix (8+ chars)
 3. Filename
 4. FTS search
 
