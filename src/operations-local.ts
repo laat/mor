@@ -493,6 +493,14 @@ export class LocalOperations implements Operations {
       await this.computeEmbedding(mem);
       count++;
     }
+    // Second pass: re-resolve links now that all memories are indexed
+    // (first pass may store short IDs for notes not yet indexed)
+    for (const filePath of files) {
+      const result = tryReadMemory(filePath);
+      if (!result) continue;
+      const { mem, raw } = result;
+      this.updateLinks(mem.id, mem.content, raw);
+    }
     const emb = this.config.embedding;
     return {
       count,
