@@ -60,27 +60,28 @@ Optional vector embeddings to augment FTS search. See [Embeddings](/docs/embeddi
 
 Connect the CLI and MCP tools to a remote mor server. When `server` is configured, all operations proxy over HTTP.
 
-| Key            | Type   | Required | Description                                 |
-| -------------- | ------ | -------- | ------------------------------------------- |
-| `server.url`   | string | yes      | Server URL (e.g. `https://mor.example.com`) |
-| `server.token` | string | no       | Bearer token for authentication             |
+| Key            | Type   | Required | Description                                      |
+| -------------- | ------ | -------- | ------------------------------------------------ |
+| `server.url`   | string | yes      | Server URL (e.g. `https://mor.example.com`)      |
+| `server.token` | string | no       | Bearer token (falls back to `MOR_TOKEN` env var) |
 
 ## HTTP server
 
 Defaults for `mor serve`. CLI flags override these.
 
-| Key           | Type    | Default     | Description                     |
-| ------------- | ------- | ----------- | ------------------------------- |
-| `serve.port`  | number  | `7677`      | Port to listen on               |
-| `serve.host`  | string  | `127.0.0.1` | Host to bind to                 |
-| `serve.token` | string  | —           | Bearer token for authentication |
-| `serve.mcp`   | boolean | `false`     | Enable MCP endpoint at `/mcp`   |
+| Key           | Type    | Default     | Description                                      |
+| ------------- | ------- | ----------- | ------------------------------------------------ |
+| `serve.port`  | number  | `7677`      | Port to listen on                                |
+| `serve.host`  | string  | `127.0.0.1` | Host to bind to                                  |
+| `serve.token` | string  | —           | Bearer token (falls back to `MOR_TOKEN` env var) |
+| `serve.mcp`   | boolean | `false`     | Enable MCP endpoint at `/mcp`                    |
 
 ## Environment variables
 
-| Variable               | Description                                              |
-| ---------------------- | -------------------------------------------------------- |
-| `MOR_HOME`             | Override the config directory (default `~/.config/mor`)  |
-| `OPENAI_API_KEY`       | OpenAI API key (used when `embedding.apiKey` is not set) |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key                                     |
-| `EDITOR`               | Editor used by `mor add` and `mor edit`                  |
+| Variable               | Description                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| `MOR_HOME`             | Override the config directory (default `~/.config/mor`)                                   |
+| `MOR_TOKEN`            | Bearer token for server/client auth (overrides config file, overridden by `--token` flag) |
+| `OPENAI_API_KEY`       | OpenAI API key (used when `embedding.apiKey` is not set)                                  |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key                                                                      |
+| `EDITOR`               | Editor used by `mor add` and `mor edit`                                                   |
