@@ -4,7 +4,7 @@ description: AI-accessible knowledge you actually own
 ---
 
 :::caution[Personal project]
-This is a personal project. I maintain it for my own use and share it because others might find it useful. Feature PRs are unlikely to be merged — if you have an idea, [start a discussion](https://github.com/laat/mor/discussions) first. Fork freely — it's MIT licensed.
+Personal project — MIT licensed, fork freely.
 :::
 
 ## Install
