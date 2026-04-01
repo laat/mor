@@ -58,6 +58,7 @@ mor ls -l
 | `import <dir>`      | Import `.md` files from a directory                                                                             |
 | `mcp`               | Start MCP server (stdio)                                                                                        |
 | `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
+| `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
 Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
 
@@ -97,20 +98,55 @@ Run the server on one machine, access from anywhere:
 
 ```sh
 # Server
-mor serve --port 7677 --token optional-secret
+mor serve --port 7677 --token mypassphrase --mcp
+```
+
+### MCP clients (Claude Code, Claude Desktop, etc.)
+
+Point your MCP client at the server URL — no secret in the config:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "type": "url",
+      "url": "http://mybox.tail1234.ts.net:7677/mcp"
+    }
+  }
+}
+```
+
+The client discovers auth via `WWW-Authenticate` → OAuth metadata → browser passphrase flow, all automatic.
+
+### CLI client
+
+```sh
+# Option 1: OAuth login (stores token in ~/.config/mor/credentials.json)
+mor login -s http://mybox.tail1234.ts.net:7677
+
+# Option 2: Direct token in config
 ```
 
 ```jsonc
-// Client — ~/.config/mor/config.json
+// ~/.config/mor/config.json
 {
   "server": {
     "url": "http://mybox.tail1234.ts.net:7677",
-    "token": "optional-secret",
+    "token": "mypassphrase",
   },
 }
 ```
 
-All CLI commands and MCP tools transparently proxy over HTTP when `server` is configured.
+All CLI commands and MCP tools transparently proxy over HTTP when `server` is configured. OAuth tokens auto-refresh on expiry.
+
+### Authentication
+
+When `--token` is set, all routes require auth. Two methods work everywhere:
+
+- **Bearer token**: `Authorization: Bearer <passphrase>` or `?token=<passphrase>`
+- **OAuth access token**: obtained via the OAuth flow (`mor login` or MCP client auto-discovery)
+
+Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing to the OAuth discovery endpoint.
 
 ### HTTP API
 
@@ -124,8 +160,7 @@ All CLI commands and MCP tools transparently proxy over HTTP when `server` is co
 | `POST`   | `/memories`                                                  | Create (`{title, content, tags?, type?}`)   |
 | `PUT`    | `/memories/:query`                                           | Update (`{title?, content?, tags?, type?}`) |
 | `DELETE` | `/memories/:query`                                           | Remove                                      |
-
-Auth: `Authorization: Bearer <token>` header when token is configured.
+| `POST`   | `/mcp`                                                       | MCP protocol (streamable HTTP)              |
 
 ## Embeddings (experimental)
 
@@ -152,7 +187,9 @@ Memories are markdown files with YAML frontmatter, stored in `~/.config/mor/memo
 ```
 ~/.config/mor/
   config.json
-  index.db
+  credentials.json   # OAuth tokens (created by `mor login`)
+  index.db           # search index
+  oauth.db           # OAuth clients and tokens (server-side)
   memories/
     python-naming-a1b2.md
     meeting-notes-c3d4.md
