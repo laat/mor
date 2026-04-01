@@ -8,7 +8,7 @@ import matter from 'gray-matter';
 import { getConfigDir, isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
-import { login } from './oauth-login.js';
+import { login, getStoredToken } from './oauth-login.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import type { MemoryFilter, Operations } from './operations.js';
@@ -76,9 +76,14 @@ program
         const res = await fetch(
           `${config.server!.url.replace(/\/+$/, '')}/health`,
           {
-            headers: config.server!.token
-              ? { Authorization: `Bearer ${config.server!.token}` }
-              : {},
+            headers: (() => {
+              const token =
+                config.server!.token ??
+                getStoredToken(getConfigDir(), config.server!.url);
+              const h: Record<string, string> = {};
+              if (token) h['Authorization'] = `Bearer ${token}`;
+              return h;
+            })(),
           },
         );
         const json = (await res.json()) as { version?: string };
