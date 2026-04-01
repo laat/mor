@@ -307,17 +307,20 @@
         letter-spacing: 0.02em;
       }
       .personal-notice {
+        position: relative;
+        z-index: 3;
         max-width: 640px;
         margin: 0 auto;
-        padding: 1rem 1.5rem;
+        padding: 0.75rem 1.5rem;
         border-radius: 10px;
         border: 1px solid rgba(234, 179, 8, 0.3);
         background: rgba(234, 179, 8, 0.08);
         color: #fde68a;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         line-height: 1.6;
         text-align: center;
         backdrop-filter: blur(8px);
+        margin-bottom: 1.5rem;
       }
       .personal-notice strong {
         color: #fbbf24;
@@ -809,6 +812,14 @@
       <div class="grid-bg"></div>
       <div class="particles" id="particles"></div>
 
+      <div class="personal-notice">
+        <strong>&#9888; Personal project.</strong> I maintain this for my own
+        use and share it because others might find it useful. Feature PRs are
+        unlikely to be merged —
+        <a href="https://github.com/laat/mor/discussions">start a discussion</a>
+        first. Fork freely — it's MIT licensed.
+      </div>
+
       <div class="logo-wrap">
         <div class="logo">mor</div>
       </div>
@@ -840,16 +851,6 @@
     </div>
 
     <div class="divider"></div>
-
-    <div style="padding: 0 2rem; margin-bottom: -2rem">
-      <div class="personal-notice">
-        <strong>&#9888; Personal project.</strong> I maintain this for my own
-        use and share it because others might find it useful. Feature PRs are
-        unlikely to be merged —
-        <a href="https://github.com/laat/mor/discussions">start a discussion</a>
-        first. Fork freely — it's MIT licensed.
-      </div>
-    </div>
 
     <section id="what">
       <h2 class="section-title"><span>What is this?</span></h2>
