@@ -5,8 +5,10 @@ import {
   deleteMemoryFromDb,
   getAllContentHashes,
   getAllMemoryIds,
+  getBacklinks,
   getEmbeddingCount,
   getEmbeddingModel,
+  getForwardLinks,
   getMemoriesByIds,
   recordAccess,
   getMemoryByFilename,
@@ -17,6 +19,7 @@ import {
   searchFts,
   searchVec,
   upsertEmbedding,
+  upsertLinks,
   upsertMemoryChecked,
   type DB,
 } from './db.js';
@@ -32,6 +35,8 @@ import {
   tryReadMemory,
   updateMemory,
 } from './memory.js';
+import { extractLinkIds, parseFrontmatterLinks } from './utils/links.js';
+import matter from 'gray-matter';
 import type {
   Config,
   GrepOptions,
@@ -184,6 +189,29 @@ export class LocalOperations implements Operations {
       filePath: mem.filePath,
       contentHash: hashContent(raw),
     });
+    this.updateLinks(mem.id, mem.content, raw);
+  }
+
+  private updateLinks(memId: string, content: string, raw: string): void {
+    const { data } = matter(raw);
+    const fmLinks = parseFrontmatterLinks(data as Record<string, unknown>);
+    const rawIds = extractLinkIds(content, fmLinks);
+
+    // Resolve short IDs to full UUIDs where possible
+    const resolved: string[] = [];
+    for (const id of rawIds) {
+      if (id === memId) continue; // skip self-references
+      if (UUID_RE.test(id)) {
+        resolved.push(id);
+      } else if (UUID_PREFIX_RE.test(id)) {
+        const row = getMemoryByPrefix(this.db, id);
+        resolved.push(row ? row.id : id);
+      } else {
+        resolved.push(id);
+      }
+    }
+
+    upsertLinks(this.db, memId, resolved);
   }
 
   private async computeEmbedding(mem: Memory): Promise<void> {
@@ -338,6 +366,16 @@ export class LocalOperations implements Operations {
     return mem;
   }
 
+  async getLinks(memId: string): Promise<{
+    forward: Array<{ id: string; title: string }>;
+    back: Array<{ id: string; title: string }>;
+  }> {
+    return {
+      forward: getForwardLinks(this.db, memId),
+      back: getBacklinks(this.db, memId),
+    };
+  }
+
   async add(opts: {
     title: string;
     description?: string;
@@ -454,6 +492,14 @@ export class LocalOperations implements Operations {
       this.upsertFromMemory(mem, raw);
       await this.computeEmbedding(mem);
       count++;
+    }
+    // Second pass: re-resolve links now that all memories are indexed
+    // (first pass may store short IDs for notes not yet indexed)
+    for (const filePath of files) {
+      const result = tryReadMemory(filePath);
+      if (!result) continue;
+      const { mem, raw } = result;
+      this.updateLinks(mem.id, mem.content, raw);
     }
     const emb = this.config.embedding;
     return {

@@ -43,6 +43,13 @@ const SCHEMA = `
     model TEXT NOT NULL,
     dimensions INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS links (
+    source_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+    target_id TEXT NOT NULL,
+    PRIMARY KEY (source_id, target_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
 `;
 
 const VEC_TABLE = 'embeddings_vec';
@@ -385,6 +392,7 @@ export function upsertEmbedding(
 }
 
 export function clearDb(db: DB, config: Config): void {
+  run(db, sql`DELETE FROM links`);
   run(db, sql`DELETE FROM embeddings`);
   if (hasVecTable(db)) run(db, sql`DROP TABLE ${raw(VEC_TABLE)}`);
   if (config.embedding && config.embedding.provider !== 'none') {
@@ -392,4 +400,50 @@ export function clearDb(db: DB, config: Config): void {
   }
   run(db, sql`DELETE FROM memories`);
   run(db, sql`INSERT INTO memories_fts(memories_fts) VALUES('delete-all')`);
+}
+
+// ---- Links ----
+
+export function upsertLinks(
+  db: DB,
+  sourceId: string,
+  targetIds: string[],
+): void {
+  run(db, sql`DELETE FROM links WHERE source_id = ${sourceId}`);
+  for (const targetId of targetIds) {
+    run(
+      db,
+      sql`INSERT OR IGNORE INTO links (source_id, target_id) VALUES (${sourceId}, ${targetId})`,
+    );
+  }
+}
+
+export function deleteLinks(db: DB, sourceId: string): void {
+  run(db, sql`DELETE FROM links WHERE source_id = ${sourceId}`);
+}
+
+export function getForwardLinks(
+  db: DB,
+  sourceId: string,
+): Array<{ id: string; title: string }> {
+  return all(
+    db,
+    sql`SELECT l.target_id AS id, COALESCE(m.title, '') AS title
+        FROM links l
+        LEFT JOIN memories m ON m.id = l.target_id
+        WHERE l.source_id = ${sourceId}`,
+  );
+}
+
+export function getBacklinks(
+  db: DB,
+  targetId: string,
+): Array<{ id: string; title: string }> {
+  return all(
+    db,
+    sql`SELECT l.source_id AS id, m.title
+        FROM links l
+        JOIN memories m ON m.id = l.source_id
+        WHERE l.target_id = ${targetId}`,
+  );
 }

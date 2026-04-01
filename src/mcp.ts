@@ -1,22 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { isRemote, loadConfig } from './config.js';
+import { loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
-import { RemoteOperations } from './operations-client.js';
-import {
-  MEMORY_TYPES,
-  type Memory,
-  type Operations,
-  type Paginated,
-} from './operations.js';
+import { MEMORY_TYPES, type Memory, type Paginated } from './operations.js';
 import { unifiedDiff } from './utils/diff.js';
-
-function createOps(): Operations {
-  const config = loadConfig();
-  if (isRemote(config)) return new RemoteOperations(config);
-  return new LocalOperations(config);
-}
 
 import { version } from './version.js';
 
@@ -54,7 +42,34 @@ function paginatedHeader<T>(page: Paginated<T>): string {
 
 // ---- Server ----
 
-export function createMcpServer(ops: Operations): McpServer {
+async function formatLinks(
+  ops: LocalOperations,
+  memId: string,
+): Promise<string | undefined> {
+  const { forward, back } = await ops.getLinks(memId);
+  if (forward.length === 0 && back.length === 0) return undefined;
+  const lines: string[] = ['Links:'];
+  for (const link of forward) {
+    const title = link.title || '(not found)';
+    lines.push(`→ ${shortId(link.id)}  ${title}`);
+  }
+  for (const link of back) {
+    lines.push(`← ${shortId(link.id)}  ${link.title}`);
+  }
+  return lines.join('\n');
+}
+
+function formatMetadata(mem: Memory): string {
+  const lines: string[] = [];
+  lines.push(`id: ${shortId(mem.id)}`);
+  lines.push(`title: ${mem.title}`);
+  if (mem.tags.length > 0) lines.push(`tags: ${mem.tags.join(', ')}`);
+  if (mem.type) lines.push(`type: ${mem.type}`);
+  if (mem.description) lines.push(`description: ${mem.description}`);
+  return lines.join('\n');
+}
+
+export function createMcpServer(ops: LocalOperations): McpServer {
   const server = new McpServer({
     name: 'mor',
     version,
@@ -161,7 +176,7 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ ids }) => {
       if (ids.length === 0)
         return { ...text('No ids provided.'), isError: true };
-      const sections: string[] = [];
+      const blocks: Array<{ type: 'text'; text: string }> = [];
       const notFound: string[] = [];
       for (const memId of ids) {
         const mem = await ops.read(memId);
@@ -169,22 +184,24 @@ export function createMcpServer(ops: Operations): McpServer {
           notFound.push(memId);
           continue;
         }
-        const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-        const desc = mem.description ? `\n${mem.description}\n` : '';
-        sections.push(`## ${mem.title}${tags}${desc}\n${mem.content}`);
+        blocks.push({ type: 'text', text: formatMetadata(mem) });
+        blocks.push({ type: 'text', text: mem.content });
+        const links = await formatLinks(ops, mem.id);
+        if (links) blocks.push({ type: 'text', text: links });
       }
-      if (sections.length === 0) {
+      if (blocks.length === 0) {
         return {
           ...text(`Memory not found: ${notFound.join(', ')}`),
           isError: true,
         };
       }
-      const result =
-        sections.join('\n\n---\n\n') +
-        (notFound.length > 0
-          ? `\n\n---\n\nNot found: ${notFound.join(', ')}`
-          : '');
-      return text(result);
+      if (notFound.length > 0) {
+        blocks.push({
+          type: 'text',
+          text: `Not found: ${notFound.join(', ')}`,
+        });
+      }
+      return { content: blocks };
     },
   );
 
@@ -332,7 +349,8 @@ export function createMcpServer(ops: Operations): McpServer {
 }
 
 export async function startMcpServer(): Promise<void> {
-  const ops = createOps();
+  const config = loadConfig();
+  const ops = new LocalOperations(config);
   const server = createMcpServer(ops);
   const transport = new StdioServerTransport();
   await server.connect(transport);

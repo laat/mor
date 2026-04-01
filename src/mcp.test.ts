@@ -263,15 +263,15 @@ describe('memory_grep', () => {
 });
 
 describe('memory_read', () => {
-  it('reads a single memory', async () => {
+  it('reads a single memory with separate metadata and content blocks', async () => {
     const mem = await ops.add({ title: 'Read Me', content: 'the content' });
 
     const { text } = await callTool('memory_read', { ids: [mem.id] });
-    expect(text).toContain('## Read Me');
+    expect(text).toContain('title: Read Me');
     expect(text).toContain('the content');
   });
 
-  it('includes description when present', async () => {
+  it('includes description in metadata block', async () => {
     const mem = await ops.add({
       title: 'With Desc',
       description: 'A short summary',
@@ -279,8 +279,8 @@ describe('memory_read', () => {
     });
 
     const { text } = await callTool('memory_read', { ids: [mem.id] });
-    expect(text).toContain('## With Desc');
-    expect(text).toContain('A short summary');
+    expect(text).toContain('title: With Desc');
+    expect(text).toContain('description: A short summary');
     expect(text).toContain('the body');
   });
 
@@ -289,9 +289,8 @@ describe('memory_read', () => {
     const b = await ops.add({ title: 'Batch B', content: 'content b' });
 
     const { text } = await callTool('memory_read', { ids: [a.id, b.id] });
-    expect(text).toContain('## Batch A');
-    expect(text).toContain('## Batch B');
-    expect(text).toContain('---');
+    expect(text).toContain('title: Batch A');
+    expect(text).toContain('title: Batch B');
   });
 
   it('reports not found IDs', async () => {
@@ -301,7 +300,7 @@ describe('memory_read', () => {
     const { text } = await callTool('memory_read', {
       ids: [mem.id, fakeId],
     });
-    expect(text).toContain('## Exists');
+    expect(text).toContain('title: Exists');
     expect(text).toContain(`Not found: ${fakeId}`);
   });
 
@@ -447,5 +446,62 @@ describe('memory_list', () => {
   it('returns empty message', async () => {
     const { text } = await callTool('memory_list', {});
     expect(text).toBe('No memories stored.');
+  });
+});
+
+describe('cross-references', () => {
+  it('shows forward links in memory_read', async () => {
+    const target = await ops.add({ title: 'Target Note', content: 'target' });
+    const source = await ops.add({
+      title: 'Source Note',
+      content: `Links to [target](mor:${target.id})`,
+    });
+
+    const { text } = await callTool('memory_read', { ids: [source.id] });
+    expect(text).toContain('Links:');
+    expect(text).toContain(`→ ${target.id.slice(0, 8)}  Target Note`);
+  });
+
+  it('shows backlinks in memory_read', async () => {
+    const target = await ops.add({ title: 'Target Note', content: 'target' });
+    await ops.add({
+      title: 'Source Note',
+      content: `Links to [target](mor:${target.id})`,
+    });
+
+    const { text } = await callTool('memory_read', { ids: [target.id] });
+    expect(text).toContain('Links:');
+    expect(text).toContain('← ');
+    expect(text).toContain('Source Note');
+  });
+
+  it('omits links section when no links exist', async () => {
+    const mem = await ops.add({ title: 'No Links', content: 'alone' });
+
+    const { text } = await callTool('memory_read', { ids: [mem.id] });
+    expect(text).not.toContain('Links:');
+  });
+
+  it('resolves short ID prefixes in links', async () => {
+    const target = await ops.add({ title: 'Target', content: 'x' });
+    const shortId = target.id.slice(0, 8);
+    const source = await ops.add({
+      title: 'Source',
+      content: `See [target](mor:${shortId})`,
+    });
+
+    const { text } = await callTool('memory_read', { ids: [source.id] });
+    expect(text).toContain('→');
+    expect(text).toContain('Target');
+  });
+
+  it('shows broken forward links', async () => {
+    const source = await ops.add({
+      title: 'Broken',
+      content: '[dead](mor:deadbeef)',
+    });
+
+    const { text } = await callTool('memory_read', { ids: [source.id] });
+    expect(text).toContain('→ deadbeef  (not found)');
   });
 });
