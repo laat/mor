@@ -1213,16 +1213,15 @@
           prompt.className = 'prompt';
           prompt.textContent = '$ ';
           div.appendChild(prompt);
-          const cmdSpan = document.createElement('span');
-          cmdSpan.className = 'cmd';
-          div.appendChild(cmdSpan);
+          const cmdContainer = document.createElement('span');
+          cmdContainer.className = 'cmd';
+          div.appendChild(cmdContainer);
           const cursor = document.createElement('span');
           cursor.className = 'cursor';
           div.appendChild(cursor);
           term.appendChild(div);
-          const plainText = l.html ? l.html.replace(/<[^>]+>/g, '') : l.text;
-          typeText(cmdSpan, plainText, 0, () => {
-            if (l.html) cmdSpan.innerHTML = l.html;
+          const segments = parseHtmlSegments(l.html || l.text);
+          typeSegments(cmdContainer, segments, 0, 0, () => {
             cursor.remove();
             setTimeout(() => typeTerm(idx + 1), 150);
           });
@@ -1244,15 +1243,51 @@
         }
       }
 
-      function typeText(el, text, i, done) {
-        if (i >= text.length) {
+      function parseHtmlSegments(html) {
+        const segments = [];
+        const re = /<span class="([^"]*)">(.*?)<\/span>/g;
+        let last = 0;
+        let m;
+        while ((m = re.exec(html)) !== null) {
+          if (m.index > last)
+            segments.push({ text: html.slice(last, m.index), cls: null });
+          segments.push({ text: m[2], cls: m[1] });
+          last = m.index + m[0].length;
+        }
+        if (last < html.length)
+          segments.push({ text: html.slice(last), cls: null });
+        return segments;
+      }
+
+      function typeSegments(container, segments, si, ci, done) {
+        if (si >= segments.length) {
           done();
           return;
         }
-        el.textContent += text[i];
-        term.scrollTop = term.scrollHeight;
-        const delay = 15 + Math.random() * 20;
-        setTimeout(() => typeText(el, text, i + 1, done), delay);
+        const seg = segments[si];
+        if (ci === 0 && seg.cls) {
+          const span = document.createElement('span');
+          span.className = seg.cls;
+          container.appendChild(span);
+        }
+        const target = seg.cls ? container.lastElementChild : container;
+        if (ci < seg.text.length) {
+          if (seg.cls) target.textContent += seg.text[ci];
+          else {
+            const textNode = target.lastChild;
+            if (textNode && textNode.nodeType === 3)
+              textNode.textContent += seg.text[ci];
+            else target.appendChild(document.createTextNode(seg.text[ci]));
+          }
+          term.scrollTop = term.scrollHeight;
+          const delay = 15 + Math.random() * 20;
+          setTimeout(
+            () => typeSegments(container, segments, si, ci + 1, done),
+            delay,
+          );
+        } else {
+          typeSegments(container, segments, si + 1, 0, done);
+        }
       }
 
       // ===== PARTICLES =====
