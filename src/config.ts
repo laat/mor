@@ -54,6 +54,16 @@ export function loadConfig(): Config {
   return config;
 }
 
+export function setServerUrl(url: string): void {
+  const configDir = getConfigDir();
+  const configPath = path.join(configDir, 'config.json');
+  const raw = fs.existsSync(configPath)
+    ? JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+    : {};
+  raw.server = { ...raw.server, url };
+  fs.writeFileSync(configPath, JSON.stringify(raw, null, 2) + '\n');
+}
+
 export function isRemote(config: Config): boolean {
   return !!config.server?.url;
 }

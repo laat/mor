@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import { setServerUrl } from './config.js';
 
 export interface OAuthCredentials {
   client_id: string;
@@ -257,6 +258,7 @@ export async function login(
     refresh_token: tokens.refresh_token,
   };
   saveCredentials(configDir, creds);
+  setServerUrl(base);
 
   console.log('Login successful! Credentials stored.');
 }
