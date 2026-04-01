@@ -244,7 +244,11 @@ export class RemoteOperations implements Operations {
     }
     if (!res.ok) return { forward: [], back: [] };
     const json = await res.json();
-    return json.data ?? { forward: [], back: [] };
+    const data = json.data ?? {};
+    return {
+      forward: Array.isArray(data.forward) ? data.forward : [],
+      back: Array.isArray(data.back) ? data.back : [],
+    };
   }
 
   async reindex() {
