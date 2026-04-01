@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 
+// eslint-disable-next-line no-control-regex
 export const ANSI_RE = /\x1b\[[0-9;]*m/g;
 // eslint-disable-next-line no-control-regex
 export const ANSI_START_RE = /^\x1b\[[0-9;]*m/;
