@@ -77,7 +77,9 @@ export function createMcpServer(ops: Operations): McpServer {
         tag: z
           .array(z.string())
           .optional()
-          .describe('Filter by tags (AND logic, glob patterns supported)'),
+          .describe(
+            'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
+          ),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
@@ -122,7 +124,9 @@ export function createMcpServer(ops: Operations): McpServer {
         tag: z
           .array(z.string())
           .optional()
-          .describe('Filter by tags (AND logic, glob patterns supported)'),
+          .describe(
+            'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
+          ),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
@@ -193,7 +197,10 @@ export function createMcpServer(ops: Operations): McpServer {
         title: z.string().describe('Memory title'),
         description: z.string().optional().describe('Short description'),
         content: z.string().describe('Memory content (markdown)'),
-        tags: z.array(z.string()).nullish().describe('Tags'),
+        tags: z
+          .array(z.string())
+          .nullish()
+          .describe('Tags — pass an array, e.g. ["tag1", "tag2"]'),
         type: z
           .enum(MEMORY_TYPES)
           .nullish()
@@ -249,7 +256,9 @@ export function createMcpServer(ops: Operations): McpServer {
         tag: z
           .array(z.string())
           .optional()
-          .describe('Filter by tags (AND logic, glob patterns supported)'),
+          .describe(
+            'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
+          ),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
@@ -271,7 +280,10 @@ export function createMcpServer(ops: Operations): McpServer {
         title: z.string().optional().describe('New title'),
         description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
-        tags: z.array(z.string()).optional().describe('New tags'),
+        tags: z
+          .array(z.string())
+          .optional()
+          .describe('New tags — pass an array, e.g. ["tag1", "tag2"]'),
         type: z.enum(MEMORY_TYPES).optional().describe('New type'),
       },
     },
