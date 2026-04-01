@@ -905,4 +905,53 @@ describe('OAuth MCP Auth', () => {
     ops.close();
     fs.rmSync(credsDir, { recursive: true });
   });
+
+  it('refresh works after access token expires on the server', async () => {
+    const Database = (await import('better-sqlite3')).default;
+    const { client, tokens } = await getAccessToken();
+
+    // Expire the access token directly in the OAuth database
+    const db = new Database(path.join(testDir, 'oauth.db'));
+    db.prepare(
+      'UPDATE oauth_tokens SET access_expires_at = 0 WHERE access_token = ?',
+    ).run(tokens.access_token);
+    db.close();
+
+    // Verify the access token is now rejected
+    const res = await fetch(`${oauthUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokens.access_token}`,
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(401);
+
+    // The refresh token should still work despite access token being rejected
+    const refreshRes = await fetch(`${oauthUrl}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: tokens.refresh_token,
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+      }),
+    });
+    expect(refreshRes.status).toBe(200);
+    const newTokens = await refreshRes.json();
+    expect(newTokens.access_token).toBeDefined();
+    expect(newTokens.refresh_token).toBeDefined();
+  });
 });

@@ -645,11 +645,10 @@ export function createOAuthRoutes(
       | { access_token: string; access_expires_at: number }
       | undefined;
     if (!row) return false;
-    if (row.access_expires_at < nowSec()) {
-      stmts.deleteByAccessToken.run(token);
-      return false;
-    }
-    return true;
+    // Don't delete the row here — the refresh_token in the same row must
+    // remain available so the client can refresh.  Expired rows are cleaned
+    // up by the periodic sweep (keyed on refresh_expires_at).
+    return row.access_expires_at >= nowSec();
   };
 
   const close = () => {
