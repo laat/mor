@@ -139,9 +139,10 @@ describe('grep', () => {
     await ops.add({ title: 'Grep Target', content: 'findme-exact-string' });
   });
 
-  it('finds literal substring', () => {
+  it('finds literal substring and prints matching line', () => {
     const out = mor('grep', 'findme-exact');
     expect(out).toContain('Grep Target');
+    expect(out).toContain('findme-exact-string');
   });
 
   it('case-insensitive grep', () => {
@@ -149,9 +150,22 @@ describe('grep', () => {
     expect(out).toContain('Grep Target');
   });
 
-  it('regex grep', () => {
+  it('regex grep prints matching line', () => {
     const out = mor('grep', '-E', 'findme-\\w+');
     expect(out).toContain('Grep Target');
+    expect(out).toContain('findme-exact-string');
+  });
+
+  it('grep shows multiple matching lines', async () => {
+    await ops.add({
+      title: 'Multi Match',
+      content: 'line one has foo\nline two is plain\nline three has foo too',
+    });
+    const out = mor('grep', 'foo');
+    expect(out).toContain('Multi Match');
+    expect(out).toContain('line one has foo');
+    expect(out).toContain('line three has foo too');
+    expect(out).not.toContain('line two is plain');
   });
 
   it('returns no results message', () => {

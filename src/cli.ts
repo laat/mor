@@ -191,16 +191,26 @@ addFilterOptions(
         console.log('No memories found.');
         return;
       }
+      const flags = opts.ignoreCase ? 'gi' : 'g';
+      const re = opts.regex
+        ? new RegExp(pattern, flags)
+        : new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+
       for (const mem of page.data) {
+        const tags =
+          mem.tags.length > 0
+            ? ` ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
+            : '';
+        console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
         if (opts.long) {
-          const tags =
-            mem.tags.length > 0
-              ? ` ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
-              : '';
-          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
           console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
-        } else {
-          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`);
+        }
+        const lines = mem.content.split('\n');
+        for (const line of lines) {
+          if (re.test(line)) {
+            const highlighted = line.replace(re, (m) => chalk.red(m));
+            console.log(`         ${highlighted}`);
+          }
         }
       }
     } catch (e) {
