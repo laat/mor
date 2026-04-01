@@ -77,6 +77,22 @@ function ftsDelete(db: DB, id: string): void {
   }
 }
 
+function hasColumn(db: DB, table: string, column: string): boolean {
+  const cols = db.pragma(`table_info(${table})`) as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
+
+function migrate(db: DB): void {
+  if (!hasColumn(db, 'memories', 'access_count')) {
+    db.exec(
+      `ALTER TABLE memories ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`,
+    );
+  }
+  if (!hasColumn(db, 'memories', 'last_accessed')) {
+    db.exec(`ALTER TABLE memories ADD COLUMN last_accessed TEXT`);
+  }
+}
+
 export function openDb(config: Config): DB {
   const db = new Database(config.dbPath);
   sqliteVec.load(db);
@@ -84,6 +100,7 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
+  migrate(db);
   if (config.embedding && config.embedding.provider !== 'none') {
     if (!hasVecTable(db)) {
       db.exec(vecTableDDL(config.embedding.dimensions));
