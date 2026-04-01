@@ -115,7 +115,7 @@ addFilterOptions(
   program
     .command('find <query>')
     .description('Search memories by query')
-    .option('-l, --limit <n>', 'Max results', '20')
+    .option('-n, --limit <n>', 'Max results', '20')
     .option('-s, --threshold <n>', 'Minimum score (0-1)'),
 ).action(
   async (
