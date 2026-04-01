@@ -156,6 +156,17 @@ describe('grep', () => {
     expect(out).toContain('findme-exact-string');
   });
 
+  it('word grep matches whole words only', async () => {
+    await ops.add({
+      title: 'Word Test',
+      content: 'beer is good\nbeers are many',
+    });
+    const out = mor('grep', '-w', 'beer');
+    expect(out).toContain('Word Test');
+    expect(out).toContain('beer is good');
+    expect(out).not.toContain('beers are many');
+  });
+
   it('grep shows multiple matching lines', async () => {
     await ops.add({
       title: 'Multi Match',

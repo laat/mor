@@ -165,6 +165,7 @@ addFilterOptions(
     .option('-n, --limit <n>', 'Max results', '20')
     .option('-i, --ignore-case', 'Case-insensitive matching')
     .option('-E, --regex', 'Treat pattern as regex')
+    .option('-w, --word-regexp', 'Match whole words only')
     .option('-l, --long', 'Show file path or URL'),
 ).action(
   async (
@@ -173,6 +174,7 @@ addFilterOptions(
       limit: string;
       ignoreCase?: boolean;
       regex?: boolean;
+      wordRegexp?: boolean;
       long?: boolean;
     } & MemoryFilter,
   ) => {
@@ -181,20 +183,29 @@ addFilterOptions(
     try {
       const limitRaw = parseInt(opts.limit, 10);
       const limit = Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw;
-      const page = await ops.grep(pattern, {
+      let grepPattern = pattern;
+      let useRegex = opts.regex;
+      if (opts.wordRegexp) {
+        const escaped = useRegex
+          ? pattern
+          : pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        grepPattern = `\\b${escaped}\\b`;
+        useRegex = true;
+      }
+      const page = await ops.grep(grepPattern, {
         limit,
         ignoreCase: opts.ignoreCase,
         filter: opts,
-        regex: opts.regex,
+        regex: useRegex,
       });
       if (page.data.length === 0) {
         console.log('No memories found.');
         return;
       }
       const flags = opts.ignoreCase ? 'gi' : 'g';
-      const re = opts.regex
-        ? new RegExp(pattern, flags)
-        : new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+      const re = useRegex
+        ? new RegExp(grepPattern, flags)
+        : new RegExp(grepPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
 
       for (const mem of page.data) {
         const tags =
