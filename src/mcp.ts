@@ -147,7 +147,11 @@ export function createMcpServer(ops: Operations): McpServer {
     {
       description: 'Read full content of one or more memories by ID.',
       inputSchema: {
-        ids: z.array(z.string()).describe('UUIDs of the memories to read'),
+        ids: z
+          .array(z.string())
+          .describe(
+            'UUIDs of the memories to read — pass an array, e.g. ["id1", "id2"]',
+          ),
       },
     },
     async ({ ids }) => {
