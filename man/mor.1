@@ -1,11 +1,11 @@
-.TH MOR 1 "2026-03-31" "mor 0.7.1" "User Commands"
+.TH MOR 1 "2026-04-01" "mor 0.14.2" "User Commands"
 .SH NAME
 mor \- a shared memory store for humans and AI
 .SH SYNOPSIS
 .B mor
 .I command
 .RI [ options ]
-.RI [ arguments ]
+.RI [ query... ]
 .SH DESCRIPTION
 .B mor
 stores knowledge as markdown files with YAML frontmatter, indexed by SQLite
@@ -18,10 +18,20 @@ Memories are stored in
 .BR MOR_HOME ).
 Each memory has an ID (UUID), title, optional description, tags, type, and
 markdown content.
+.PP
+All commands accept multi-word queries without quoting. Options must come before
+the query:
+.PP
+.RS
+.nf
+mor find \-\-limit 5 python naming
+mor cat fastify server primer
+.fi
+.RE
 .SH COMMANDS
 .SS Search
 .TP
-.BI "find " query
+.BI "find " "query..."
 Full-text search using FTS5 (tokenized, stemmed). When embeddings are configured,
 results are merged using Reciprocal Rank Fusion. Frequently accessed memories
 get a small ranking boost.
@@ -34,7 +44,7 @@ Max results (default 20).
 Minimum relevance score 0\-1 (default 0.3).
 .RE
 .TP
-.BI "grep " pattern
+.BI "grep " "pattern..."
 Search memory content by substring or regex.
 .RS
 .TP
@@ -85,7 +95,7 @@ Comma-separated tags.
 Memory type (see \fBTYPES\fR).
 .RE
 .TP
-.BI "edit " query
+.BI "edit " "query..."
 Open a memory in \fB$EDITOR\fR.
 .RS
 .TP
@@ -93,8 +103,8 @@ Open a memory in \fB$EDITOR\fR.
 Edit frontmatter too.
 .RE
 .TP
-.BI "update " query
-Update metadata or content of an existing memory.
+.BI "update " "query..."
+Update metadata or content of an existing memory. Options must come before the query.
 .RS
 .TP
 .BI \-t ", " \-\-title " " title
@@ -114,24 +124,51 @@ Read new content from file or \fB\-\fR for stdin.
 .RE
 .SS Read and Export
 .TP
-.BI "cat " query
+.BI "cat " "query..."
 Print memory content to stdout.
 .RS
 .TP
 .B \-\-raw
 Include YAML frontmatter.
+.TP
+.B \-\-links
+Show cross-references after the content.
 .RE
 .TP
-.BI "cp " "query dest"
+.BI "cp " "query..."
 Copy memory content to a file.
 .RS
+.TP
+.BI \-o ", " \-\-output " " dest
+Destination file path (required).
 .TP
 .B \-\-raw
 Include YAML frontmatter.
 .RE
+.SS Cross-references
+.TP
+.BI "links " "[query...]"
+Show forward links and backlinks for a memory.
+.RS
+.TP
+.B \-\-broken
+List all memories with broken (dangling) references.
+.RE
+.PP
+Memories can link to each other using markdown links with the \fBmor:\fR scheme:
+.PP
+.RS
+.nf
+[Fastify Chaos Plugin](mor:22f6b489)
+.fi
+.RE
+.PP
+Links use \fB\(->>\fR for forward, \fB<<\-\fR for backlinks, and \fB<<\->>\fR for
+bidirectional. They are derived from content and optional frontmatter
+\fBlinks\fR arrays, rebuilt on every upsert and reindex.
 .SS Manage
 .TP
-.BI "rm " id
+.BI "rm " "id..."
 Remove a memory by UUID or UUID prefix (8+ characters).
 .TP
 .B ls
@@ -155,7 +192,7 @@ List all types with counts.
 Pull remote changes via git, commit and push local changes.
 .TP
 .B reindex
-Rebuild the search index from memory files.
+Rebuild the search index and links table from memory files.
 .TP
 .BI "import " dir
 Import \fI.md\fR files from a directory.
@@ -183,6 +220,14 @@ Enable MCP endpoint at \fI/mcp\fR.
 .TP
 .B version
 Show version information.
+.TP
+.BI "login"
+Authenticate with a remote server via OAuth.
+.RS
+.TP
+.BI \-s ", " \-\-server " " url
+Server URL.
+.RE
 .SH FILTER OPTIONS
 The following options are available for
 .BR find ,
@@ -194,7 +239,7 @@ and
 Filter by memory type (comma-separated, glob patterns).
 .TP
 .BI \-\-tag " " pattern
-Filter by tag (glob pattern).
+Filter by tag (comma-separated, AND logic, glob patterns).
 .TP
 .BI \-\-repo " " pattern
 Filter by repository (glob pattern).
@@ -243,11 +288,14 @@ and
 .I ~/.config/mor/config.json
 Configuration file.
 .TP
+.I ~/.config/mor/credentials.json
+OAuth tokens (created by \fBmor login\fR).
+.TP
 .I ~/.config/mor/memories/
 Memory storage directory.
 .TP
 .I ~/.config/mor/index.db
-SQLite search index.
+SQLite search index (memories, FTS, links, embeddings).
 .SH CONFIGURATION
 The configuration file supports:
 .TP
@@ -281,7 +329,7 @@ Search for memories:
 .PP
 .RS
 .nf
-mor find "authentication flow"
+mor find authentication flow
 .fi
 .RE
 .PP
@@ -289,7 +337,7 @@ Grep for an exact string:
 .PP
 .RS
 .nf
-mor grep "createServer" \-i
+mor grep \-i createServer
 .fi
 .RE
 .PP
@@ -313,7 +361,23 @@ Update tags on a memory:
 .PP
 .RS
 .nf
-mor update 8da8d8f2 \-\-tags "go,concurrency"
+mor update \-\-tags "go,concurrency" 8da8d8f2
+.fi
+.RE
+.PP
+Copy a memory to a file:
+.PP
+.RS
+.nf
+mor cp \-o ./out.md fastify server primer
+.fi
+.RE
+.PP
+Show cross-references for a memory:
+.PP
+.RS
+.nf
+mor links fastify chaos plugin
 .fi
 .RE
 .PP
