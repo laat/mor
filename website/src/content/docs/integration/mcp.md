@@ -72,6 +72,8 @@ notes. Always check mor before saying something wasn't found.
 
 You can auto-surface relevant memories on each Claude Code prompt via a `UserPromptSubmit` hook. Instead of injecting full content, it outputs lightweight hints (title, ID, description) so Claude can decide whether to read more via MCP tools.
 
+### HTTP hook
+
 Add to `~/.claude/settings.json` (requires `mor serve` running):
 
 ```json
@@ -113,6 +115,30 @@ If you configured `mor serve` with a bearer token, add the `Authorization` heade
   }
 }
 ```
+
+### Shell hook
+
+If you're not running `mor serve`, use the standalone bash script instead. Save as e.g. `~/.claude/hooks/memberberry.sh` and make it executable:
+
+<!-- @include hooks/memberberry.sh -->
+
+Then add to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "command": "~/.claude/hooks/memberberry.sh"
+      }
+    ]
+  }
+}
+```
+
+Requires `jq` and `mor` on PATH.
+
+### Behavior
 
 - Searches top 3 memories per prompt
 - Deduplicates within a session (won't re-surface the same memory)
