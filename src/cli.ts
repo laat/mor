@@ -40,6 +40,10 @@ function getOps(config: ReturnType<typeof loadConfig>): Operations {
   return new LocalOperations(config);
 }
 
+function joinArgs(parts: string[]): string {
+  return parts.join(' ');
+}
+
 const program = new Command();
 
 function addFilterOptions(cmd: Command): Command {
@@ -98,16 +102,17 @@ program
 
 addFilterOptions(
   program
-    .command('find <query>')
+    .command('find <query...>')
     .description('Search memories by query')
     .option('--limit <n>', 'Max results', '20')
     .option('-s, --threshold <n>', 'Minimum score (0-1)')
     .option('--json', 'Output as JSON (includes content)'),
 ).action(
   async (
-    query: string,
+    queryParts: string[],
     opts: { limit: string; threshold?: string; json?: boolean } & MemoryFilter,
   ) => {
+    const query = joinArgs(queryParts);
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -160,7 +165,7 @@ addFilterOptions(
 
 addFilterOptions(
   program
-    .command('grep <pattern>')
+    .command('grep <pattern...>')
     .description('Search memories by substring or regex')
     .option('--limit <n>', 'Max results', '20')
     .option('-i, --ignore-case', 'Case-insensitive matching')
@@ -176,7 +181,7 @@ addFilterOptions(
     ),
 ).action(
   async (
-    pattern: string,
+    patternParts: string[],
     opts: {
       limit: string;
       ignoreCase?: boolean;
@@ -189,6 +194,7 @@ addFilterOptions(
       filesWithMatches?: boolean;
     } & MemoryFilter,
   ) => {
+    const pattern = joinArgs(patternParts);
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -369,9 +375,10 @@ program
   );
 
 program
-  .command('rm <id>')
+  .command('rm <id...>')
   .description('Remove a memory by UUID or UUID prefix')
-  .action(async (id: string) => {
+  .action(async (idParts: string[]) => {
+    const id = joinArgs(idParts);
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -388,7 +395,7 @@ program
   });
 
 program
-  .command('update <query>')
+  .command('update <query...>')
   .description("Update a memory's metadata or content")
   .option('-t, --title <title>', 'New title')
   .option('-d, --description <text>', 'Short description')
@@ -397,7 +404,7 @@ program
   .option('--content-from <source>', 'Read content from file or URL')
   .action(
     async (
-      query: string,
+      queryParts: string[],
       opts: {
         title?: string;
         description?: string;
@@ -406,6 +413,7 @@ program
         contentFrom?: string;
       },
     ) => {
+      const query = joinArgs(queryParts);
       const config = loadConfig();
       const ops = getOps(config);
       try {
@@ -467,61 +475,66 @@ function exportMemory(mem: Memory, raw?: boolean): string {
 }
 
 program
-  .command('cat <query>')
+  .command('cat <query...>')
   .description('Print memory content')
   .option('--raw', 'Include frontmatter')
   .option('--links', 'Show links')
-  .action(async (query: string, opts: { raw?: boolean; links?: boolean }) => {
-    const config = loadConfig();
-    const ops = getOps(config);
-    try {
-      const mem = await ops.read(query);
-      if (!mem) {
-        console.error(`Error: memory not found: ${query}`);
-        process.exit(1);
-      }
-      let output = exportMemory(mem, opts.raw);
-      if (!opts.raw && process.stdout.isTTY) output = colorizeMarkdown(output);
-      process.stdout.write(output);
-      if (!opts.raw) process.stdout.write('\n');
-      if (!opts.raw && opts.links) {
-        const { forward, back } = await ops.getLinks(mem.id);
-        if (forward.length > 0 || back.length > 0) {
-          const forwardIds = new Set(forward.map((l) => l.id));
-          const backIds = new Set(back.map((l) => l.id));
-          console.log(chalk.dim('---'));
-          console.log(chalk.bold('Links:'));
-          for (const link of forward) {
-            const title = link.title || chalk.dim('(not found)');
-            const arrow = backIds.has(link.id)
-              ? chalk.cyan('↔')
-              : chalk.yellow('→');
-            console.log(
-              `${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
-            );
-          }
-          for (const link of back) {
-            if (!forwardIds.has(link.id)) {
+  .action(
+    async (queryParts: string[], opts: { raw?: boolean; links?: boolean }) => {
+      const query = joinArgs(queryParts);
+      const config = loadConfig();
+      const ops = getOps(config);
+      try {
+        const mem = await ops.read(query);
+        if (!mem) {
+          console.error(`Error: memory not found: ${query}`);
+          process.exit(1);
+        }
+        let output = exportMemory(mem, opts.raw);
+        if (!opts.raw && process.stdout.isTTY)
+          output = colorizeMarkdown(output);
+        process.stdout.write(output);
+        if (!opts.raw) process.stdout.write('\n');
+        if (!opts.raw && opts.links) {
+          const { forward, back } = await ops.getLinks(mem.id);
+          if (forward.length > 0 || back.length > 0) {
+            const forwardIds = new Set(forward.map((l) => l.id));
+            const backIds = new Set(back.map((l) => l.id));
+            console.log(chalk.dim('---'));
+            console.log(chalk.bold('Links:'));
+            for (const link of forward) {
+              const title = link.title || chalk.dim('(not found)');
+              const arrow = backIds.has(link.id)
+                ? chalk.cyan('↔')
+                : chalk.yellow('→');
               console.log(
-                `${chalk.green('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+                `${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
               );
+            }
+            for (const link of back) {
+              if (!forwardIds.has(link.id)) {
+                console.log(
+                  `${chalk.green('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+                );
+              }
             }
           }
         }
+      } catch (e) {
+        console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        process.exit(1);
+      } finally {
+        ops.close();
       }
-    } catch (e) {
-      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    } finally {
-      ops.close();
-    }
-  });
+    },
+  );
 
 program
-  .command('links [query]')
+  .command('links [query...]')
   .description('Show links for a memory, or list broken links')
   .option('--broken', 'List all memories with broken links')
-  .action(async (query: string | undefined, opts: { broken?: boolean }) => {
+  .action(async (queryParts: string[], opts: { broken?: boolean }) => {
+    const query = queryParts.length > 0 ? joinArgs(queryParts) : undefined;
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -583,34 +596,40 @@ program
   });
 
 program
-  .command('cp <query> <dest>')
+  .command('cp <query...>')
   .description('Copy memory content to a file')
   .option('--raw', 'Include frontmatter')
-  .action(async (query: string, dest: string, opts: { raw?: boolean }) => {
-    const config = loadConfig();
-    const ops = getOps(config);
-    try {
-      const mem = await ops.read(query);
-      if (!mem) {
-        console.error(`Error: memory not found: ${query}`);
+  .requiredOption('-o, --output <dest>', 'Destination file path')
+  .action(
+    async (queryParts: string[], opts: { raw?: boolean; output: string }) => {
+      const query = joinArgs(queryParts);
+      const dest = opts.output;
+      const config = loadConfig();
+      const ops = getOps(config);
+      try {
+        const mem = await ops.read(query);
+        if (!mem) {
+          console.error(`Error: memory not found: ${query}`);
+          process.exit(1);
+        }
+        const output = exportMemory(mem, opts.raw);
+        fs.writeFileSync(dest, output.endsWith('\n') ? output : output + '\n');
+        console.log(`Copied "${mem.title}" to ${dest}`);
+      } catch (e) {
+        console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
+      } finally {
+        ops.close();
       }
-      const output = exportMemory(mem, opts.raw);
-      fs.writeFileSync(dest, output.endsWith('\n') ? output : output + '\n');
-      console.log(`Copied "${mem.title}" to ${dest}`);
-    } catch (e) {
-      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(1);
-    } finally {
-      ops.close();
-    }
-  });
+    },
+  );
 
 program
-  .command('edit <query>')
+  .command('edit <query...>')
   .description('Open memory in $EDITOR')
   .option('--raw', 'Edit full file including frontmatter')
-  .action(async (query: string, opts: { raw?: boolean }) => {
+  .action(async (queryParts: string[], opts: { raw?: boolean }) => {
+    const query = joinArgs(queryParts);
     const config = loadConfig();
     const ops = getOps(config);
     let tmpDir: string | undefined;

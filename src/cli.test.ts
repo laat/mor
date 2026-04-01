@@ -420,7 +420,7 @@ describe('cp', () => {
   it('copies content to file', async () => {
     await ops.add({ title: 'Copy Me', content: 'copy this content' });
     const dest = path.join(testDir, 'output.txt');
-    mor('cp', 'Copy Me', dest);
+    mor('cp', '-o', dest, 'Copy Me');
     const content = fs.readFileSync(dest, 'utf-8');
     expect(content.trim()).toBe('copy this content');
   });

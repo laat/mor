@@ -33,10 +33,10 @@ mor grep -E "async\s+function"
 mor grep -w "Beer" -n -C 2
 
 # Read, edit, copy, remove
-mor cat "python naming"
-mor edit "python naming"
-mor cp "python naming" ./out.md
-mor rm "python naming"
+mor cat python naming
+mor edit python naming
+mor cp -o ./out.md python naming
+mor rm python naming
 
 # List
 mor ls
@@ -45,24 +45,24 @@ mor ls -l
 
 ## Commands
 
-| Command             | Description                                                                                                     |
-| ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
-| `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
-| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
-| `cat <query>`       | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
-| `cp <query> <dest>` | Copy content to file                                                                                            |
-| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
-| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
-| `rm <query>`        | Remove a memory                                                                                                 |
-| `links [query]`     | Show cross-references for a memory (`--broken` to find dangling links)                                          |
-| `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
-| `sync`              | Pull, commit, and push the memory folder via git                                                                |
-| `reindex`           | Rebuild search index                                                                                            |
-| `import <dir>`      | Import `.md` files from a directory                                                                             |
-| `mcp`               | Start MCP server (stdio)                                                                                        |
-| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
-| `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
+| Command           | Description                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- |
+| `find <query>`    | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
+| `grep <pattern>`  | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
+| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
+| `cat <query>`     | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
+| `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
+| `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
+| `update <query>`  | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
+| `rm <query>`      | Remove a memory                                                                                                 |
+| `links [query]`   | Show cross-references for a memory (`--broken` to find dangling links)                                          |
+| `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
+| `sync`            | Pull, commit, and push the memory folder via git                                                                |
+| `reindex`         | Rebuild search index                                                                                            |
+| `import <dir>`    | Import `.md` files from a directory                                                                             |
+| `mcp`             | Start MCP server (stdio)                                                                                        |
+| `serve`           | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
+| `login`           | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
 Queries resolve in order: full UUID, UUID prefix (8+ chars), filename, FTS search.
 
