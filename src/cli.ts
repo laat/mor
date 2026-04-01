@@ -463,6 +463,8 @@ program
 
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
+// eslint-disable-next-line no-control-regex
+const ANSI_START_RE = /^\x1b\[[0-9;]*m/;
 
 function truncate(line: string): string {
   const cols = process.stdout.columns;
@@ -473,7 +475,7 @@ function truncate(line: string): string {
   let vis = 0;
   let i = 0;
   while (i < line.length && vis < cols - 1) {
-    const m = line.slice(i).match(/^\x1b\[[0-9;]*m/);
+    const m = line.slice(i).match(ANSI_START_RE);
     if (m) {
       i += m[0].length;
     } else {
