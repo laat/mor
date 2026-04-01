@@ -156,6 +156,22 @@ describe('grep', () => {
     expect(out).toContain('findme-exact-string');
   });
 
+  it('-l shows only titles, no matching lines', () => {
+    const out = mor('grep', '-l', 'findme-exact');
+    expect(out).toContain('Grep Target');
+    expect(out).not.toContain('findme-exact-string');
+  });
+
+  it('-n shows line numbers', async () => {
+    await ops.add({
+      title: 'Numbered',
+      content: 'first\nsecond\nthird has target\nfourth',
+    });
+    const out = mor('grep', '-n', 'target');
+    expect(out).toContain('Numbered');
+    expect(out).toMatch(/3:.*third has target/);
+  });
+
   it('word grep matches whole words only', async () => {
     await ops.add({
       title: 'Word Test',
@@ -229,7 +245,7 @@ describe('ls', () => {
   });
 
   it('lists with limit', () => {
-    const out = mor('ls', '-n', '1');
+    const out = mor('ls', '--limit', '1');
     const lines = out.split('\n');
     expect(lines).toHaveLength(1);
   });

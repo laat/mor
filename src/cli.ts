@@ -115,7 +115,7 @@ addFilterOptions(
   program
     .command('find <query>')
     .description('Search memories by query')
-    .option('-n, --limit <n>', 'Max results', '20')
+    .option('--limit <n>', 'Max results', '20')
     .option('-s, --threshold <n>', 'Minimum score (0-1)'),
 ).action(
   async (
@@ -162,11 +162,15 @@ addFilterOptions(
   program
     .command('grep <pattern>')
     .description('Search memories by substring or regex')
-    .option('-n, --limit <n>', 'Max results', '20')
+    .option('--limit <n>', 'Max results', '20')
     .option('-i, --ignore-case', 'Case-insensitive matching')
     .option('-E, --regex', 'Treat pattern as regex')
     .option('-w, --word-regexp', 'Match whole words only')
-    .option('-l, --long', 'Show file path or URL'),
+    .option('-n, --line-number', 'Show line numbers')
+    .option(
+      '-l, --files-with-matches',
+      'Show only memory titles, no matching lines',
+    ),
 ).action(
   async (
     pattern: string,
@@ -175,7 +179,8 @@ addFilterOptions(
       ignoreCase?: boolean;
       regex?: boolean;
       wordRegexp?: boolean;
-      long?: boolean;
+      lineNumber?: boolean;
+      filesWithMatches?: boolean;
     } & MemoryFilter,
   ) => {
     const config = loadConfig();
@@ -213,14 +218,13 @@ addFilterOptions(
             ? ` ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
             : '';
         console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
-        if (opts.long) {
-          console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
-        }
+        if (opts.filesWithMatches) continue;
         const lines = mem.content.split('\n');
-        for (const line of lines) {
-          if (re.test(line)) {
-            const highlighted = line.replace(re, (m) => chalk.red(m));
-            console.log(`         ${highlighted}`);
+        for (let i = 0; i < lines.length; i++) {
+          if (re.test(lines[i])) {
+            const highlighted = lines[i].replace(re, (m) => chalk.red(m));
+            const prefix = opts.lineNumber ? chalk.dim(`${i + 1}:`) + ' ' : '';
+            console.log(`         ${prefix}${highlighted}`);
           }
         }
       }
@@ -626,7 +630,7 @@ addFilterOptions(
   program
     .command('ls')
     .description('List all memories')
-    .option('-n, --limit <n>', 'Max results')
+    .option('--limit <n>', 'Max results')
     .option('-l, --long', 'Show file path or URL')
     .option('--tags', 'List all tags with counts')
     .option('--types', 'List all types with counts'),
