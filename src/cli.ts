@@ -465,7 +465,8 @@ program
   .command('cat <query>')
   .description('Print memory content')
   .option('--raw', 'Include frontmatter')
-  .action(async (query: string, opts: { raw?: boolean }) => {
+  .option('--no-links', 'Hide links')
+  .action(async (query: string, opts: { raw?: boolean; links?: boolean }) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
@@ -478,6 +479,88 @@ program
       if (!opts.raw && process.stdout.isTTY) output = colorizeMarkdown(output);
       process.stdout.write(output);
       if (!opts.raw) process.stdout.write('\n');
+      if (!opts.raw && opts.links !== false && ops instanceof LocalOperations) {
+        const { forward, back } = ops.getLinks(mem.id);
+        if (forward.length > 0 || back.length > 0) {
+          console.log(chalk.dim('---'));
+          console.log(chalk.bold('Links:'));
+          for (const link of forward) {
+            const title = link.title || chalk.dim('(not found)');
+            console.log(
+              `${chalk.green('→')} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
+            );
+          }
+          for (const link of back) {
+            console.log(
+              `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      ops.close();
+    }
+  });
+
+program
+  .command('links [query]')
+  .description('Show links for a memory, or list broken links')
+  .option('--broken', 'List all memories with broken links')
+  .action(async (query: string | undefined, opts: { broken?: boolean }) => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    if (!(ops instanceof LocalOperations)) {
+      console.error('Error: links command requires local operations');
+      process.exit(1);
+    }
+    try {
+      if (opts.broken) {
+        const page = await ops.list(undefined, 10000);
+        let found = false;
+        for (const mem of page.data) {
+          const { forward } = ops.getLinks(mem.id);
+          const broken = forward.filter((l) => !l.title);
+          if (broken.length > 0) {
+            found = true;
+            console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`);
+            for (const link of broken) {
+              console.log(
+                `  ${chalk.red('→')} ${chalk.dim(link.id.slice(0, 8))}  ${chalk.dim('(not found)')}`,
+              );
+            }
+          }
+        }
+        if (!found) console.log('No broken links found.');
+        return;
+      }
+      if (!query) {
+        console.error('Error: provide a memory ID, or use --broken');
+        process.exit(1);
+      }
+      const mem = await ops.read(query);
+      if (!mem) {
+        console.error(`Error: memory not found: ${query}`);
+        process.exit(1);
+      }
+      const { forward, back } = ops.getLinks(mem.id);
+      if (forward.length === 0 && back.length === 0) {
+        console.log('No links.');
+        return;
+      }
+      for (const link of forward) {
+        const title = link.title || chalk.dim('(not found)');
+        console.log(
+          `${chalk.green('→')} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
+        );
+      }
+      for (const link of back) {
+        console.log(
+          `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+        );
+      }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);

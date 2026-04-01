@@ -5,8 +5,10 @@ import {
   deleteMemoryFromDb,
   getAllContentHashes,
   getAllMemoryIds,
+  getBacklinks,
   getEmbeddingCount,
   getEmbeddingModel,
+  getForwardLinks,
   getMemoriesByIds,
   recordAccess,
   getMemoryByFilename,
@@ -17,6 +19,7 @@ import {
   searchFts,
   searchVec,
   upsertEmbedding,
+  upsertLinks,
   upsertMemoryChecked,
   type DB,
 } from './db.js';
@@ -32,6 +35,8 @@ import {
   tryReadMemory,
   updateMemory,
 } from './memory.js';
+import { extractLinkIds, parseFrontmatterLinks } from './utils/links.js';
+import matter from 'gray-matter';
 import type {
   Config,
   GrepOptions,
@@ -184,6 +189,29 @@ export class LocalOperations implements Operations {
       filePath: mem.filePath,
       contentHash: hashContent(raw),
     });
+    this.updateLinks(mem.id, mem.content, raw);
+  }
+
+  private updateLinks(memId: string, content: string, raw: string): void {
+    const { data } = matter(raw);
+    const fmLinks = parseFrontmatterLinks(data as Record<string, unknown>);
+    const rawIds = extractLinkIds(content, fmLinks);
+
+    // Resolve short IDs to full UUIDs where possible
+    const resolved: string[] = [];
+    for (const id of rawIds) {
+      if (id === memId) continue; // skip self-references
+      if (UUID_RE.test(id)) {
+        resolved.push(id);
+      } else if (UUID_PREFIX_RE.test(id)) {
+        const row = getMemoryByPrefix(this.db, id);
+        resolved.push(row ? row.id : id);
+      } else {
+        resolved.push(id);
+      }
+    }
+
+    upsertLinks(this.db, memId, resolved);
   }
 
   private async computeEmbedding(mem: Memory): Promise<void> {
@@ -336,6 +364,16 @@ export class LocalOperations implements Operations {
     const mem = await this.resolveQuery(query);
     if (mem) recordAccess(this.db, mem.id);
     return mem;
+  }
+
+  getLinks(memId: string): {
+    forward: Array<{ id: string; title: string }>;
+    back: Array<{ id: string; title: string }>;
+  } {
+    return {
+      forward: getForwardLinks(this.db, memId),
+      back: getBacklinks(this.db, memId),
+    };
   }
 
   async add(opts: {
