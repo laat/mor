@@ -146,7 +146,9 @@ addFilterOptions(
             : '';
         const score = chalk.dim(`  (${r.score.toFixed(2)})`);
         console.log(
-          `${chalk.cyan(r.memory.id.slice(0, 8))}  ${r.memory.title}${tags}${score}`,
+          truncate(
+            `${chalk.cyan(r.memory.id.slice(0, 8))}  ${r.memory.title}${tags}${score}`,
+          ),
         );
       }
     } catch (e) {
@@ -230,26 +232,33 @@ addFilterOptions(
         const after =
           parseInt(opts.afterContext ?? opts.context ?? '0', 10) || 0;
         const lines = mem.content.split('\n');
+        const numWidth = opts.lineNumber ? String(lines.length).length : 0;
+        const highlighted = lines.map((line) => {
+          let isMatch = false;
+          const text = line.replace(re, (m) => {
+            isMatch = true;
+            return chalk.red(m);
+          });
+          return { text, isMatch };
+        });
         let lastPrinted = -2;
-        for (let i = 0; i < lines.length; i++) {
-          if (re.test(lines[i])) {
-            const start = Math.max(0, i - before);
-            const end = Math.min(lines.length - 1, i + after);
-            if (lastPrinted >= 0 && start > lastPrinted + 1) {
-              console.log(chalk.dim('         --'));
-            }
-            for (let j = start; j <= end; j++) {
-              if (j <= lastPrinted) continue;
-              lastPrinted = j;
-              const lineText =
-                j === i
-                  ? lines[j].replace(re, (m) => chalk.red(m))
-                  : chalk.dim(lines[j]);
-              const prefix = opts.lineNumber
-                ? chalk.dim(`${j + 1}:`) + ' '
-                : '';
-              console.log(`         ${prefix}${lineText}`);
-            }
+        for (let i = 0; i < highlighted.length; i++) {
+          if (!highlighted[i].isMatch) continue;
+          const start = Math.max(0, i - before);
+          const end = Math.min(highlighted.length - 1, i + after);
+          if (lastPrinted >= 0 && start > lastPrinted + 1) {
+            console.log(chalk.dim('  --'));
+          }
+          for (let j = start; j <= end; j++) {
+            if (j <= lastPrinted) continue;
+            lastPrinted = j;
+            const lineText = highlighted[j].isMatch
+              ? highlighted[j].text
+              : chalk.dim(lines[j]);
+            const prefix = opts.lineNumber
+              ? chalk.dim(`${String(j + 1).padStart(numWidth)}: `)
+              : '';
+            console.log(`  ${prefix}${lineText}`);
           }
         }
       }
@@ -451,6 +460,29 @@ program
       }
     },
   );
+
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+
+function truncate(line: string): string {
+  const cols = process.stdout.columns;
+  if (!cols) return line;
+  const visible = line.replace(ANSI_RE, '');
+  if (visible.length <= cols) return line;
+  // Walk the original string, counting visible chars
+  let vis = 0;
+  let i = 0;
+  while (i < line.length && vis < cols - 1) {
+    const m = line.slice(i).match(/^\x1b\[[0-9;]*m/);
+    if (m) {
+      i += m[0].length;
+    } else {
+      vis++;
+      i++;
+    }
+  }
+  return line.slice(0, i) + '\x1b[0m…';
+}
 
 function colorizeMarkdown(text: string): string {
   let inCodeBlock = false;
@@ -681,6 +713,7 @@ addFilterOptions(
     .command('ls')
     .description('List all memories')
     .option('--limit <n>', 'Max results')
+    .option('-a, --all', 'Show all (no limit)')
     .option('-l, --long', 'Show file path or URL')
     .option('--tags', 'List all tags with counts')
     .option('--types', 'List all types with counts'),
@@ -688,6 +721,7 @@ addFilterOptions(
   async (
     opts: {
       limit?: string;
+      all?: boolean;
       long?: boolean;
       tags?: boolean;
       types?: boolean;
@@ -697,7 +731,7 @@ addFilterOptions(
     const ops = getOps(config);
     try {
       // For --tags/--types we need all memories, otherwise use limit
-      const needAll = opts.tags || opts.types;
+      const needAll = opts.tags || opts.types || opts.all;
       const limitRaw = opts.limit ? parseInt(opts.limit, 10) : undefined;
       const limit = needAll
         ? 10000
@@ -737,16 +771,20 @@ addFilterOptions(
             ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
             : mem.filePath;
           console.log(
-            `${chalk.cyan(mem.id.slice(0, 8))}  ${chalk.magenta(mem.type.padEnd(10))}  ${date}  ${mem.title}${tags}`,
+            truncate(
+              `${chalk.cyan(mem.id.slice(0, 8))}  ${chalk.magenta(mem.type.padEnd(10))}  ${date}  ${mem.title}${tags}`,
+            ),
           );
           if (mem.description)
-            console.log(`         ${chalk.dim(mem.description)}`);
-          console.log(`         ${chalk.dim(loc)}`);
+            console.log(truncate(`         ${chalk.dim(mem.description)}`));
+          console.log(truncate(`         ${chalk.dim(loc)}`));
         } else {
           const desc = mem.description
             ? `  ${chalk.dim(`— ${mem.description}`)}`
             : '';
-          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${desc}`);
+          console.log(
+            truncate(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${desc}`),
+          );
         }
       }
     } catch (e) {
