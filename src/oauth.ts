@@ -426,6 +426,27 @@ export function createOAuthRoutes(
       );
     }
 
+    const client = stmts.getClient.get(clientId) as ClientRow | undefined;
+    if (!client) {
+      return c.json(
+        { error: 'invalid_client', error_description: 'Unknown client_id' },
+        400,
+      );
+    }
+    const reg = JSON.parse(client.registration_json);
+    const registeredUris: string[] = reg.redirect_uris ?? [];
+    if (
+      !registeredUris.some((u: string) => redirectUriMatches(u, redirectUri))
+    ) {
+      return c.json(
+        {
+          error: 'invalid_request',
+          error_description: 'redirect_uri mismatch',
+        },
+        400,
+      );
+    }
+
     const redirectWithParams = (params: Record<string, string>) => {
       const url = new URL(redirectUri);
       for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
@@ -440,7 +461,6 @@ export function createOAuthRoutes(
       });
     }
 
-    // Issue auth code
     const code = randomToken();
     stmts.insertCode.run(
       code,
