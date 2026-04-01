@@ -3,6 +3,10 @@ title: Getting Started
 description: Install mor and start remembering things
 ---
 
+:::caution[Personal project]
+This is a personal project. I maintain it for my own use and share it because others might find it useful. Feature PRs are unlikely to be merged — if you have an idea, [start a discussion](https://github.com/laat/mor/discussions) first. Fork freely — it's MIT licensed.
+:::
+
 ## Install
 
 ```sh
