@@ -452,6 +452,29 @@ program
     },
   );
 
+function colorizeMarkdown(text: string): string {
+  let inCodeBlock = false;
+  return text
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        return chalk.dim(line);
+      }
+      if (inCodeBlock) return line;
+      if (/^#{1,6}\s/.test(line)) return chalk.bold.green(line);
+      if (/^>\s/.test(line)) return chalk.dim.italic(line);
+      if (/^[-*]\s/.test(line)) return chalk.dim(line[0]) + line.slice(1);
+      return line
+        .replace(/\*\*(.+?)\*\*/g, (_, t) => chalk.bold(t))
+        .replace(
+          /\[([^\]]+)\]\(([^)]+)\)/g,
+          (_, label, url) => `${chalk.cyan(label)} ${chalk.dim(`(${url})`)}`,
+        );
+    })
+    .join('\n');
+}
+
 function exportMemory(mem: Memory, raw?: boolean): string {
   if (raw) return serializeMemory(mem);
   if (mem.type === 'file')
@@ -472,7 +495,9 @@ program
         console.error(`Error: memory not found: ${query}`);
         process.exit(1);
       }
-      process.stdout.write(exportMemory(mem, opts.raw));
+      let output = exportMemory(mem, opts.raw);
+      if (!opts.raw && process.stdout.isTTY) output = colorizeMarkdown(output);
+      process.stdout.write(output);
       if (!opts.raw) process.stdout.write('\n');
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
