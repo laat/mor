@@ -390,6 +390,37 @@ describe('update', () => {
     expect(err).toContain('not found');
   });
 
+  it('shows metadata diff on title change', async () => {
+    const mem = await ops.add({ title: 'Before Title', content: 'content' });
+    const id = mem.id.slice(0, 8);
+    const out = mor('update', '-t', 'After Title', id);
+    expect(out).toContain('Updated:');
+    expect(out).toContain('title:');
+    expect(out).toContain('Before Title');
+    expect(out).toContain('After Title');
+  });
+
+  it('shows content diff on content change', async () => {
+    const mem = await ops.add({ title: 'Diff Test', content: 'old content' });
+    const id = mem.id.slice(0, 8);
+    const tmpFile = path.join(testDir, 'new-content.txt');
+    fs.writeFileSync(tmpFile, 'new content');
+    const out = mor('update', '--content-from', tmpFile, id);
+    expect(out).toContain('Updated:');
+    expect(out).toContain('content diff');
+  });
+
+  it('reports no changes when values match', async () => {
+    const mem = await ops.add({
+      title: 'Same',
+      content: 'same',
+      tags: ['a'],
+    });
+    const id = mem.id.slice(0, 8);
+    const out = mor('update', '--tags', 'a', id);
+    expect(out).toContain('No changes:');
+  });
+
   it('errors with no updates', async () => {
     const mem = await ops.add({ title: 'No Update', content: 'content' });
     const id = mem.id.slice(0, 8);

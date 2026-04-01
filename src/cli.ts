@@ -18,6 +18,7 @@ import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
 import { parseRawGitHubUrl } from './utils/github.js';
 import { colorizeMarkdown, truncate } from './utils/ansi.js';
 import { wrapCodeFence, stripCodeFence } from './utils/markdown.js';
+import { unifiedDiff } from './utils/diff.js';
 import { version } from './version.js';
 
 function openInEditor(file: string): void {
@@ -454,10 +455,48 @@ program
           );
           process.exit(1);
         }
-        const mem = await ops.update(query, updates);
-        console.log(
-          `${chalk.green('Updated:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
-        );
+        const before = await ops.read(query);
+        if (!before) {
+          console.error(`Error: memory not found: ${query}`);
+          process.exit(1);
+        }
+        const mem = await ops.update(before.id, updates);
+        const meta: string[] = [];
+        if (updates.title && updates.title !== before.title)
+          meta.push(
+            `  ${chalk.dim('title:')} ${before.title} ${chalk.dim('→')} ${updates.title}`,
+          );
+        if (updates.description && updates.description !== before.description)
+          meta.push(
+            `  ${chalk.dim('description:')} ${before.description ?? '(none)'} ${chalk.dim('→')} ${updates.description}`,
+          );
+        if (
+          updates.tags &&
+          JSON.stringify(updates.tags) !== JSON.stringify(before.tags)
+        )
+          meta.push(
+            `  ${chalk.dim('tags:')} [${before.tags.join(', ')}] ${chalk.dim('→')} [${updates.tags.join(', ')}]`,
+          );
+        if (updates.type && updates.type !== before.type)
+          meta.push(
+            `  ${chalk.dim('type:')} ${before.type} ${chalk.dim('→')} ${updates.type}`,
+          );
+        const contentChanged =
+          updates.content && updates.content !== before.content;
+        if (meta.length === 0 && !contentChanged) {
+          console.log(
+            `${chalk.dim('No changes:')} ${chalk.cyan(before.id.slice(0, 8))}  ${before.title}`,
+          );
+        } else {
+          console.log(
+            `${chalk.green('Updated:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+          );
+          if (meta.length > 0) console.log(meta.join('\n'));
+          if (contentChanged) {
+            console.log(chalk.dim('\n--- content diff ---'));
+            console.log(unifiedDiff(before.content, updates.content!));
+          }
+        }
       } catch (e) {
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
