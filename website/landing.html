@@ -442,8 +442,10 @@
       .terminal-body {
         padding: 1.5rem 1.75rem;
         line-height: 2;
-        overflow: hidden;
-        min-height: 38em;
+        overflow-x: auto;
+        overflow-y: auto;
+        min-height: 22em;
+        max-height: 22em;
         font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
       }
       .terminal-body .line {
@@ -1228,6 +1230,7 @@
           if (l.html) div.innerHTML = l.html;
           else div.textContent = l.text;
           term.appendChild(div);
+          term.scrollTop = term.scrollHeight;
           const delay = l.instant ? 0 : l.type === 'comment' ? 300 : 80;
           gsap.from(div, {
             opacity: 0,
@@ -1276,6 +1279,7 @@
               textNode.textContent += seg.text[ci];
             else target.appendChild(document.createTextNode(seg.text[ci]));
           }
+          term.scrollTop = term.scrollHeight;
           const delay = 15 + Math.random() * 20;
           setTimeout(
             () => typeSegments(container, segments, si, ci + 1, done),
