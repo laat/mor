@@ -116,11 +116,12 @@ addFilterOptions(
     .command('find <query>')
     .description('Search memories by query')
     .option('--limit <n>', 'Max results', '20')
-    .option('-s, --threshold <n>', 'Minimum score (0-1)'),
+    .option('-s, --threshold <n>', 'Minimum score (0-1)')
+    .option('--json', 'Output as JSON (includes content)'),
 ).action(
   async (
     query: string,
-    opts: { limit: string; threshold?: string } & MemoryFilter,
+    opts: { limit: string; threshold?: string; json?: boolean } & MemoryFilter,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -135,6 +136,18 @@ addFilterOptions(
         ? parseFloat(opts.threshold)
         : (config.threshold ?? 0.3);
       const results = page.data.filter((r) => r.score >= threshold);
+      if (opts.json) {
+        const json = results.map((r) => ({
+          id: r.memory.id,
+          title: r.memory.title,
+          description: r.memory.description ?? null,
+          tags: r.memory.tags,
+          score: r.score,
+          content: r.memory.content,
+        }));
+        console.log(JSON.stringify(json));
+        return;
+      }
       if (results.length === 0) {
         console.log('No memories found.');
         return;

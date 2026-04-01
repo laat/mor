@@ -132,6 +132,29 @@ describe('find', () => {
     const out = mor('find', 'nonexistent-xyzzy');
     expect(out).toBe('No memories found.');
   });
+
+  it('--json outputs array with content', async () => {
+    await ops.add({
+      title: 'JSON Test',
+      content: 'json content here',
+      tags: ['a', 'b'],
+    });
+    const out = mor('find', 'json', '--json');
+    const results = JSON.parse(out);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      title: 'JSON Test',
+      tags: ['a', 'b'],
+      content: 'json content here',
+    });
+    expect(results[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(typeof results[0].score).toBe('number');
+  });
+
+  it('--json returns empty array when no results', () => {
+    const out = mor('find', 'nonexistent-xyzzy', '--json');
+    expect(JSON.parse(out)).toEqual([]);
+  });
 });
 
 describe('grep', () => {
