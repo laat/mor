@@ -56,14 +56,4 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-To make Claude Code check mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
-
-```markdown
-## Memory
-
-When the user asks to recall, find, check, or reuse something they
-previously saved or remembered — use the `mor` MCP server tools
-(`memory_search`, `memory_read`, `memory_list`). This is the user's
-primary memory store containing code snippets, files, and reference
-notes. Always check mor before saying something wasn't found.
-```
+For Claude Code-specific setup (CLAUDE.md instruction, memberberry hook), see [Claude Code integration](/integration/claude-code/).
