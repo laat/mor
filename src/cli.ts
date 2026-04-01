@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
+import matter from 'gray-matter';
 import { isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
@@ -14,42 +15,12 @@ import type { MemoryFilter, Operations } from './operations.js';
 import { startServer } from './operations-server.js';
 import { MEMORY_TYPES, type Memory, type MemoryType } from './operations.js';
 import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
+import { parseRawGitHubUrl } from './utils/github.js';
+import { colorizeMarkdown, truncate } from './utils/ansi.js';
+import { wrapCodeFence, stripCodeFence } from './utils/markdown.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
-
-function parseRawGitHubUrl(
-  url: string,
-): { filename: string; repository: string } | undefined {
-  // https://raw.githubusercontent.com/{owner}/{repo}/refs/heads/{branch}/{path}
-  // https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}
-  const m = url.match(
-    /^https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/(.+)/,
-  );
-  if (!m) return undefined;
-  const [, owner, repo, rest] = m;
-  // Strip query params, then extract filename from the remaining path
-  const cleanPath = rest.split('?')[0];
-  const filename = path.basename(cleanPath);
-  return { filename, repository: `github.com/${owner}/${repo}` };
-}
-
-function wrapCodeFence(content: string, filename: string): string {
-  const ext = path.extname(filename).toLowerCase();
-  if (ext === '.md' || ext === '.markdown' || ext === '.txt' || ext === '') {
-    return content;
-  }
-  const lang = EXT_TO_LANG[ext] ?? ext.slice(1);
-  return '```' + lang + '\n' + content.replace(/\n$/, '') + '\n```';
-}
-
-function stripCodeFence(
-  content: string,
-): { code: string; lang: string } | null {
-  const match = content.match(/^```(\w*)\n([\s\S]*?)\n```\s*$/);
-  if (!match) return null;
-  return { code: match[2], lang: match[1] };
-}
 
 function openInEditor(file: string): void {
   const editor = process.env.EDITOR ?? 'vi';
@@ -474,54 +445,6 @@ program
     },
   );
 
-// eslint-disable-next-line no-control-regex
-const ANSI_RE = /\x1b\[[0-9;]*m/g;
-// eslint-disable-next-line no-control-regex
-const ANSI_START_RE = /^\x1b\[[0-9;]*m/;
-
-function truncate(line: string): string {
-  const cols = process.stdout.columns;
-  if (!cols) return line;
-  const visible = line.replace(ANSI_RE, '');
-  if (visible.length <= cols) return line;
-  // Walk the original string, counting visible chars
-  let vis = 0;
-  let i = 0;
-  while (i < line.length && vis < cols - 1) {
-    const m = line.slice(i).match(ANSI_START_RE);
-    if (m) {
-      i += m[0].length;
-    } else {
-      vis++;
-      i++;
-    }
-  }
-  return line.slice(0, i) + '\x1b[0m…';
-}
-
-function colorizeMarkdown(text: string): string {
-  let inCodeBlock = false;
-  return text
-    .split('\n')
-    .map((line) => {
-      if (line.startsWith('```')) {
-        inCodeBlock = !inCodeBlock;
-        return chalk.dim(line);
-      }
-      if (inCodeBlock) return line;
-      if (/^#{1,6}\s/.test(line)) return chalk.bold.green(line);
-      if (/^>\s/.test(line)) return chalk.dim.italic(line);
-      if (/^[-*]\s/.test(line)) return chalk.dim(line[0]) + line.slice(1);
-      return line
-        .replace(/\*\*(.+?)\*\*/g, (_, t) => chalk.bold(t))
-        .replace(
-          /\[([^\]]+)\]\(([^)]+)\)/g,
-          (_, label, url) => `${chalk.cyan(label)} ${chalk.dim(`(${url})`)}`,
-        );
-    })
-    .join('\n');
-}
-
 function exportMemory(mem: Memory, raw?: boolean): string {
   if (raw) return serializeMemory(mem);
   if (mem.type === 'file')
@@ -602,9 +525,7 @@ program
         openInEditor(tmpFile);
         const edited = fs.readFileSync(tmpFile, 'utf-8');
         if (edited !== original) {
-          const { data, content: newContent } = (
-            await import('gray-matter')
-          ).default(edited);
+          const { data, content: newContent } = matter(edited);
           await ops.update(mem.id, {
             title: data.title,
             description: data.description,
