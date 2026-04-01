@@ -495,6 +495,24 @@ describe('cross-references', () => {
     expect(text).toContain('Target');
   });
 
+  it('shows bidirectional arrow for mutual links', async () => {
+    const a = await ops.add({ title: 'Note A', content: 'placeholder' });
+    const b = await ops.add({
+      title: 'Note B',
+      content: `Links to [Note A](mor:${a.id})`,
+    });
+    // Update A to link back to B
+    await ops.update(a.id, {
+      content: `Links to [Note B](mor:${b.id})`,
+    });
+
+    const { text } = await callTool('memory_read', { ids: [a.id] });
+    expect(text).toContain('↔');
+    expect(text).toContain('Note B');
+    // Should not have separate → and ← for the same note
+    expect(text).not.toContain('←');
+  });
+
   it('shows broken forward links', async () => {
     const source = await ops.add({
       title: 'Broken',

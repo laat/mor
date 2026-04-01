@@ -48,13 +48,21 @@ async function formatLinks(
 ): Promise<string | undefined> {
   const { forward, back } = await ops.getLinks(memId);
   if (forward.length === 0 && back.length === 0) return undefined;
+  const forwardIds = new Set(forward.map((l) => l.id));
+  const backIds = new Set(back.map((l) => l.id));
   const lines: string[] = ['Links:'];
   for (const link of forward) {
     const title = link.title || '(not found)';
-    lines.push(`→ ${shortId(link.id)}  ${title}`);
+    if (backIds.has(link.id)) {
+      lines.push(`↔ ${shortId(link.id)}  ${title}`);
+    } else {
+      lines.push(`→ ${shortId(link.id)}  ${title}`);
+    }
   }
   for (const link of back) {
-    lines.push(`← ${shortId(link.id)}  ${link.title}`);
+    if (!forwardIds.has(link.id)) {
+      lines.push(`← ${shortId(link.id)}  ${link.title}`);
+    }
   }
   return lines.join('\n');
 }

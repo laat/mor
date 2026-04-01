@@ -487,18 +487,25 @@ program
       if (!opts.raw && opts.links) {
         const { forward, back } = await ops.getLinks(mem.id);
         if (forward.length > 0 || back.length > 0) {
+          const forwardIds = new Set(forward.map((l) => l.id));
+          const backIds = new Set(back.map((l) => l.id));
           console.log(chalk.dim('---'));
           console.log(chalk.bold('Links:'));
           for (const link of forward) {
             const title = link.title || chalk.dim('(not found)');
+            const arrow = backIds.has(link.id)
+              ? chalk.magenta('↔')
+              : chalk.green('→');
             console.log(
-              `${chalk.green('→')} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
+              `${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
             );
           }
           for (const link of back) {
-            console.log(
-              `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
-            );
+            if (!forwardIds.has(link.id)) {
+              console.log(
+                `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+              );
+            }
           }
         }
       }
@@ -551,16 +558,21 @@ program
         console.log('No links.');
         return;
       }
+      const forwardIds = new Set(forward.map((l) => l.id));
+      const backIds = new Set(back.map((l) => l.id));
       for (const link of forward) {
         const title = link.title || chalk.dim('(not found)');
-        console.log(
-          `${chalk.green('→')} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`,
-        );
+        const arrow = backIds.has(link.id)
+          ? chalk.magenta('↔')
+          : chalk.green('→');
+        console.log(`${arrow} ${chalk.cyan(link.id.slice(0, 8))}  ${title}`);
       }
       for (const link of back) {
-        console.log(
-          `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
-        );
+        if (!forwardIds.has(link.id)) {
+          console.log(
+            `${chalk.blue('←')} ${chalk.cyan(link.id.slice(0, 8))}  ${link.title}`,
+          );
+        }
       }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
