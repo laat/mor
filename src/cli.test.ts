@@ -172,6 +172,56 @@ describe('grep', () => {
     expect(out).toMatch(/3:.*third has target/);
   });
 
+  it('-A shows lines after match', async () => {
+    await ops.add({
+      title: 'After Ctx',
+      content: 'aaa\nbbb\ntarget\nccc\nddd',
+    });
+    const out = mor('grep', '-A', '1', 'target');
+    expect(out).toContain('target');
+    expect(out).toContain('ccc');
+    expect(out).not.toContain('bbb');
+  });
+
+  it('-B shows lines before match', async () => {
+    await ops.add({
+      title: 'Before Ctx',
+      content: 'aaa\nbbb\ntarget\nccc\nddd',
+    });
+    const out = mor('grep', '-B', '1', 'target');
+    expect(out).toContain('target');
+    expect(out).toContain('bbb');
+    expect(out).not.toContain('ccc');
+  });
+
+  it('-C shows lines before and after match', async () => {
+    await ops.add({
+      title: 'Full Ctx',
+      content: 'aaa\nbbb\ntarget\nccc\nddd',
+    });
+    const out = mor('grep', '-C', '1', 'target');
+    expect(out).toContain('bbb');
+    expect(out).toContain('target');
+    expect(out).toContain('ccc');
+    expect(out).not.toContain('aaa');
+    expect(out).not.toContain('ddd');
+  });
+
+  it('-C merges overlapping context', async () => {
+    await ops.add({
+      title: 'Overlap',
+      content: 'aaa\nmatch1\nbbb\nmatch2\nccc',
+    });
+    const out = mor('grep', '-C', '1', '-n', 'match');
+    // Lines should appear once, merged, no separator between adjacent matches
+    expect(out).toContain('1: aaa');
+    expect(out).toContain('2:');
+    expect(out).toContain('3:');
+    expect(out).toContain('4:');
+    expect(out).toContain('5:');
+    expect(out).not.toContain('--');
+  });
+
   it('word grep matches whole words only', async () => {
     await ops.add({
       title: 'Word Test',

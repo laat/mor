@@ -167,6 +167,9 @@ addFilterOptions(
     .option('-E, --regex', 'Treat pattern as regex')
     .option('-w, --word-regexp', 'Match whole words only')
     .option('-n, --line-number', 'Show line numbers')
+    .option('-A, --after-context <n>', 'Lines after match')
+    .option('-B, --before-context <n>', 'Lines before match')
+    .option('-C, --context <n>', 'Lines before and after match')
     .option(
       '-l, --files-with-matches',
       'Show only memory titles, no matching lines',
@@ -180,6 +183,9 @@ addFilterOptions(
       regex?: boolean;
       wordRegexp?: boolean;
       lineNumber?: boolean;
+      afterContext?: string;
+      beforeContext?: string;
+      context?: string;
       filesWithMatches?: boolean;
     } & MemoryFilter,
   ) => {
@@ -219,12 +225,31 @@ addFilterOptions(
             : '';
         console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
         if (opts.filesWithMatches) continue;
+        const before =
+          parseInt(opts.beforeContext ?? opts.context ?? '0', 10) || 0;
+        const after =
+          parseInt(opts.afterContext ?? opts.context ?? '0', 10) || 0;
         const lines = mem.content.split('\n');
+        let lastPrinted = -2;
         for (let i = 0; i < lines.length; i++) {
           if (re.test(lines[i])) {
-            const highlighted = lines[i].replace(re, (m) => chalk.red(m));
-            const prefix = opts.lineNumber ? chalk.dim(`${i + 1}:`) + ' ' : '';
-            console.log(`         ${prefix}${highlighted}`);
+            const start = Math.max(0, i - before);
+            const end = Math.min(lines.length - 1, i + after);
+            if (lastPrinted >= 0 && start > lastPrinted + 1) {
+              console.log(chalk.dim('         --'));
+            }
+            for (let j = start; j <= end; j++) {
+              if (j <= lastPrinted) continue;
+              lastPrinted = j;
+              const lineText =
+                j === i
+                  ? lines[j].replace(re, (m) => chalk.red(m))
+                  : chalk.dim(lines[j]);
+              const prefix = opts.lineNumber
+                ? chalk.dim(`${j + 1}:`) + ' '
+                : '';
+              console.log(`         ${prefix}${lineText}`);
+            }
           }
         }
       }
