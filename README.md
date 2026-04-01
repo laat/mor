@@ -121,11 +121,14 @@ The client discovers auth via `WWW-Authenticate` → OAuth metadata → browser 
 ### CLI client
 
 ```sh
-# Option 1: OAuth login (stores token in ~/.config/mor/credentials.json)
+# OAuth login — saves server URL to config and credentials to credentials.json
 mor login -s http://mybox.tail1234.ts.net:7677
 
-# Option 2: Direct token in config
+# All commands now proxy to the remote server
+mor find "python naming"
 ```
+
+Or configure a direct token instead:
 
 ```jsonc
 // ~/.config/mor/config.json
@@ -137,7 +140,7 @@ mor login -s http://mybox.tail1234.ts.net:7677
 }
 ```
 
-All CLI commands and MCP tools transparently proxy over HTTP when `server` is configured. OAuth tokens auto-refresh on expiry.
+OAuth tokens auto-refresh on expiry.
 
 ### Authentication
 
