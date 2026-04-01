@@ -1,21 +1,14 @@
 name: Update Documentation
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
   workflow_dispatch:
 
 jobs:
   update-docs:
     runs-on: ubuntu-latest
-    if: "github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
       contents: write
       pull-requests: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,30 +21,47 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: '--model claude-sonnet-4-6 --max-turns 30'
-          prompt: |
-            Update documentation to match the current source code. Be efficient — read only what you need.
+      - name: Run Claude to update docs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npx @anthropic-ai/claude-code@latest -p "
+          Update documentation to match current source code. Be efficient.
 
-            Step 1: Run `git log --oneline -5` to see recent changes.
-            Step 2: Read src/cli.ts (the command definitions, lines 60-120 are the command table).
-            Step 3: Read src/operations-server.ts (grep for app.get/app.post to find HTTP endpoints).
-            Step 4: For each doc file below, check if it matches the code. Only edit files with actual discrepancies.
+          1. Run git log --oneline -5 to see recent changes.
+          2. Read src/cli.ts lines 60-120 for command definitions.
+          3. Read src/operations-server.ts — grep for app.get/app.post for HTTP endpoints.
+          4. Check each doc file and only edit those with actual discrepancies:
+             - README.md (commands table, HTTP API table, examples)
+             - CLAUDE.md (database tables description)
+             - man/mor.1 (commands, options, version)
+             - website/src/content/docs/cli.md (commands table, examples)
+             - website/src/content/docs/getting-started.md (quick start examples)
+             - website/src/content/docs/storage.md (database tables)
+             - website/src/content/docs/integration/mcp.md (tools table)
+             - website/src/content/docs/integration/http.md (REST API table)
 
-            Doc files:
-            - README.md — commands table, HTTP API table, examples
-            - CLAUDE.md — database tables description
-            - man/mor.1 — commands, options, version number in header
-            - website/src/content/docs/cli.md — commands table, examples
-            - website/src/content/docs/getting-started.md — quick start examples
-            - website/src/content/docs/storage.md — database tables list
-            - website/src/content/docs/integration/mcp.md — tools table
-            - website/src/content/docs/integration/http.md — REST API table
+          Rules:
+          - Only fix factual inaccuracies
+          - Do NOT rewrite prose, add sections, or change tone
+          - Do NOT edit files under src/
+          - If docs are correct, make no changes
+          " --model claude-sonnet-4-6 --max-turns 15
 
-            Rules:
-            - Only fix factual inaccuracies — wrong flags, missing commands, outdated examples
-            - Do NOT rewrite prose, add sections, or change tone
-            - Do NOT edit any file under src/
-            - If docs are already correct, make no changes and stop early
+      - name: Create PR if changes exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "No documentation changes needed."
+            exit 0
+          fi
+          branch="docs/auto-update-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          git add -A
+          git commit -m "docs: auto-update documentation to match source code"
+          git push origin "$branch"
+          gh pr create \
+            --title "docs: auto-update documentation" \
+            --body "Automated documentation update by Claude. Review carefully before merging." \
+            --label documentation
