@@ -13,48 +13,52 @@ jobs:
     runs-on: ubuntu-latest
     if: "github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
-      issues: write
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/checkout@v4
         with:
-          script: |
-            const sha = context.sha.slice(0, 7);
-            const body = `## Task
+          fetch-depth: 10
 
-            Review the recent source code changes and update documentation files to match.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
 
-            **Recent commit:** ${context.sha} (${context.event?.head_commit?.message || 'manual trigger'})
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: 'Read,Glob,Grep,Edit,Write,Bash(pnpm build),Bash(pnpm test),Bash(git diff),Bash(git log *)'
+          prompt: |
+            You are updating documentation for the mor CLI tool.
 
-            ## What to check
+            First, understand what changed recently:
+            ```
+            git log --oneline -10
+            ```
 
-            Read \`src/cli.ts\`, \`src/mcp.ts\`, \`src/operations.ts\`, \`src/operations-server.ts\`, and \`src/db.ts\` to understand the current CLI commands, MCP tools, HTTP endpoints, and database schema.
+            Then read the source code to understand the current state:
+            - src/cli.ts — CLI commands and options
+            - src/mcp.ts — MCP tools and response format
+            - src/operations.ts — Operations interface
+            - src/operations-server.ts — HTTP endpoints
+            - src/db.ts — database schema
 
-            Compare against these documentation files and fix any discrepancies:
+            Compare against these documentation files and fix discrepancies:
+            - README.md — commands table, quick start examples, HTTP API table
+            - CLAUDE.md — architecture section, database tables
+            - man/mor.1 — command descriptions, options, examples, version
+            - website/src/content/docs/cli.md — commands table, examples
+            - website/src/content/docs/getting-started.md — quick start examples
+            - website/src/content/docs/storage.md — file format, database tables
+            - website/src/content/docs/integration/mcp.md — tools table, filtering
+            - website/src/content/docs/integration/http.md — REST API table
 
-            | File | What to check |
-            |------|---------------|
-            | \`README.md\` | Commands table, quick start examples, HTTP API table |
-            | \`CLAUDE.md\` | Architecture section, database tables description |
-            | \`man/mor.1\` | Command descriptions, options, examples, version number |
-            | \`website/src/content/docs/cli.md\` | Commands table, filter options, examples |
-            | \`website/src/content/docs/getting-started.md\` | Quick start examples |
-            | \`website/src/content/docs/storage.md\` | File format, database tables, frontmatter fields |
-            | \`website/src/content/docs/integration/mcp.md\` | Tools table, filtering params, response format |
-            | \`website/src/content/docs/integration/http.md\` | REST API endpoints table |
-
-            ## Rules
-
-            - **Only fix factual inaccuracies** — wrong flags, missing commands, outdated examples, incorrect descriptions
-            - **Do NOT rewrite prose**, add new sections, or change tone/style
-            - **Do NOT touch code files** — this is a docs-only task
-            - If all docs are already correct, close this issue with no changes
-            - Run \`pnpm build && pnpm test\` to verify nothing is broken`.replace(/            /g, '');
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Update docs for ${sha}`,
-              body,
-              assignees: ['copilot'],
-              labels: ['documentation']
-            });
+            Rules:
+            - Only fix factual inaccuracies — wrong flags, missing commands, outdated examples
+            - Do NOT rewrite prose, add new sections, or change tone/style
+            - Do NOT touch source code files
+            - Verify with: pnpm build && pnpm test
+            - If all docs are already correct, make no changes
