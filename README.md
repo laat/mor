@@ -3,9 +3,9 @@
 > [!WARNING]
 > This is a personal project. I maintain it for my own use and share it because others might find it useful. Feature PRs are unlikely to be merged — if you have an idea, [start a discussion](https://github.com/laat/mor/discussions) first. Fork freely — it's MIT licensed.
 
-AI-accessible knowledge you actually own. Plain markdown files on your disk, searchable by AI via MCP.
+AI-accessible knowledge you actually own. **Plain markdown files on your disk**, searchable by AI via MCP.
 
-Your notes are plain markdown with YAML frontmatter — readable without mor, portable to any tool, git-syncable across machines. The MCP server gives AI assistants (Claude Code, Claude Desktop, Cursor, etc.) persistent memory that survives context windows. You also get a CLI and HTTP API.
+Your notes live on your disk as plain markdown with YAML frontmatter — readable without mor, portable to any tool, git-syncable across machines. The MCP server gives AI assistants (Claude Code, Claude Desktop, Cursor, etc.) persistent memory that survives context windows. You also get a CLI and HTTP API.
 
 ## Install
 
