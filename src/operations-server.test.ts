@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
 import { loadConfig } from './config.js';
+import { RemoteOperations } from './operations-client.js';
 import { startServer } from './operations-server.js';
 import type { Config } from './operations.js';
 
@@ -440,5 +442,467 @@ describe('MCP HTTP Transport', () => {
       headers: { 'mcp-session-id': 'bogus-session-id' },
     });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('OAuth MCP Auth', () => {
+  let oauthServer: http.Server;
+  let oauthUrl: string;
+  const PASSPHRASE = 'test-passphrase-123';
+
+  beforeEach(async () => {
+    oauthServer = startServer(config, {
+      port: 0,
+      host: '127.0.0.1',
+      token: PASSPHRASE,
+      mcp: true,
+    });
+    await new Promise<void>((resolve) =>
+      oauthServer.once('listening', resolve),
+    );
+    const addr = oauthServer.address() as { port: number };
+    oauthUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((resolve) => oauthServer.close(() => resolve()));
+  });
+
+  // Helper: register a client
+  async function registerClient() {
+    const res = await fetch(`${oauthUrl}/oauth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        redirect_uris: ['http://127.0.0.1:3000/callback'],
+        client_name: 'test-client',
+        token_endpoint_auth_method: 'client_secret_post',
+      }),
+    });
+    return res.json();
+  }
+
+  // Helper: generate PKCE pair
+  function generatePkce() {
+    const verifier = crypto.randomBytes(32).toString('base64url');
+    const challenge = crypto
+      .createHash('sha256')
+      .update(verifier)
+      .digest('base64url');
+    return { verifier, challenge };
+  }
+
+  // Helper: full OAuth flow → access token
+  async function getAccessToken() {
+    const client = await registerClient();
+    const { verifier, challenge } = generatePkce();
+    const state = 'test-state';
+
+    // Authorize (POST with correct passphrase)
+    const authRes = await fetch(`${oauthUrl}/oauth/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: client.client_id,
+        redirect_uri: 'http://127.0.0.1:3000/callback',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        response_type: 'code',
+        state,
+        passphrase: PASSPHRASE,
+      }),
+      redirect: 'manual',
+    });
+    const location = new URL(authRes.headers.get('location')!);
+    const code = location.searchParams.get('code')!;
+
+    // Token exchange
+    const tokenRes = await fetch(`${oauthUrl}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        code_verifier: verifier,
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+        redirect_uri: 'http://127.0.0.1:3000/callback',
+      }),
+    });
+    const tokens = await tokenRes.json();
+    return { client, tokens };
+  }
+
+  // --- Discovery ---
+
+  it('serves OAuth AS metadata without auth', async () => {
+    const res = await fetch(
+      `${oauthUrl}/.well-known/oauth-authorization-server`,
+    );
+    expect(res.status).toBe(200);
+    const meta = await res.json();
+    expect(meta.issuer).toContain('127.0.0.1');
+    expect(meta.authorization_endpoint).toContain('/oauth/authorize');
+    expect(meta.token_endpoint).toContain('/oauth/token');
+    expect(meta.registration_endpoint).toContain('/oauth/register');
+    expect(meta.code_challenge_methods_supported).toEqual(['S256']);
+  });
+
+  it('serves protected resource metadata without auth', async () => {
+    const res = await fetch(
+      `${oauthUrl}/.well-known/oauth-protected-resource/mcp`,
+    );
+    expect(res.status).toBe(200);
+    const meta = await res.json();
+    expect(meta.resource).toContain('/mcp');
+    expect(meta.authorization_servers).toHaveLength(1);
+    expect(meta.resource_name).toBe('mor');
+  });
+
+  // --- Client Registration ---
+
+  it('registers a client via DCR', async () => {
+    const client = await registerClient();
+    expect(client.client_id).toBeDefined();
+    expect(client.client_secret).toBeDefined();
+    expect(client.client_id_issued_at).toBeDefined();
+    expect(client.client_secret_expires_at).toBeGreaterThan(0);
+  });
+
+  it('rejects invalid client metadata', async () => {
+    const res = await fetch(`${oauthUrl}/oauth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ invalid: true }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('invalid_client_metadata');
+  });
+
+  // --- Authorization ---
+
+  it('serves authorize form on GET', async () => {
+    const client = await registerClient();
+    const { challenge } = generatePkce();
+    const params = new URLSearchParams({
+      client_id: client.client_id,
+      redirect_uri: 'http://127.0.0.1:3000/callback',
+      response_type: 'code',
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      state: 'abc',
+    });
+    const res = await fetch(`${oauthUrl}/oauth/authorize?${params}`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('mor');
+    expect(html).toContain('passphrase');
+    expect(html).toContain(client.client_id);
+  });
+
+  it('redirects with code on correct passphrase', async () => {
+    const client = await registerClient();
+    const { challenge } = generatePkce();
+    const res = await fetch(`${oauthUrl}/oauth/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: client.client_id,
+        redirect_uri: 'http://127.0.0.1:3000/callback',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        response_type: 'code',
+        state: 'mystate',
+        passphrase: PASSPHRASE,
+      }),
+      redirect: 'manual',
+    });
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.get('location')!);
+    expect(location.searchParams.get('code')).toBeTruthy();
+    expect(location.searchParams.get('state')).toBe('mystate');
+    expect(location.searchParams.has('error')).toBe(false);
+  });
+
+  it('redirects with error on wrong passphrase', async () => {
+    const client = await registerClient();
+    const { challenge } = generatePkce();
+    const res = await fetch(`${oauthUrl}/oauth/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: client.client_id,
+        redirect_uri: 'http://127.0.0.1:3000/callback',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        response_type: 'code',
+        state: 'mystate',
+        passphrase: 'wrong-passphrase',
+      }),
+      redirect: 'manual',
+    });
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.get('location')!);
+    expect(location.searchParams.get('error')).toBe('access_denied');
+    expect(location.searchParams.get('state')).toBe('mystate');
+  });
+
+  // --- Token Exchange ---
+
+  it('exchanges auth code for tokens with PKCE', async () => {
+    const { tokens } = await getAccessToken();
+    expect(tokens.access_token).toBeDefined();
+    expect(tokens.refresh_token).toBeDefined();
+    expect(tokens.token_type).toBe('bearer');
+    expect(tokens.expires_in).toBe(3600);
+  });
+
+  it('rejects token exchange with wrong code_verifier', async () => {
+    const client = await registerClient();
+    const { challenge } = generatePkce();
+
+    const authRes = await fetch(`${oauthUrl}/oauth/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: client.client_id,
+        redirect_uri: 'http://127.0.0.1:3000/callback',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        response_type: 'code',
+        passphrase: PASSPHRASE,
+      }),
+      redirect: 'manual',
+    });
+    const location = new URL(authRes.headers.get('location')!);
+    const code = location.searchParams.get('code')!;
+
+    const tokenRes = await fetch(`${oauthUrl}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        code_verifier: 'totally-wrong-verifier',
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+      }),
+    });
+    expect(tokenRes.status).toBe(400);
+    const body = await tokenRes.json();
+    expect(body.error).toBe('invalid_grant');
+  });
+
+  // --- Token Refresh ---
+
+  it('refreshes an access token', async () => {
+    const { client, tokens } = await getAccessToken();
+
+    const res = await fetch(`${oauthUrl}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: tokens.refresh_token,
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const newTokens = await res.json();
+    expect(newTokens.access_token).toBeDefined();
+    expect(newTokens.access_token).not.toBe(tokens.access_token);
+    expect(newTokens.refresh_token).toBeDefined();
+  });
+
+  // --- Token Revocation ---
+
+  it('revokes an access token', async () => {
+    const { client, tokens } = await getAccessToken();
+
+    const revokeRes = await fetch(`${oauthUrl}/oauth/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        token: tokens.access_token,
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+      }),
+    });
+    expect(revokeRes.status).toBe(200);
+
+    // Token should no longer work
+    const mcpRes = await fetch(`${oauthUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokens.access_token}`,
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(mcpRes.status).toBe(401);
+  });
+
+  // --- MCP Endpoint Auth ---
+
+  it('/mcp returns 401 without token and includes resource_metadata', async () => {
+    const res = await fetch(`${oauthUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(401);
+    const wwwAuth = res.headers.get('www-authenticate');
+    expect(wwwAuth).toContain('Bearer');
+    expect(wwwAuth).toContain('resource_metadata');
+  });
+
+  it('/mcp accepts raw passphrase', async () => {
+    const res = await fetch(`${oauthUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${PASSPHRASE}`,
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('mcp-session-id')).toBeTruthy();
+  });
+
+  it('/mcp accepts passphrase via query param', async () => {
+    const res = await fetch(`${oauthUrl}/mcp?token=${PASSPHRASE}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('mcp-session-id')).toBeTruthy();
+  });
+
+  it('/mcp accepts OAuth access token and initializes session', async () => {
+    const { tokens } = await getAccessToken();
+
+    const res = await fetch(`${oauthUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokens.access_token}`,
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          protocolVersion: '2025-03-26',
+          capabilities: {},
+          clientInfo: { name: 'test', version: '1.0' },
+        },
+        id: 1,
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('mcp-session-id')).toBeTruthy();
+  });
+
+  // --- REST API backward compat ---
+
+  it('REST API still accepts direct bearer passphrase', async () => {
+    const res = await fetch(`${oauthUrl}/health`, {
+      headers: { Authorization: `Bearer ${PASSPHRASE}` },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('REST API rejects wrong token', async () => {
+    const res = await fetch(`${oauthUrl}/health`, {
+      headers: { Authorization: 'Bearer wrong' },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('REST API accepts OAuth access token', async () => {
+    const { tokens } = await getAccessToken();
+    const res = await fetch(`${oauthUrl}/health`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('RemoteOperations auto-refreshes expired token', async () => {
+    const { client, tokens } = await getAccessToken();
+
+    // Store credentials with the current tokens
+    const credsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-autorefresh-'));
+    fs.writeFileSync(
+      path.join(credsDir, 'credentials.json'),
+      JSON.stringify({
+        [oauthUrl]: {
+          client_id: client.client_id,
+          client_secret: client.client_secret,
+          access_token: 'expired-bogus-token',
+          refresh_token: tokens.refresh_token,
+        },
+      }),
+    );
+
+    // Create RemoteOperations with the stored (expired) token
+    const ops = new RemoteOperations(
+      { ...config, server: { url: oauthUrl } },
+      credsDir,
+    );
+
+    // Should auto-refresh and succeed
+    const result = await ops.search('test', 5);
+    expect(result).toBeDefined();
+    expect(result.data).toBeDefined();
+
+    ops.close();
+    fs.rmSync(credsDir, { recursive: true });
   });
 });

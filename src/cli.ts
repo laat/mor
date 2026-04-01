@@ -6,9 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
 import matter from 'gray-matter';
-import { isRemote, loadConfig } from './config.js';
+import { getConfigDir, isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
+import { login } from './oauth-login.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import type { MemoryFilter, Operations } from './operations.js';
@@ -38,7 +39,7 @@ function parseType(value: string | undefined): MemoryType | undefined {
 }
 
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
-  if (isRemote(config)) return new RemoteOperations(config);
+  if (isRemote(config)) return new RemoteOperations(config, getConfigDir());
   return new LocalOperations(config);
 }
 
@@ -769,5 +770,26 @@ program
       startServer(config, { port, host, token, mcp });
     },
   );
+
+program
+  .command('login')
+  .description('Authenticate with a remote mor server via OAuth')
+  .option('-s, --server <url>', 'Server URL (defaults to config server.url)')
+  .action(async (opts: { server?: string }) => {
+    const config = loadConfig();
+    const serverUrl = opts.server ?? config.server?.url;
+    if (!serverUrl) {
+      console.error(
+        'Error: No server URL. Use --server <url> or set server.url in config.',
+      );
+      process.exit(1);
+    }
+    try {
+      await login(serverUrl, getConfigDir());
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    }
+  });
 
 program.parse();

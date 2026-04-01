@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { Config } from './operations.js';
 import { expandHome } from './utils/path.js';
 
-function getConfigDir(): string {
+export function getConfigDir(): string {
   if (process.env.MOR_HOME) {
     return expandHome(process.env.MOR_HOME);
   }

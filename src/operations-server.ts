@@ -2,13 +2,16 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { serve } from '@hono/node-server';
 import crypto from 'node:crypto';
+import path from 'node:path';
 import type http from 'node:http';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { createRequire } from 'node:module';
 import { createMcpServer } from './mcp.js';
+import { createOAuthRoutes } from './oauth.js';
 import { LocalOperations, NotFoundError } from './operations-local.js';
 import type { Config } from './operations.js';
+import { isLoopbackHost } from './utils/net.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -17,11 +20,6 @@ function log(msg: string): void {
   if (process.env.NODE_ENV === 'test') return;
   const ts = new Date().toISOString();
   process.stderr.write(`${ts} [mor] ${msg}\n`);
-}
-
-function isLoopbackHost(host: string): boolean {
-  const hostname = host.split(':')[0];
-  return ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(hostname);
 }
 
 function parseLimit(raw: string | undefined, defaultLimit = 20): number {
@@ -65,26 +63,54 @@ export function startServer(
 
   const app = new Hono();
 
+  const oauth = opts.token
+    ? createOAuthRoutes(opts.token, path.dirname(config.dbPath))
+    : null;
+
   app.use(logger((msg) => log(msg.replace(/[?&]token=[^\s&]*/g, ''))));
 
+  if (oauth) {
+    app.route('', oauth.routes);
+  }
+
   if (opts.token) {
+    const passphraseHash = crypto
+      .createHash('sha256')
+      .update(opts.token)
+      .digest();
+
     app.use(async (c, next) => {
+      const p = c.req.path;
+      if (p.startsWith('/.well-known/') || p.startsWith('/oauth/')) {
+        return next();
+      }
       const provided =
         c.req.header('authorization')?.replace(/^Bearer\s+/i, '') ??
         c.req.query('token') ??
         '';
-      const expectedHash = crypto
-        .createHash('sha256')
-        .update(opts.token!)
-        .digest();
+
       const providedHash = crypto
         .createHash('sha256')
         .update(provided)
         .digest();
-      if (!crypto.timingSafeEqual(providedHash, expectedHash)) {
-        return c.json({ error: 'Unauthorized' }, 401);
+      if (crypto.timingSafeEqual(providedHash, passphraseHash)) {
+        return next();
       }
-      await next();
+
+      if (oauth && provided && oauth.verifyAccessToken(provided)) {
+        return next();
+      }
+
+      if (oauth) {
+        const host = c.req.header('host') ?? 'localhost';
+        const proto = isLoopbackHost(host) ? 'http' : 'https';
+        c.header(
+          'WWW-Authenticate',
+          `Bearer resource_metadata="${proto}://${host}/.well-known/oauth-protected-resource/mcp"`,
+        );
+      }
+
+      return c.json({ error: 'Unauthorized' }, 401);
     });
   }
 
@@ -290,7 +316,6 @@ export function startServer(
     }
   });
 
-  // MCP HTTP transport
   if (opts.mcp) {
     app.all('/mcp', async (c) => {
       const sessionId = c.req.header('mcp-session-id');
@@ -347,6 +372,7 @@ export function startServer(
 
   const shutdown = () => {
     log('Shutting down...');
+    oauth?.close();
     clearInterval(sweepTimer);
     memberberrySessions.clear();
     for (const transport of mcpTransports.values()) {

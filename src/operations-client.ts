@@ -1,3 +1,4 @@
+import { getStoredToken, refreshAccessToken } from './oauth-login.js';
 import type {
   Config,
   GrepOptions,
@@ -30,13 +31,29 @@ function filterParams(filter?: MemoryFilter): Record<string, string> {
 export class RemoteOperations implements Operations {
   private baseUrl: string;
   private headers: Record<string, string>;
+  private configDir?: string;
 
-  constructor(config: Config) {
+  constructor(config: Config, configDir?: string) {
     if (!config.server?.url) throw new Error('No server URL configured');
     this.baseUrl = config.server.url.replace(/\/+$/, '');
+    this.configDir = configDir;
     this.headers = { 'Content-Type': 'application/json' };
-    if (config.server.token)
+
+    // Priority: explicit token > stored OAuth token
+    if (config.server.token) {
       this.headers['Authorization'] = `Bearer ${config.server.token}`;
+    } else if (configDir) {
+      const stored = getStoredToken(configDir, this.baseUrl);
+      if (stored) this.headers['Authorization'] = `Bearer ${stored}`;
+    }
+  }
+
+  private async tryRefresh(): Promise<boolean> {
+    if (!this.configDir) return false;
+    const newToken = await refreshAccessToken(this.configDir, this.baseUrl);
+    if (!newToken) return false;
+    this.headers['Authorization'] = `Bearer ${newToken}`;
+    return true;
   }
 
   async search(
@@ -51,9 +68,14 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    const res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
+    let res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
       headers: this.headers,
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
+        headers: this.headers,
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -61,10 +83,16 @@ export class RemoteOperations implements Operations {
   }
 
   async read(query: string): Promise<Memory | undefined> {
-    const res = await fetch(
+    let res = await fetch(
       `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
       { headers: this.headers },
     );
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(
+        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+        { headers: this.headers },
+      );
+    }
     if (res.status === 404) return undefined;
     const json = await res.json();
     if (!res.ok)
@@ -80,11 +108,18 @@ export class RemoteOperations implements Operations {
     type?: string;
     repository?: string;
   }): Promise<Memory> {
-    const res = await fetch(`${this.baseUrl}/memories`, {
+    let res = await fetch(`${this.baseUrl}/memories`, {
       method: 'POST',
       headers: this.headers,
       body: JSON.stringify(opts),
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/memories`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(opts),
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -101,10 +136,20 @@ export class RemoteOperations implements Operations {
       type?: string;
     },
   ): Promise<Memory> {
-    const res = await fetch(
+    let res = await fetch(
       `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
       { method: 'PUT', headers: this.headers, body: JSON.stringify(updates) },
     );
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(
+        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+        {
+          method: 'PUT',
+          headers: this.headers,
+          body: JSON.stringify(updates),
+        },
+      );
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -112,10 +157,16 @@ export class RemoteOperations implements Operations {
   }
 
   async remove(query: string): Promise<{ title: string; id: string }> {
-    const res = await fetch(
+    let res = await fetch(
       `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
       { method: 'DELETE', headers: this.headers },
     );
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(
+        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+        { method: 'DELETE', headers: this.headers },
+      );
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -138,9 +189,14 @@ export class RemoteOperations implements Operations {
       ...(regex ? { regex: '1' } : {}),
       ...filterParams(filter),
     });
-    const res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
+    let res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
       headers: this.headers,
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
+        headers: this.headers,
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -157,9 +213,14 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...filterParams(filter),
     });
-    const res = await fetch(`${this.baseUrl}/memories?${params}`, {
+    let res = await fetch(`${this.baseUrl}/memories?${params}`, {
       headers: this.headers,
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/memories?${params}`, {
+        headers: this.headers,
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -167,10 +228,16 @@ export class RemoteOperations implements Operations {
   }
 
   async reindex() {
-    const res = await fetch(`${this.baseUrl}/reindex`, {
+    let res = await fetch(`${this.baseUrl}/reindex`, {
       method: 'POST',
       headers: this.headers,
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/reindex`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
@@ -178,10 +245,16 @@ export class RemoteOperations implements Operations {
   }
 
   async sync(_commitMessage?: string): Promise<{ message: string }> {
-    const res = await fetch(`${this.baseUrl}/sync`, {
+    let res = await fetch(`${this.baseUrl}/sync`, {
       method: 'POST',
       headers: this.headers,
     });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(`${this.baseUrl}/sync`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+    }
     const json = await res.json();
     if (!res.ok)
       throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
