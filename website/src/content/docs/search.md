@@ -32,7 +32,11 @@ mor grep -E "async\s+function" -i
 
 - **Exact match** — no stemming or tokenization (default)
 - **Regex** — with `-E` flag, uses JavaScript regular expressions
+- **Word match** — with `-w` flag, matches whole words only
 - **Case-insensitive** — with `-i` flag
+- **Line numbers** — with `-n` flag
+- **Files only** — with `-l` flag, shows only memory titles
+- **Context** — `-A <n>` after, `-B <n>` before, `-C <n>` both
 - **Searches title and content** — finds strings anywhere in the memory
 
 Use `grep` for code identifiers, URLs, special characters, patterns, or anything FTS might tokenize away.

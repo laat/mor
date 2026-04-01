@@ -27,6 +27,7 @@ mor find "python naming"
 mor grep "snake_case"
 mor grep -i "todo"
 mor grep -E "async\s+function"
+mor grep -w "Beer" -n -C 2
 
 # Read, edit, copy, remove
 mor cat "python naming"
@@ -41,22 +42,22 @@ mor ls -l
 
 ## Commands
 
-| Command             | Description                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| `find <query>`      | Full-text search (`-n` limit, `-s` threshold, `-l` long)                                         |
-| `grep <pattern>`    | Substring or regex search (`-n` limit, `-i` case-insensitive, `-E` regex, `-l` long)             |
-| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)       |
-| `cat <query>`       | Print content (`--raw` for frontmatter)                                                          |
-| `cp <query> <dest>` | Copy content to file                                                                             |
-| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                  |
-| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content) |
-| `rm <query>`        | Remove a memory                                                                                  |
-| `ls`                | List all (`-n` limit, `-l` long)                                                                 |
-| `sync`              | Pull, commit, and push the memory folder via git                                                 |
-| `reindex`           | Rebuild search index                                                                             |
-| `import <dir>`      | Import `.md` files from a directory                                                              |
-| `mcp`               | Start MCP server (stdio)                                                                         |
-| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                     |
+| Command             | Description                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `find <query>`      | Full-text search (`-n` limit, `-s` threshold, `-l` long)                                                        |
+| `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
+| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
+| `cat <query>`       | Print content (`--raw` for frontmatter)                                                                         |
+| `cp <query> <dest>` | Copy content to file                                                                                            |
+| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
+| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, stdin for content)                |
+| `rm <query>`        | Remove a memory                                                                                                 |
+| `ls`                | List all (`-n` limit, `-l` long)                                                                                |
+| `sync`              | Pull, commit, and push the memory folder via git                                                                |
+| `reindex`           | Rebuild search index                                                                                            |
+| `import <dir>`      | Import `.md` files from a directory                                                                             |
+| `mcp`               | Start MCP server (stdio)                                                                                        |
+| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
 
 Queries resolve in order: full UUID, UUID prefix (4+ chars), filename, FTS search.
 

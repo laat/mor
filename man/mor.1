@@ -38,7 +38,7 @@ Minimum relevance score 0\-1 (default 0.3).
 Search memory content by substring or regex.
 .RS
 .TP
-.BI \-n ", " \-\-limit " " n
+.BI \-\-limit " " n
 Max results (default 20).
 .TP
 .BR \-i ", " \-\-ignore\-case
@@ -47,8 +47,23 @@ Case-insensitive matching.
 .BR \-E ", " \-\-regex
 Treat pattern as a JavaScript regular expression.
 .TP
-.BR \-l ", " \-\-long
-Show file paths.
+.BR \-w ", " \-\-word\-regexp
+Match whole words only.
+.TP
+.BR \-n ", " \-\-line\-number
+Show line numbers.
+.TP
+.BI \-A ", " \-\-after\-context " " n
+Show n lines after each match.
+.TP
+.BI \-B ", " \-\-before\-context " " n
+Show n lines before each match.
+.TP
+.BI \-C ", " \-\-context " " n
+Show n lines before and after each match.
+.TP
+.BR \-l ", " \-\-files\-with\-matches
+Show only memory titles, no matching lines.
 .RE
 .SS Create and Edit
 .TP

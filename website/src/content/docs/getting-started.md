@@ -26,9 +26,10 @@ mor add https://raw.githubusercontent.com/owner/repo/main/config.ts
 # Search (full-text, OR-ranked)
 mor find "retry http"
 
-# Grep (substring or regex)
+# Grep (substring or regex, with context)
 mor grep "snake_case"
 mor grep -E "async\s+function" -i
+mor grep -w "TODO" -n -C 2
 
 # List all
 mor ls
