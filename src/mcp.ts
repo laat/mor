@@ -70,7 +70,10 @@ export function createMcpServer(ops: Operations): McpServer {
           .number()
           .optional()
           .describe('Skip first N results (default 0)'),
-        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        tag: z
+          .array(z.string())
+          .optional()
+          .describe('Filter by tags (AND logic, glob patterns supported)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
@@ -112,7 +115,10 @@ export function createMcpServer(ops: Operations): McpServer {
           .boolean()
           .optional()
           .describe('Treat pattern as regex (default false)'),
-        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        tag: z
+          .array(z.string())
+          .optional()
+          .describe('Filter by tags (AND logic, glob patterns supported)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },
@@ -231,7 +237,10 @@ export function createMcpServer(ops: Operations): McpServer {
           .number()
           .optional()
           .describe('Skip first N results (default 0)'),
-        tag: z.string().optional().describe('Filter by tag (glob pattern)'),
+        tag: z
+          .array(z.string())
+          .optional()
+          .describe('Filter by tags (AND logic, glob patterns supported)'),
         type: z.string().optional().describe('Filter by memory type'),
       },
     },

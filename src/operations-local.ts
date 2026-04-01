@@ -68,8 +68,9 @@ function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
     const types = filter.type.split(',').map((t) => t.trim());
     if (!types.some((t) => matchGlob(mem.type, t))) return false;
   }
-  if (filter.tag) {
-    if (!mem.tags.some((tag) => matchGlob(tag, filter.tag!))) return false;
+  if (filter.tag?.length) {
+    if (!filter.tag.every((t) => mem.tags.some((tag) => matchGlob(tag, t))))
+      return false;
   }
   if (filter.repo) {
     if (!mem.repository || !matchGlob(mem.repository, filter.repo))
@@ -87,7 +88,10 @@ function applyFilter<T>(
   getMem: (item: T) => Memory,
   filter?: MemoryFilter,
 ): T[] {
-  if (!filter || (!filter.type && !filter.tag && !filter.repo && !filter.ext))
+  if (
+    !filter ||
+    (!filter.type && !filter.tag?.length && !filter.repo && !filter.ext)
+  )
     return items;
   return items.filter((item) => matchMemory(getMem(item), filter));
 }

@@ -73,7 +73,7 @@ export interface SearchResult {
 
 export interface MemoryFilter {
   type?: string;
-  tag?: string;
+  tag?: string[];
   repo?: string;
   ext?: string;
 }

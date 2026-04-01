@@ -18,14 +18,15 @@ class HttpError extends Error {
   }
 }
 
-function filterParams(filter?: MemoryFilter): Record<string, string> {
-  if (!filter) return {};
-  const p: Record<string, string> = {};
-  if (filter.type) p.type = filter.type;
-  if (filter.tag) p.tag = filter.tag;
-  if (filter.repo) p.repo = filter.repo;
-  if (filter.ext) p.ext = filter.ext;
-  return p;
+function appendFilterParams(
+  params: URLSearchParams,
+  filter?: MemoryFilter,
+): void {
+  if (!filter) return;
+  if (filter.type) params.set('type', filter.type);
+  if (filter.tag?.length) for (const t of filter.tag) params.append('tag', t);
+  if (filter.repo) params.set('repo', filter.repo);
+  if (filter.ext) params.set('ext', filter.ext);
 }
 
 export class RemoteOperations implements Operations {
@@ -66,8 +67,8 @@ export class RemoteOperations implements Operations {
       q: query,
       limit: String(limit),
       offset: String(offset),
-      ...filterParams(filter),
     });
+    appendFilterParams(params, filter);
     let res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
       headers: this.headers,
     });
@@ -187,8 +188,8 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
       ...(ignoreCase ? { ignoreCase: '1' } : {}),
       ...(regex ? { regex: '1' } : {}),
-      ...filterParams(filter),
     });
+    appendFilterParams(params, filter);
     let res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
       headers: this.headers,
     });
@@ -211,8 +212,8 @@ export class RemoteOperations implements Operations {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
-      ...filterParams(filter),
     });
+    appendFilterParams(params, filter);
     let res = await fetch(`${this.baseUrl}/memories?${params}`, {
       headers: this.headers,
     });

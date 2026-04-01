@@ -188,7 +188,7 @@ describe('memory_search', () => {
 
     const { text } = await callTool('memory_search', {
       query: 'test',
-      tag: 'yes',
+      tag: ['yes'],
     });
     expect(text).toContain('Tagged');
     expect(text).not.toContain('Untagged');
@@ -380,7 +380,7 @@ describe('memory_list', () => {
     await ops.add({ title: 'Yes', content: 'x', tags: ['match'] });
     await ops.add({ title: 'No', content: 'y', tags: ['other'] });
 
-    const { text } = await callTool('memory_list', { tag: 'match' });
+    const { text } = await callTool('memory_list', { tag: ['match'] });
     expect(text).toContain('Yes');
     expect(text).not.toContain('No');
   });

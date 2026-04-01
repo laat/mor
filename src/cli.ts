@@ -45,9 +45,20 @@ const program = new Command();
 function addFilterOptions(cmd: Command): Command {
   return cmd
     .option('--type <type>', 'Filter by memory type (comma-separated, glob)')
-    .option('--tag <pattern>', 'Filter by tag (glob)')
+    .option('--tag <pattern>', 'Filter by tag (comma-separated, AND, glob)')
     .option('--repo <pattern>', 'Filter by repository (glob)')
     .option('--ext <ext>', 'Filter by file extension in title');
+}
+
+function parseFilterOpts(opts: Record<string, any>): MemoryFilter {
+  return {
+    type: opts.type,
+    tag: opts.tag
+      ? opts.tag.split(',').map((t: string) => t.trim())
+      : undefined,
+    repo: opts.repo,
+    ext: opts.ext,
+  };
 }
 
 program
@@ -99,7 +110,7 @@ addFilterOptions(
       const page = await ops.search(
         query,
         Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
-        opts,
+        parseFilterOpts(opts),
       );
       const threshold = opts.threshold
         ? parseFloat(opts.threshold)
@@ -190,7 +201,7 @@ addFilterOptions(
       const page = await ops.grep(grepPattern, {
         limit,
         ignoreCase: opts.ignoreCase,
-        filter: opts,
+        filter: parseFilterOpts(opts),
         regex: useRegex,
       });
       if (page.data.length === 0) {
@@ -672,7 +683,7 @@ addFilterOptions(
         : limitRaw && !Number.isNaN(limitRaw) && limitRaw >= 1
           ? limitRaw
           : 100;
-      const page = await ops.list(opts, limit);
+      const page = await ops.list(parseFilterOpts(opts), limit);
       if (page.data.length === 0) {
         console.log('No memories stored.');
         return;

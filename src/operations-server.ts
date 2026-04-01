@@ -29,12 +29,19 @@ function parseOffset(raw: string | undefined): number {
   return Number.isNaN(n) || n < 0 ? 0 : n;
 }
 
-function parseFilter(c: { req: { query(k: string): string | undefined } }) {
-  const tag = c.req.query('tag');
+function parseFilter(c: {
+  req: {
+    query(k: string): string | undefined;
+    queries(k: string): string[] | undefined;
+  };
+}) {
+  const tag = c.req.queries('tag');
   const type = c.req.query('type');
   const repo = c.req.query('repo');
   const ext = c.req.query('ext');
-  return tag || type || repo || ext ? { tag, type, repo, ext } : undefined;
+  return tag?.length || type || repo || ext
+    ? { tag, type, repo, ext }
+    : undefined;
 }
 
 function errMsg(e: unknown): { msg: string; status: 404 | 500 } {

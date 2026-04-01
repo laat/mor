@@ -259,7 +259,7 @@ describe('search', () => {
     await ops.add({ title: 'Tagged A', content: 'test', tags: ['alpha'] });
     await ops.add({ title: 'Tagged B', content: 'test', tags: ['beta'] });
 
-    const page = await ops.search('test', 20, { tag: 'alpha' });
+    const page = await ops.search('test', 20, { tag: ['alpha'] });
     expect(page.data.every((r) => r.memory.tags.includes('alpha'))).toBe(true);
   });
 
@@ -353,7 +353,7 @@ describe('grep', () => {
     await ops.add({ title: 'G A', content: 'shared', tags: ['yes'] });
     await ops.add({ title: 'G B', content: 'shared', tags: ['no'] });
 
-    const page = await ops.grep('shared', { filter: { tag: 'yes' } });
+    const page = await ops.grep('shared', { filter: { tag: ['yes'] } });
     expect(page.data).toHaveLength(1);
     expect(page.data[0].title).toBe('G A');
   });
@@ -429,9 +429,23 @@ describe('list', () => {
     await ops.add({ title: 'T A', content: 'x', tags: ['match'] });
     await ops.add({ title: 'T B', content: 'y', tags: ['other'] });
 
-    const page = await ops.list({ tag: 'match' });
+    const page = await ops.list({ tag: ['match'] });
     expect(page.total).toBe(1);
     expect(page.data[0].title).toBe('T A');
+  });
+
+  it('filters by multiple tags with AND logic', async () => {
+    await ops.add({ title: 'Both', content: 'x', tags: ['alpha', 'beta'] });
+    await ops.add({
+      title: 'Only alpha',
+      content: 'y',
+      tags: ['alpha'],
+    });
+    await ops.add({ title: 'Only beta', content: 'z', tags: ['beta'] });
+
+    const page = await ops.list({ tag: ['alpha', 'beta'] });
+    expect(page.total).toBe(1);
+    expect(page.data[0].title).toBe('Both');
   });
 
   it('returns empty when no memories', async () => {
