@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import chalk from 'chalk';
 import { isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
@@ -140,12 +141,13 @@ addFilterOptions(
       }
       for (const r of results) {
         const tags =
-          r.memory.tags.length > 0 ? ` [${r.memory.tags.join(', ')}]` : '';
-        const score = `  (${r.score.toFixed(2)})`;
+          r.memory.tags.length > 0
+            ? ` ${chalk.yellow(`[${r.memory.tags.join(', ')}]`)}`
+            : '';
+        const score = chalk.dim(`  (${r.score.toFixed(2)})`);
         console.log(
-          `${r.memory.id.slice(0, 8)}  ${r.memory.title}${tags}${score}`,
+          `${chalk.cyan(r.memory.id.slice(0, 8))}  ${r.memory.title}${tags}${score}`,
         );
-        console.log(`         ${path.basename(r.memory.filePath)}`);
       }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
@@ -191,11 +193,14 @@ addFilterOptions(
       }
       for (const mem of page.data) {
         if (opts.long) {
-          const tags = mem.tags.length > 0 ? ` [${mem.tags.join(', ')}]` : '';
-          console.log(`${mem.id.slice(0, 8)}  ${mem.title}${tags}`);
-          console.log(`         ${path.basename(mem.filePath)}`);
+          const tags =
+            mem.tags.length > 0
+              ? ` ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
+              : '';
+          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
+          console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
         } else {
-          console.log(`${mem.id.slice(0, 8)}  ${mem.title}`);
+          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`);
         }
       }
     } catch (e) {
@@ -296,8 +301,10 @@ program
           type: memType,
           repository,
         });
-        console.log(`Created: ${mem.id.slice(0, 8)}  ${mem.title}`);
-        console.log(`         ${path.basename(mem.filePath)}`);
+        console.log(
+          `${chalk.green('Created:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+        );
+        console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
       } finally {
         ops.close();
       }
@@ -312,7 +319,9 @@ program
     const ops = getOps(config);
     try {
       const result = await ops.remove(id);
-      console.log(`Removed: ${result.id.slice(0, 8)}  ${result.title}`);
+      console.log(
+        `${chalk.green('Removed:')} ${chalk.cyan(result.id.slice(0, 8))}  ${result.title}`,
+      );
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
@@ -381,7 +390,9 @@ program
           process.exit(1);
         }
         const mem = await ops.update(query, updates);
-        console.log(`Updated: ${mem.id.slice(0, 8)}  ${mem.title}`);
+        console.log(
+          `${chalk.green('Updated:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+        );
       } catch (e) {
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
@@ -636,25 +647,31 @@ addFilterOptions(
         }
         const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
         for (const [key, count] of sorted) {
-          console.log(`${String(count).padStart(4)}  ${key}`);
+          console.log(`${chalk.bold(String(count).padStart(4))}  ${key}`);
         }
         return;
       }
       for (const mem of page.data) {
         if (opts.long) {
-          const date = mem.updated.slice(0, 10);
-          const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
+          const date = chalk.dim(mem.updated.slice(0, 10));
+          const tags =
+            mem.tags.length > 0
+              ? `  ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
+              : '';
           const loc = isRemote(config)
             ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
             : mem.filePath;
           console.log(
-            `${mem.id.slice(0, 8)}  ${mem.type.padEnd(10)}  ${date}  ${mem.title}${tags}`,
+            `${chalk.cyan(mem.id.slice(0, 8))}  ${chalk.magenta(mem.type.padEnd(10))}  ${date}  ${mem.title}${tags}`,
           );
-          if (mem.description) console.log(`         ${mem.description}`);
-          console.log(`         ${loc}`);
+          if (mem.description)
+            console.log(`         ${chalk.dim(mem.description)}`);
+          console.log(`         ${chalk.dim(loc)}`);
         } else {
-          const desc = mem.description ? `  — ${mem.description}` : '';
-          console.log(`${mem.id.slice(0, 8)}  ${mem.title}${desc}`);
+          const desc = mem.description
+            ? `  ${chalk.dim(`— ${mem.description}`)}`
+            : '';
+          console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${desc}`);
         }
       }
     } catch (e) {
