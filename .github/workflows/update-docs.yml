@@ -1,0 +1,59 @@
+name: Update Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'docs:')"
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha.slice(0, 7);
+            const body = `## Task
+
+            Review the recent source code changes and update documentation files to match.
+
+            **Recent commit:** ${context.sha} (${context.event.head_commit?.message || 'unknown'})
+
+            ## What to check
+
+            Read \`src/cli.ts\`, \`src/mcp.ts\`, \`src/operations.ts\`, \`src/operations-server.ts\`, and \`src/db.ts\` to understand the current CLI commands, MCP tools, HTTP endpoints, and database schema.
+
+            Compare against these documentation files and fix any discrepancies:
+
+            | File | What to check |
+            |------|---------------|
+            | \`README.md\` | Commands table, quick start examples, HTTP API table |
+            | \`CLAUDE.md\` | Architecture section, database tables description |
+            | \`man/mor.1\` | Command descriptions, options, examples, version number |
+            | \`website/src/content/docs/cli.md\` | Commands table, filter options, examples |
+            | \`website/src/content/docs/getting-started.md\` | Quick start examples |
+            | \`website/src/content/docs/storage.md\` | File format, database tables, frontmatter fields |
+            | \`website/src/content/docs/integration/mcp.md\` | Tools table, filtering params, response format |
+            | \`website/src/content/docs/integration/http.md\` | REST API endpoints table |
+
+            ## Rules
+
+            - **Only fix factual inaccuracies** — wrong flags, missing commands, outdated examples, incorrect descriptions
+            - **Do NOT rewrite prose**, add new sections, or change tone/style
+            - **Do NOT touch code files** — this is a docs-only task
+            - If all docs are already correct, close this issue with no changes
+            - Run \`pnpm build && pnpm test\` to verify nothing is broken`.replace(/            /g, '');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Update docs for ${sha}`,
+              body,
+              assignees: ['copilot'],
+              labels: ['documentation']
+            });
