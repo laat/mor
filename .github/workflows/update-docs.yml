@@ -11,7 +11,7 @@ on:
 jobs:
   update-docs:
     runs-on: ubuntu-latest
-    if: "!startsWith(github.event.head_commit.message, 'docs:')"
+    if: "github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
       issues: write
     steps:
@@ -23,7 +23,7 @@ jobs:
 
             Review the recent source code changes and update documentation files to match.
 
-            **Recent commit:** ${context.sha} (${context.event.head_commit?.message || 'unknown'})
+            **Recent commit:** ${context.sha} (${context.event?.head_commit?.message || 'manual trigger'})
 
             ## What to check
 
