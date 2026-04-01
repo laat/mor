@@ -12,14 +12,21 @@ export interface OAuthCredentials {
   refresh_token: string;
 }
 
+function normalizeUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
 function credentialsPath(configDir: string): string {
   return path.join(configDir, 'credentials.json');
 }
 
 function loadCredentials(configDir: string): Record<string, OAuthCredentials> {
-  const p = credentialsPath(configDir);
-  if (!fs.existsSync(p)) return {};
-  return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  try {
+    return JSON.parse(fs.readFileSync(credentialsPath(configDir), 'utf-8'));
+  } catch (e: any) {
+    if (e.code === 'ENOENT') return {};
+    throw e;
+  }
 }
 
 function saveCredentials(
@@ -37,18 +44,14 @@ export function getStoredToken(
   configDir: string,
   serverUrl: string,
 ): string | undefined {
-  const creds = loadCredentials(configDir);
-  const key = serverUrl.replace(/\/+$/, '');
-  return creds[key]?.access_token;
+  return loadCredentials(configDir)[normalizeUrl(serverUrl)]?.access_token;
 }
 
 export function getStoredCredentials(
   configDir: string,
   serverUrl: string,
 ): OAuthCredentials | undefined {
-  const creds = loadCredentials(configDir);
-  const key = serverUrl.replace(/\/+$/, '');
-  return creds[key];
+  return loadCredentials(configDir)[normalizeUrl(serverUrl)];
 }
 
 export function clearStoredCredentials(
@@ -56,8 +59,7 @@ export function clearStoredCredentials(
   serverUrl: string,
 ): void {
   const creds = loadCredentials(configDir);
-  const key = serverUrl.replace(/\/+$/, '');
-  delete creds[key];
+  delete creds[normalizeUrl(serverUrl)];
   saveCredentials(configDir, creds);
 }
 
@@ -69,11 +71,12 @@ export async function refreshAccessToken(
   configDir: string,
   serverUrl: string,
 ): Promise<string | undefined> {
-  const stored = getStoredCredentials(configDir, serverUrl);
+  const base = normalizeUrl(serverUrl);
+  const creds = loadCredentials(configDir);
+  const stored = creds[base];
   if (!stored) return undefined;
 
-  const tokenUrl = `${serverUrl.replace(/\/+$/, '')}/oauth/token`;
-  const res = await fetch(tokenUrl, {
+  const res = await fetch(`${base}/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -85,14 +88,13 @@ export async function refreshAccessToken(
   });
 
   if (!res.ok) {
-    clearStoredCredentials(configDir, serverUrl);
+    delete creds[base];
+    saveCredentials(configDir, creds);
     return undefined;
   }
 
   const tokens = await res.json();
-  const creds = loadCredentials(configDir);
-  const key = serverUrl.replace(/\/+$/, '');
-  creds[key] = {
+  creds[base] = {
     ...stored,
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
@@ -108,7 +110,7 @@ export async function login(
   serverUrl: string,
   configDir: string,
 ): Promise<void> {
-  const base = serverUrl.replace(/\/+$/, '');
+  const base = normalizeUrl(serverUrl);
 
   // 1. Discover OAuth metadata
   const metaRes = await fetch(`${base}/.well-known/oauth-authorization-server`);
@@ -250,8 +252,7 @@ export async function login(
 
   // 6. Store credentials
   const creds = loadCredentials(configDir);
-  const key = base;
-  creds[key] = {
+  creds[base] = {
     client_id: client.client_id,
     client_secret: client.client_secret,
     access_token: tokens.access_token,

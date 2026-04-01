@@ -161,10 +161,6 @@ export function createOAuthRoutes(
     insertCode: db.prepare(
       'INSERT INTO oauth_codes (code, client_id, code_challenge, redirect_uri, expires_at) VALUES (?, ?, ?, ?, ?)',
     ),
-    getCode: db.prepare(
-      'SELECT code, client_id, code_challenge, redirect_uri, expires_at FROM oauth_codes WHERE code = ?',
-    ),
-    deleteCode: db.prepare('DELETE FROM oauth_codes WHERE code = ?'),
     consumeCode: db.prepare(
       'DELETE FROM oauth_codes WHERE code = ? RETURNING client_id, code_challenge, redirect_uri, expires_at',
     ),
@@ -173,9 +169,6 @@ export function createOAuthRoutes(
     ),
     getAccessToken: db.prepare(
       'SELECT access_token, refresh_token, client_id, access_expires_at FROM oauth_tokens WHERE access_token = ?',
-    ),
-    getRefreshToken: db.prepare(
-      'SELECT access_token, refresh_token, client_id, refresh_expires_at FROM oauth_tokens WHERE refresh_token = ?',
     ),
     deleteByAccessToken: db.prepare(
       'DELETE FROM oauth_tokens WHERE access_token = ?',
@@ -324,7 +317,6 @@ export function createOAuthRoutes(
     return c.json(response, 201);
   });
 
-  // Authorization endpoint — GET serves form, POST processes it
   routes.get('/oauth/authorize', (c) => {
     const clientId = c.req.query('client_id');
     const redirectUri = c.req.query('redirect_uri');
@@ -473,7 +465,6 @@ export function createOAuthRoutes(
     return redirectWithParams({ code });
   });
 
-  // Token endpoint
   routes.post('/oauth/token', async (c) => {
     const body = await c.req.parseBody();
     const grantType = body['grant_type'] as string | undefined;
