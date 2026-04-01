@@ -166,7 +166,8 @@ export function createMcpServer(ops: Operations): McpServer {
           continue;
         }
         const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-        sections.push(`## ${mem.title}${tags}\n\n${mem.content}`);
+        const desc = mem.description ? `\n${mem.description}\n` : '';
+        sections.push(`## ${mem.title}${tags}${desc}\n${mem.content}`);
       }
       if (sections.length === 0) {
         return {

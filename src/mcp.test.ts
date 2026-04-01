@@ -271,6 +271,19 @@ describe('memory_read', () => {
     expect(text).toContain('the content');
   });
 
+  it('includes description when present', async () => {
+    const mem = await ops.add({
+      title: 'With Desc',
+      description: 'A short summary',
+      content: 'the body',
+    });
+
+    const { text } = await callTool('memory_read', { ids: [mem.id] });
+    expect(text).toContain('## With Desc');
+    expect(text).toContain('A short summary');
+    expect(text).toContain('the body');
+  });
+
   it('batch reads multiple memories', async () => {
     const a = await ops.add({ title: 'Batch A', content: 'content a' });
     const b = await ops.add({ title: 'Batch B', content: 'content b' });
