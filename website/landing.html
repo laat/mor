@@ -310,9 +310,11 @@
         position: relative;
         z-index: 3;
         margin: 1rem auto 0;
-        color: var(--dim);
+        color: #fbbf24;
         font-size: 0.75rem;
         text-align: center;
+        opacity: 0;
+        transform: translateY(10px);
       }
       .personal-notice strong {
         color: #fbbf24;
@@ -1009,36 +1011,42 @@
         .fromTo(
           '.logo-wrap',
           { autoAlpha: 0, y: 50, scale: 0.9, filter: 'blur(15px)' },
-          { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.2 },
+          { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.8 },
         )
         .fromTo(
           '.tagline',
           { autoAlpha: 0, y: 20 },
-          { autoAlpha: 1, y: 0, duration: 0.8 },
-          '-=0.6',
+          { autoAlpha: 1, y: 0, duration: 0.5 },
+          '-=0.4',
         )
         .fromTo(
           '.hero-cta',
           { autoAlpha: 0, y: 20 },
-          { autoAlpha: 1, y: 0, duration: 0.7 },
-          '-=0.4',
+          { autoAlpha: 1, y: 0, duration: 0.4 },
+          '-=0.3',
         )
         .fromTo(
           '.install-box',
           { autoAlpha: 0, y: 15 },
-          { autoAlpha: 1, y: 0, duration: 0.6 },
-          '-=0.3',
+          { autoAlpha: 1, y: 0, duration: 0.4 },
+          '-=0.2',
         )
         .fromTo(
           '.meme-badge',
           { autoAlpha: 0, y: 10 },
-          { autoAlpha: 1, y: 0, duration: 0.5 },
-          '-=0.2',
+          { autoAlpha: 1, y: 0, duration: 0.3 },
+          '-=0.15',
+        )
+        .fromTo(
+          '.personal-notice',
+          { autoAlpha: 0, y: 10 },
+          { autoAlpha: 1, y: 0, duration: 0.3 },
+          '-=0.1',
         )
         .fromTo(
           '.scroll-hint',
           { autoAlpha: 0 },
-          { autoAlpha: 1, duration: 0.5 },
+          { autoAlpha: 1, duration: 0.3 },
           '-=0.1',
         );
 
