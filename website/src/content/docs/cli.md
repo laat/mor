@@ -10,11 +10,12 @@ description: All mor commands and their options
 | `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
 | `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
 | `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
-| `cat <query>`       | Print content (`--raw` for frontmatter)                                                                         |
+| `cat <query>`       | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
 | `cp <query> <dest>` | Copy content to file                                                                                            |
 | `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`    | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
 | `rm <query>`        | Remove a memory                                                                                                 |
+| `links [query]`     | Show cross-references (`--broken` to find dangling links)                                                       |
 | `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
 | `sync`              | Pull, commit, and push the memory folder via git                                                                |
 | `reindex`           | Rebuild search index                                                                                            |
@@ -132,3 +133,40 @@ Enable automatic syncing after every add, update, or remove in `~/.config/mor/co
 ```
 
 Each mutation commits with a descriptive message (e.g. `add: Shopping List`) and pushes immediately.
+
+## Cross-references
+
+Memories can link to each other using markdown links with the `mor:` scheme:
+
+```markdown
+See [Fastify Chaos Plugin](mor:22f6b489) for resilience testing.
+```
+
+Links are extracted from content automatically — the `links` table is a derived index rebuilt on every upsert and reindex.
+
+### Viewing links
+
+```sh
+# Show all links for a memory (→ forward, ← backlinks)
+mor links 0cad2b1c
+
+# Show links inline with content
+mor cat 0cad2b1c --links
+
+# Find all memories with broken references
+mor links --broken
+```
+
+### Frontmatter links
+
+For file/snippet memories where content is a code block, add links in the frontmatter:
+
+```yaml
+links:
+  - id: 22f6b489
+    title: Fastify Chaos Plugin
+  - id: 405614a7
+    title: rxjs.http.ts
+```
+
+Both content links and frontmatter links are merged into the same derived index.

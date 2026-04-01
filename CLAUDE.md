@@ -45,7 +45,11 @@ Memories are markdown files in `~/.config/mor/memories/` (overridable via `MOR_H
 
 ### Database
 
-`db.ts` manages a SQLite database with three tables: `memories` (content), `memories_fts` (FTS5 content-less), `embeddings` (vector blobs). FTS updates require explicit delete-then-insert with old values — this is handled in `upsertMemoryChecked` and `deleteMemoryFromDb`, both wrapped in transactions.
+`db.ts` manages a SQLite database with four tables: `memories` (content), `memories_fts` (FTS5 content-less), `links` (cross-references, derived index), `embeddings` (vector blobs). FTS updates require explicit delete-then-insert with old values — this is handled in `upsertMemoryChecked` and `deleteMemoryFromDb`, both wrapped in transactions.
+
+### Cross-references
+
+Memories can link to each other via `[text](mor:<id>)` markdown links in content or `links` arrays in frontmatter (`{ id, title }` objects). The `links` table is a derived index — rebuilt from content and frontmatter on every upsert and reindex (like FTS). Short ID prefixes (8+ chars) are resolved to full UUIDs at ingest time. `getForwardLinks` and `getBacklinks` in `db.ts` query the table. `getLinks` on `Operations` returns both directions. Reindex does a second pass to resolve forward references to notes indexed later.
 
 ## Code Style
 

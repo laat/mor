@@ -50,11 +50,12 @@ mor ls -l
 | `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
 | `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
 | `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
-| `cat <query>`       | Print content (`--raw` for frontmatter)                                                                         |
+| `cat <query>`       | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
 | `cp <query> <dest>` | Copy content to file                                                                                            |
 | `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
 | `rm <query>`        | Remove a memory                                                                                                 |
+| `links [query]`     | Show cross-references for a memory (`--broken` to find dangling links)                                          |
 | `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
 | `sync`              | Pull, commit, and push the memory folder via git                                                                |
 | `reindex`           | Rebuild search index                                                                                            |
@@ -163,6 +164,7 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 | `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
 | `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
 | `GET`    | `/memories/:query`                                           | Read one                                                             |
+| `GET`    | `/memories/:query/links`                                     | Get forward and backlinks                                            |
 | `POST`   | `/memories`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
 | `PUT`    | `/memories/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
 | `DELETE` | `/memories/:query`                                           | Remove                                                               |
