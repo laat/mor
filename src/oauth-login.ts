@@ -182,12 +182,12 @@ export async function login(
         return;
       }
 
+      const addr = srv.address() as { port: number };
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(
         '<html><body><h2>Login successful!</h2><p>You can close this tab.</p></body></html>',
       );
       srv.close();
-      const addr = srv.address() as { port: number };
       resolve({
         code: authCode,
         redirectUri: `http://127.0.0.1:${addr.port}/callback`,
