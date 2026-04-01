@@ -8,6 +8,11 @@
             "type": "command",
             "command": ".claude/hooks/format.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/lint.sh",
+            "timeout": 30
           }
         ]
       }
