@@ -10,9 +10,11 @@ Create a release for mor. The user provides the version number (e.g. `/release v
 
 1. **Parse version**: Strip leading `v` if present to get the semver (e.g. `0.12.0`). The tag uses `v` prefix (e.g. `v0.12.0`).
 
-2. **Find previous release tag**: Run `gh release list --limit 1` to get the latest release tag.
+2. **Pre-flight check**: Run `pnpm prepublishOnly` (lint, test, build) before making any changes. If it fails, stop and fix the issues first.
 
-3. **Build changelog**: Run `git log <previous-tag>..HEAD --oneline` to get all commits since the last release. Group them into sections:
+3. **Find previous release tag**: Run `gh release list --limit 1` to get the latest release tag.
+
+4. **Build changelog**: Run `git log <previous-tag>..HEAD --oneline` to get all commits since the last release. Group them into sections:
    - **Features** — new functionality
    - **Fixes** — bug fixes
    - **Docs** — documentation changes
@@ -20,12 +22,12 @@ Create a release for mor. The user provides the version number (e.g. `/release v
 
    Skip version bump commits. Write concise user-facing descriptions, not raw commit messages.
 
-4. **Show the changelog to the user** and ask for approval before proceeding.
+5. **Show the changelog to the user** and ask for approval before proceeding.
 
-5. **Bump version**: Update `version` in `package.json` to the new semver.
+6. **Bump version**: Update `version` in `package.json` to the new semver.
 
-6. **Commit and push**: Commit with message `<semver>` (e.g. `0.12.0`), then push.
+7. **Commit and push**: Commit with message `<semver>` (e.g. `0.12.0`), then push.
 
-7. **Create GitHub release**: Run `gh release create v<semver>` with the changelog as the body. Use `## What's new` as the top-level heading.
+8. **Create GitHub release**: Run `gh release create v<semver>` with the changelog as the body. Use `## What's new` as the top-level heading.
 
-8. **Publish to npm**: Run `pnpm publish --access public`.
+9. **Publish to npm**: Ask the user to run `pnpm publish --access public` interactively themselves (it requires OTP authentication). Do NOT run it directly.
