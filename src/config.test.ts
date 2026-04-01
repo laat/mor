@@ -5,15 +5,20 @@ import os from 'node:os';
 import { loadConfig, isRemote } from './config.js';
 
 let testDir: string;
+let savedMorToken: string | undefined;
 
 beforeEach(() => {
   testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-config-test-'));
   process.env.MOR_HOME = testDir;
+  savedMorToken = process.env.MOR_TOKEN;
+  delete process.env.MOR_TOKEN;
 });
 
 afterEach(() => {
   fs.rmSync(testDir, { recursive: true, force: true });
   delete process.env.MOR_HOME;
+  if (savedMorToken !== undefined) process.env.MOR_TOKEN = savedMorToken;
+  else delete process.env.MOR_TOKEN;
 });
 
 describe('loadConfig', () => {
