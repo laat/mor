@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { readFileSync } from 'node:fs';
+import { chmodSync, readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
 
@@ -17,3 +17,5 @@ await build({
     'process.env.MOR_VERSION': JSON.stringify(pkg.version),
   },
 });
+
+chmodSync('dist/cli.cjs', 0o755);
