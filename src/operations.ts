@@ -140,5 +140,5 @@ export interface Operations {
     };
   }>;
   sync(commitMessage?: string): Promise<{ message: string }>;
-  close(): void;
+  close(): void | Promise<void>;
 }

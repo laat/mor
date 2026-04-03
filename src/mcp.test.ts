@@ -108,7 +108,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  ops.close();
+  await ops.close();
   await new Promise<void>((resolve) => server.close(() => resolve()));
   fs.rmSync(testDir, { recursive: true, force: true });
   delete process.env.MOR_HOME;

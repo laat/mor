@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import PQueue from 'p-queue';
 import { spawnSync } from 'node:child_process';
 import {
   clearDb,
@@ -108,6 +109,7 @@ export class LocalOperations implements Operations {
   private lastSyncTime = 0;
   private autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
   private autoSyncMessages: string[] = [];
+  private embeddingQueue = new PQueue({ concurrency: 1 });
 
   constructor(config: Config) {
     this.config = config;
@@ -165,15 +167,9 @@ export class LocalOperations implements Operations {
 
   private computeEmbeddingsInBackground(memories: Memory[]): void {
     if (this.provider.name === 'none') return;
-    (async () => {
-      for (const mem of memories) {
-        await this.computeEmbedding(mem);
-      }
-    })().catch((e) => {
-      process.stderr.write(
-        `Warning: background embedding failed: ${e instanceof Error ? e.message : e}\n`,
-      );
-    });
+    for (const mem of memories) {
+      this.embeddingQueue.add(() => this.computeEmbedding(mem));
+    }
   }
 
   private upsertFromMemory(mem: Memory, raw: string): void {
@@ -583,7 +579,7 @@ export class LocalOperations implements Operations {
     });
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.autoSyncTimer) {
       clearTimeout(this.autoSyncTimer);
       this.autoSyncTimer = null;
@@ -594,13 +590,15 @@ export class LocalOperations implements Operations {
         messages.length === 1 ? messages[0] : messages.join(', ');
       try {
         // sync() uses spawnSync internally, so this completes before db.close()
-        this.sync(commitMessage);
+        await this.sync(commitMessage);
       } catch (e) {
         process.stderr.write(
           `Warning: autosync on close failed: ${e instanceof Error ? e.message : e}\n`,
         );
       }
     }
+    this.embeddingQueue.clear();
+    await this.embeddingQueue.onIdle();
     this.db.close();
   }
 }

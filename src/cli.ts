@@ -159,7 +159,7 @@ addFilterOptions(
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   },
 );
@@ -271,7 +271,7 @@ addFilterOptions(
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   },
 );
@@ -370,7 +370,7 @@ program
         );
         console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
       } finally {
-        ops.close();
+        await ops.close();
       }
     },
   );
@@ -391,7 +391,7 @@ program
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   });
 
@@ -501,7 +501,7 @@ program
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
       } finally {
-        ops.close();
+        await ops.close();
       }
     },
   );
@@ -563,7 +563,7 @@ program
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
       } finally {
-        ops.close();
+        await ops.close();
       }
     },
   );
@@ -630,7 +630,7 @@ program
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   });
 
@@ -658,7 +658,7 @@ program
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
       } finally {
-        ops.close();
+        await ops.close();
       }
     },
   );
@@ -743,7 +743,7 @@ program
       }
     } finally {
       if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
-      ops.close();
+      await ops.close();
     }
   });
 
@@ -767,7 +767,7 @@ program
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   });
 
@@ -796,7 +796,7 @@ program
       }
       console.log(`Imported ${count} memories.`);
     } finally {
-      ops.close();
+      await ops.close();
     }
   });
 
@@ -890,7 +890,7 @@ addFilterOptions(
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   },
 );
@@ -908,7 +908,7 @@ program
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
     } finally {
-      ops.close();
+      await ops.close();
     }
   });
 
