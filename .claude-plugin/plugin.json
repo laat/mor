@@ -1,0 +1,14 @@
+{
+  "name": "mor",
+  "version": "0.14.3",
+  "description": "AI-accessible knowledge you actually own — plain markdown on your disk",
+  "author": {
+    "name": "Sigurd Fosseng",
+    "email": "sigurd@fosseng.net",
+    "url": "https://github.com/laat"
+  },
+  "homepage": "https://github.com/laat/mor",
+  "repository": "https://github.com/laat/mor",
+  "license": "MIT",
+  "keywords": ["memory", "knowledge-base", "markdown", "mcp"]
+}

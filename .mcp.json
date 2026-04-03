@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "mor": {
-      "command": "npx",
-      "args": ["tsx", "src/cli.ts", "mcp"]
+      "command": "mor",
+      "args": ["mcp"]
     }
   }
 }

@@ -3,9 +3,18 @@ title: Claude Code
 description: Set up mor as a memory store for Claude Code
 ---
 
-## MCP server
+## Plugin
 
-Add to your Claude Code MCP config:
+mor ships as a Claude Code plugin. Installing it gives you the MCP server (memory tools), slash commands (`/mor:remember`, `/mor:consolidate`, `/mor:review`), and skills automatically.
+
+```bash
+npm install -g mor
+claude plugins add --global $(npm root -g)/mor
+```
+
+## MCP server (manual)
+
+If you prefer to configure the MCP server without the plugin, add to your Claude Code MCP config:
 
 ```json
 {
@@ -84,9 +93,18 @@ If you configured `mor serve` with a bearer token, add the `Authorization` heade
 
 ### Shell hook
 
-Standalone alternative that doesn't require `mor serve`. Save as e.g. `~/.claude/hooks/memberberry.sh` and make it executable:
+Standalone alternative that doesn't require `mor serve`:
 
-<!-- @include hooks/memberberry.sh -->
+```bash
+mkdir -p ~/.claude/hooks && curl -sO --output-dir ~/.claude/hooks https://mor.yapping.no/hooks/memberberry.sh && chmod +x ~/.claude/hooks/memberberry.sh
+```
+
+<details>
+<summary>Script source</summary>
+
+<!-- @include website/public/hooks/memberberry.sh -->
+
+</details>
 
 Then add to `~/.claude/settings.json`:
 
