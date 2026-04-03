@@ -8,8 +8,8 @@ description: Set up mor as a memory store for Claude Code
 mor ships as a Claude Code plugin. Installing it gives you the MCP server (memory tools), slash commands (`/mor:remember`, `/mor:consolidate`, `/mor:review`), and skills automatically.
 
 ```bash
-npm install -g mor
-claude plugins add --global $(npm root -g)/mor
+claude plugin marketplace add github:laat/mor
+claude plugin install mor
 ```
 
 ## MCP server (manual)
