@@ -33,11 +33,17 @@ Read memories in batches using `memory_read` (batch IDs). For each memory, check
 | **Duplicates**          | Memories with very similar titles or overlapping content                                        |
 | **Stale**               | Outdated information, references to things that may have changed                                |
 | **Tag inconsistencies** | Similar tags that should be unified (e.g. "fs" vs "filesystem"), unused tags on single memories |
-| **Type mismatches**     | Memories whose type doesn't match their content (e.g. a "file" type with no code)               |
+| **Type mismatches**     | Memories whose type doesn't match their content (see type guidelines below)                     |
 | **Broken links**        | `mor:` links pointing to non-existent memories                                                  |
 | **Missing links**       | Memories that reference the same concepts but aren't cross-linked                               |
 | **Empty/thin**          | Memories with very little content that could be merged into related notes                       |
 | **Title quality**       | Vague titles that don't help with search                                                        |
+
+### Type guidelines
+
+- **`file`** — a source file that can be dropped into a project as-is. Content should be a brief one-line description followed by a single fenced code block — nothing else. No prose sections, no multiple code blocks. If a file memory has extra context (usage examples, design notes), split those into a separate `snippet` or `knowledge` memory with a cross-reference link.
+- **`snippet`** — a code example, pattern, or recipe. Can have prose, multiple code blocks, and explanatory sections.
+- **`knowledge`** — concepts, design docs, references. Primarily prose.
 
 If the user specified a focus area (e.g. "duplicates", "tag hygiene"), prioritize that.
 
