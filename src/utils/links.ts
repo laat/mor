@@ -9,6 +9,11 @@
  */
 
 const MARKDOWN_LINK_RE = /\]\(mor:([0-9a-f-]{8,36})\)/gi;
+const FENCED_CODE_RE = /^(`{3,}|~{3,}).*\n[\s\S]*?\n\1\s*$/gm;
+
+function stripCodeFences(text: string): string {
+  return text.replace(FENCED_CODE_RE, '');
+}
 
 export interface FrontmatterLink {
   id: string;
@@ -21,7 +26,7 @@ export function extractLinkIds(
 ): string[] {
   const ids = new Set<string>();
 
-  for (const match of content.matchAll(MARKDOWN_LINK_RE)) {
+  for (const match of stripCodeFences(content).matchAll(MARKDOWN_LINK_RE)) {
     ids.add(match[1].toLowerCase());
   }
 

@@ -40,6 +40,25 @@ describe('extractLinkIds', () => {
     expect(extractLinkIds('no links here')).toHaveLength(0);
   });
 
+  it('ignores links inside fenced code blocks', () => {
+    const content = [
+      'Real [link](mor:aaaaaaaa) here.',
+      '',
+      '```markdown',
+      '- [example](mor:bbbbbbbb)',
+      '- [other](mor:cccccccc)',
+      '```',
+    ].join('\n');
+    const ids = extractLinkIds(content);
+    expect(ids).toEqual(['aaaaaaaa']);
+  });
+
+  it('ignores links inside tilde fenced code blocks', () => {
+    const content = ['~~~', '[link](mor:bbbbbbbb)', '~~~'].join('\n');
+    const ids = extractLinkIds(content);
+    expect(ids).toHaveLength(0);
+  });
+
   it('lowercases IDs', () => {
     const content = '[note](mor:AABBCCDD)';
     const ids = extractLinkIds(content);
