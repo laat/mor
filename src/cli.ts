@@ -377,16 +377,17 @@ program
 
 program
   .command('rm <id...>')
-  .description('Remove a memory by UUID or UUID prefix')
-  .action(async (idParts: string[]) => {
-    const id = joinArgs(idParts);
+  .description('Remove one or more memories by UUID or UUID prefix')
+  .action(async (ids: string[]) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      const result = await ops.remove(id);
-      console.log(
-        `${chalk.green('Removed:')} ${chalk.cyan(result.id.slice(0, 8))}  ${result.title}`,
-      );
+      for (const id of ids) {
+        const result = await ops.remove(id);
+        console.log(
+          `${chalk.green('Removed:')} ${chalk.cyan(result.id.slice(0, 8))}  ${result.title}`,
+        );
+      }
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);
