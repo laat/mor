@@ -123,7 +123,7 @@ addFilterOptions(
         Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
         parseFilterOpts(opts),
       );
-      const DEFAULT_THRESHOLD = { fts: 0.3, hybrid: 0.3 };
+      const DEFAULT_THRESHOLD = { fts: 0.3, hybrid: 0.5 };
       const threshold = opts.threshold
         ? parseFloat(opts.threshold)
         : (config.threshold ?? DEFAULT_THRESHOLD[page.scoring]);

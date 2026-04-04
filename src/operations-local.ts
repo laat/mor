@@ -300,11 +300,13 @@ export class LocalOperations implements Operations {
           .map((r) => [r.id, 1 - r.distance / 2]),
       );
 
-      // Hybrid fusion: normalized FTS rank + raw cosine similarity
+      // Hybrid fusion: weighted normalized FTS rank + raw cosine similarity
       // FTS component: (k+1)/(k+rank) — 1.0 at rank 1, decays with rank
       // Vector component: cosine similarity (0–1)
-      // Score = average of both (0 if absent from a list)
+      // Weighted 60/40 toward FTS so text matches dominate
       const RRF_K = 60;
+      const FTS_WEIGHT = 0.6;
+      const VEC_WEIGHT = 0.4;
       const ftsRanks = new Map(ftsResults.map((r, i) => [r.id, i + 1]));
 
       const allIds = [...new Set([...ftsRanks.keys(), ...vectorMap.keys()])];
@@ -315,7 +317,7 @@ export class LocalOperations implements Operations {
           ? (RRF_K + 1) / (RRF_K + ftsRanks.get(id)!)
           : 0;
         const vecScore = vectorMap.get(id) ?? 0;
-        let score = (ftsScore + vecScore) / 2;
+        let score = FTS_WEIGHT * ftsScore + VEC_WEIGHT * vecScore;
         const accesses = memRows.get(id)?.access_count ?? 0;
         score *= 1 + Math.min(accesses, ACCESS_BOOST_CAP) * ACCESS_BOOST_WEIGHT;
         merged.push({ id, score });
