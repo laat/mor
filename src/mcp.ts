@@ -1,9 +1,15 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { loadConfig } from './config.js';
+import { getConfigDir, isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
-import { MEMORY_TYPES, type Memory, type Paginated } from './operations.js';
+import { RemoteOperations } from './operations-client.js';
+import {
+  MEMORY_TYPES,
+  type Memory,
+  type Operations,
+  type Paginated,
+} from './operations.js';
 import { unifiedDiff } from './utils/diff.js';
 
 import { version } from './version.js';
@@ -43,7 +49,7 @@ function paginatedHeader<T>(page: Paginated<T>): string {
 // ---- Server ----
 
 async function formatLinks(
-  ops: LocalOperations,
+  ops: Operations,
   memId: string,
 ): Promise<string | undefined> {
   const { forward, back } = await ops.getLinks(memId);
@@ -77,7 +83,7 @@ function formatMetadata(mem: Memory): string {
   return lines.join('\n');
 }
 
-export function createMcpServer(ops: LocalOperations): McpServer {
+export function createMcpServer(ops: Operations): McpServer {
   const server = new McpServer({
     name: 'mor',
     version,
@@ -356,9 +362,14 @@ export function createMcpServer(ops: LocalOperations): McpServer {
   return server;
 }
 
+function getOps(config: ReturnType<typeof loadConfig>): Operations {
+  if (isRemote(config)) return new RemoteOperations(config, getConfigDir());
+  return new LocalOperations(config);
+}
+
 export async function startMcpServer(): Promise<void> {
   const config = loadConfig();
-  const ops = new LocalOperations(config);
+  const ops = getOps(config);
   const server = createMcpServer(ops);
   const transport = new StdioServerTransport();
   await server.connect(transport);
