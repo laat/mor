@@ -46,6 +46,8 @@ import type {
   MemoryType,
   Operations,
   Paginated,
+  ScoringMode,
+  SearchPage,
   SearchResult,
 } from './operations.js';
 
@@ -275,7 +277,7 @@ export class LocalOperations implements Operations {
     limit = 20,
     filter?: MemoryFilter,
     offset = 0,
-  ): Promise<Paginated<SearchResult>> {
+  ): Promise<SearchPage> {
     this.syncIndexIfNeeded();
 
     // Fetch enough to cover offset + limit after filtering
@@ -283,8 +285,10 @@ export class LocalOperations implements Operations {
     const ftsResults = searchFts(this.db, query, fetchLimit);
 
     let filtered: SearchResult[];
+    let scoring: ScoringMode;
 
     if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
+      scoring = 'rrf';
       const queryEmbedding = await this.provider.embed(query);
 
       // KNN search via sqlite-vec (cosine distance: 0 = identical, 2 = opposite)
@@ -314,20 +318,22 @@ export class LocalOperations implements Operations {
         merged.push({ id, score });
       }
       merged.sort((a, b) => b.score - a.score);
-      const best = merged[0]?.score || 1;
 
+      // Normalize by theoretical max: rank 1 in both lists
+      const RRF_MAX = 2 / (RRF_K + 1);
       const results: SearchResult[] = [];
       for (const r of merged) {
         const row = memRows.get(r.id);
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score / best,
+          score: r.score / RRF_MAX,
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
       filtered = applyFilter(results, (r) => r.memory, filter);
     } else {
+      scoring = 'fts';
       const ids = ftsResults.map((r) => r.id);
       const memRows = getMemoriesByIds(this.db, ids);
       const results: SearchResult[] = [];
@@ -353,6 +359,7 @@ export class LocalOperations implements Operations {
       total: filtered.length,
       offset,
       limit,
+      scoring,
     };
   }
 

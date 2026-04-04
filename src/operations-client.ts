@@ -6,7 +6,7 @@ import type {
   MemoryFilter,
   Operations,
   Paginated,
-  SearchResult,
+  SearchPage,
 } from './operations.js';
 
 class HttpError extends Error {
@@ -62,7 +62,7 @@ export class RemoteOperations implements Operations {
     limit = 20,
     filter?: MemoryFilter,
     offset = 0,
-  ): Promise<Paginated<SearchResult>> {
+  ): Promise<SearchPage> {
     const params = new URLSearchParams({
       q: query,
       limit: String(limit),

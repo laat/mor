@@ -123,9 +123,10 @@ addFilterOptions(
         Number.isNaN(limitRaw) || limitRaw < 1 ? 20 : limitRaw,
         parseFilterOpts(opts),
       );
+      const DEFAULT_THRESHOLD = { fts: 0.3, rrf: 0.3 };
       const threshold = opts.threshold
         ? parseFloat(opts.threshold)
-        : (config.threshold ?? 0.3);
+        : (config.threshold ?? DEFAULT_THRESHOLD[page.scoring]);
       const results = page.data.filter((r) => r.score >= threshold);
       if (opts.json) {
         const json = results.map((r) => ({

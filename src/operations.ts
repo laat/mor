@@ -86,11 +86,17 @@ export interface GrepOptions {
   regex?: boolean;
 }
 
+export type ScoringMode = 'fts' | 'rrf';
+
 export interface Paginated<T> {
   data: T[];
   total: number;
   offset: number;
   limit: number;
+}
+
+export interface SearchPage extends Paginated<SearchResult> {
+  scoring: ScoringMode;
 }
 
 export interface Operations {
@@ -99,7 +105,7 @@ export interface Operations {
     limit?: number,
     filter?: MemoryFilter,
     offset?: number,
-  ): Promise<Paginated<SearchResult>>;
+  ): Promise<SearchPage>;
   read(query: string): Promise<Memory | undefined>;
   add(opts: {
     title: string;
