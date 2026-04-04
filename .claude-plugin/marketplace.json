@@ -1,4 +1,8 @@
 {
+  "name": "mor",
+  "owner": {
+    "name": "laat"
+  },
   "plugins": [
     {
       "name": "mor",
