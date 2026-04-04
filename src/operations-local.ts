@@ -288,7 +288,7 @@ export class LocalOperations implements Operations {
     let scoring: ScoringMode;
 
     if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
-      scoring = 'rrf';
+      scoring = 'hybrid';
       const queryEmbedding = await this.provider.embed(query);
 
       // KNN search via sqlite-vec (cosine distance: 0 = identical, 2 = opposite)
@@ -300,34 +300,35 @@ export class LocalOperations implements Operations {
           .map((r) => [r.id, 1 - r.distance / 2]),
       );
 
-      // Reciprocal Rank Fusion (k=60)
+      // Hybrid fusion: normalized FTS rank + raw cosine similarity
+      // FTS component: (k+1)/(k+rank) — 1.0 at rank 1, decays with rank
+      // Vector component: cosine similarity (0–1)
+      // Score = average of both (0 if absent from a list)
       const RRF_K = 60;
       const ftsRanks = new Map(ftsResults.map((r, i) => [r.id, i + 1]));
-      const vecRanked = [...vectorMap.entries()].sort((a, b) => b[1] - a[1]);
-      const vecRanks = new Map(vecRanked.map(([id], i) => [id, i + 1]));
 
-      const allIds = [...new Set([...ftsRanks.keys(), ...vecRanks.keys()])];
+      const allIds = [...new Set([...ftsRanks.keys(), ...vectorMap.keys()])];
       const memRows = getMemoriesByIds(this.db, allIds);
       const merged: Array<{ id: string; score: number }> = [];
       for (const id of allIds) {
-        let score = 0;
-        if (ftsRanks.has(id)) score += 1 / (RRF_K + ftsRanks.get(id)!);
-        if (vecRanks.has(id)) score += 1 / (RRF_K + vecRanks.get(id)!);
+        const ftsScore = ftsRanks.has(id)
+          ? (RRF_K + 1) / (RRF_K + ftsRanks.get(id)!)
+          : 0;
+        const vecScore = vectorMap.get(id) ?? 0;
+        let score = (ftsScore + vecScore) / 2;
         const accesses = memRows.get(id)?.access_count ?? 0;
         score *= 1 + Math.min(accesses, ACCESS_BOOST_CAP) * ACCESS_BOOST_WEIGHT;
         merged.push({ id, score });
       }
       merged.sort((a, b) => b.score - a.score);
 
-      // Normalize by theoretical max: rank 1 in both lists
-      const RRF_MAX = 2 / (RRF_K + 1);
       const results: SearchResult[] = [];
       for (const r of merged) {
         const row = memRows.get(r.id);
         if (!row) continue;
         results.push({
           memory: readMemory(row.file_path),
-          score: r.score / RRF_MAX,
+          score: r.score,
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }

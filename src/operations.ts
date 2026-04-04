@@ -86,7 +86,7 @@ export interface GrepOptions {
   regex?: boolean;
 }
 
-export type ScoringMode = 'fts' | 'rrf';
+export type ScoringMode = 'fts' | 'hybrid';
 
 export interface Paginated<T> {
   data: T[];

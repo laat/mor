@@ -28,12 +28,12 @@ The central abstraction is `Operations` in `operations.ts` with two implementati
 All three access surfaces use this interface:
 
 1. **CLI** (`cli.ts`) — Commander-based, calls `getOps(config)` to get local or remote ops
-2. **MCP Server** (`mcp.ts`) — Stdio and HTTP transports, creates its own `LocalOperations`
+2. **MCP Server** (`mcp.ts`) — Stdio and HTTP transports, calls `getOps(config)` to get local or remote ops
 3. **HTTP Server** (`operations-server.ts`) — Hono-based, creates `LocalOperations`
 
 ### Search & Query Resolution
 
-`resolveQuery` in `LocalOperations` resolves a user query by trying in order: full UUID → UUID prefix (8+ chars) → filename → FTS search. `search()` does FTS5 search, optionally merged with vector similarity via Reciprocal Rank Fusion (RRF). Frequently accessed memories get a small ranking boost.
+`resolveQuery` in `LocalOperations` resolves a user query by trying in order: full UUID → UUID prefix (8+ chars) → filename → FTS search. `search()` does FTS5 search, optionally merged with vector similarity via hybrid fusion. When embeddings are enabled, scores combine a normalized FTS rank component (RRF-style with k=60) and raw cosine similarity, averaged to a 0–1 scale. Without embeddings, raw BM25 scores are used. `search()` returns a `SearchPage` with a `scoring` field (`'fts'` or `'hybrid'`) so consumers can apply context-dependent thresholds. Frequently accessed memories get a small ranking boost.
 
 `syncIndex` walks the memory directory and upserts changed files by content hash. `syncIndexIfNeeded` is a debounced wrapper (200ms) used on read paths to avoid redundant scans.
 
