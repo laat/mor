@@ -77,7 +77,7 @@ export function createMemory(
 
   const filename = generateFilename(opts.title, id);
   const filePath = path.join(config.memoryDir, filename);
-  const raw = matter.stringify(opts.content, frontmatter);
+  const raw = matter.stringify({ content: opts.content }, frontmatter);
   fs.writeFileSync(filePath, raw);
 
   return {
@@ -127,7 +127,7 @@ function parseMemory(raw: string, filePath: string): Memory {
 
 export function serializeMemory(mem: Memory): string {
   const frontmatter = buildFrontmatter(mem);
-  return matter.stringify(mem.content, frontmatter);
+  return matter.stringify({ content: mem.content }, frontmatter);
 }
 
 export function updateMemory(
@@ -159,7 +159,7 @@ export function updateMemory(
   });
 
   const content = updates.content ?? existing.content;
-  const raw = matter.stringify(content, frontmatter);
+  const raw = matter.stringify({ content }, frontmatter);
 
   let newPath = filePath;
   if (updates.title && updates.title !== existing.title) {

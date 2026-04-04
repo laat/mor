@@ -116,6 +116,20 @@ describe('add', () => {
     const err = morFail('add');
     expect(err).toBeTruthy();
   });
+
+  it('preserves existing frontmatter in markdown files', async () => {
+    const mdFile = path.join(testDir, 'doc.md');
+    fs.writeFileSync(
+      mdFile,
+      '---\nauthor: Jane\nstatus: draft\n---\n\n# My Doc\n\nHello world\n',
+    );
+    mor('add', mdFile);
+    const mems = (await ops.list()).data;
+    expect(mems).toHaveLength(1);
+    const mem = await ops.read(mems[0].id);
+    expect(mem!.content).toContain('author: Jane');
+    expect(mem!.content).toContain('# My Doc');
+  });
 });
 
 describe('find', () => {
