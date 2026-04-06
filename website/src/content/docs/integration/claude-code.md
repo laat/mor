@@ -15,7 +15,7 @@ claude plugin install mor
 To update to the latest version:
 
 ```bash
-claude plugin update mor
+claude plugin update mor@mor
 ```
 
 ## MCP server (manual)
