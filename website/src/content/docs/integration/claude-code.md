@@ -12,6 +12,12 @@ claude plugin marketplace add laat/mor
 claude plugin install mor
 ```
 
+To update to the latest version:
+
+```bash
+claude plugin update mor
+```
+
 ## MCP server (manual)
 
 If you prefer to configure the MCP server without the plugin, add to your Claude Code MCP config:
