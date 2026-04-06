@@ -24,7 +24,7 @@ Create a release for mor. The user provides the version number (e.g. `/release v
 
 5. **Show the changelog to the user** and ask for approval before proceeding.
 
-6. **Bump version**: Update `version` in `package.json` to the new semver.
+6. **Bump version**: Update `version` in both `package.json` and `.claude-plugin/plugin.json` to the new semver.
 
 7. **Commit and push**: Commit with message `<semver>` (e.g. `0.12.0`), then push.
 
