@@ -1,5 +1,5 @@
 ---
-name: review
+name: memory-review
 description: Review the memory store for quality issues — duplicates, stale content, broken links, tag inconsistencies, and cleanup opportunities
 ---
 
@@ -8,10 +8,10 @@ Audit the memory store and produce a structured report of proposed changes. Do N
 ## Examples
 
 ```
-/review
-/review tag hygiene
-/review duplicates
-/review stale
+/memory-review
+/memory-review tag hygiene
+/memory-review duplicates
+/memory-review stale
 ```
 
 ## Steps
@@ -75,7 +75,7 @@ End with a summary: "X memories reviewed, Y issues found across Z categories"
 After the user approves specific proposals:
 
 - Use `memory_update` for retags, title changes, content updates
-- Use `/consolidate` for batch operations (retagging many notes, merging)
+- Use `/memory-consolidate` for batch operations (retagging many notes, merging)
 - Use `memory_remove` for deletions
 - Report what was changed
 
