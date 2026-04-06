@@ -80,6 +80,8 @@ function formatMetadata(mem: Memory): string {
   if (mem.tags.length > 0) lines.push(`tags: ${mem.tags.join(', ')}`);
   if (mem.type) lines.push(`type: ${mem.type}`);
   if (mem.description) lines.push(`description: ${mem.description}`);
+  if (mem.created) lines.push(`created: ${mem.created}`);
+  if (mem.updated) lines.push(`updated: ${mem.updated}`);
   return lines.join('\n');
 }
 
