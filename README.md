@@ -170,7 +170,7 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 | `DELETE` | `/memories/:query`                                           | Remove                                                               |
 | `POST`   | `/mcp`                                                       | MCP protocol (streamable HTTP)                                       |
 
-## Embeddings (experimental)
+## Embeddings
 
 Optionally augment FTS search with vector similarity. Configure in `~/.config/mor/config.json`:
 

@@ -1,10 +1,7 @@
 ---
 title: Embeddings
 description: Optional vector search for semantic matching
-sidebar:
-  badge:
-    text: Experimental
-    variant: caution
+sidebar: {}
 ---
 
 Optionally augment FTS search with vector similarity. When configured, `mor find` merges FTS and vector results using Reciprocal Rank Fusion (RRF) — combining rankings without manual weight tuning.
