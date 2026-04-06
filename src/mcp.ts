@@ -97,7 +97,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_search',
     {
       description:
-        'Search memories by query. Returns top result with full content, and summaries for the rest.',
+        'Semantic search over memories using natural language. Best for finding memories about a topic. Returns scored, ranked results with the top result shown in full.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -136,7 +136,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'memory_grep',
     {
       description:
-        'Search memory content by substring or regex. Use for exact strings, code identifiers, URLs, or patterns.',
+        'Exact text search over memory content and titles. Use when you know the precise string, identifier, URL, or regex pattern to match. Unlike memory_search, this finds literal text rather than semantically similar content.',
       inputSchema: {
         pattern: z.string().describe('Substring or regex pattern'),
         limit: z.number().optional().describe('Max results (default 20)'),
