@@ -1,4 +1,6 @@
 import chalk from 'chalk';
+import { Marked } from 'marked';
+import { markedTerminal } from 'marked-terminal';
 
 // eslint-disable-next-line no-control-regex
 export const ANSI_RE = /\x1b\[[0-9;]*m/g;
@@ -28,28 +30,23 @@ export function truncate(line: string, cols = process.stdout.columns): string {
   return line.slice(0, i) + '\x1b[0m…';
 }
 
+const terminalMarked = new Marked(
+  markedTerminal({
+    firstHeading: chalk.bold.green,
+    heading: chalk.bold.green,
+    codespan: chalk.yellow,
+    code: chalk.yellow,
+    blockquote: chalk.gray.italic,
+    link: chalk.cyan,
+    href: chalk.dim,
+    showSectionPrefix: false,
+    tab: 2,
+  }),
+);
+
 /**
- * Apply basic syntax highlighting to markdown text for terminal output.
+ * Render markdown to styled terminal output via marked + marked-terminal.
  */
 export function colorizeMarkdown(text: string): string {
-  let inCodeBlock = false;
-  return text
-    .split('\n')
-    .map((line) => {
-      if (line.startsWith('```')) {
-        inCodeBlock = !inCodeBlock;
-        return chalk.dim(line);
-      }
-      if (inCodeBlock) return line;
-      if (/^#{1,6}\s/.test(line)) return chalk.bold.green(line);
-      if (/^>\s/.test(line)) return chalk.dim.italic(line);
-      if (/^[-*]\s/.test(line)) return chalk.dim(line[0]) + line.slice(1);
-      return line
-        .replace(/\*\*(.+?)\*\*/g, (_, t) => chalk.bold(t))
-        .replace(
-          /\[([^\]]+)\]\(([^)]+)\)/g,
-          (_, label, url) => `${chalk.cyan(label)} ${chalk.dim(`(${url})`)}`,
-        );
-    })
-    .join('\n');
+  return (terminalMarked.parse(text) as string).replace(/\n+$/, '');
 }
