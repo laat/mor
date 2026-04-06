@@ -12,10 +12,11 @@ claude plugin marketplace add laat/mor
 claude plugin install mor
 ```
 
-To update to the latest version:
+To update to the latest version, uninstall and reinstall:
 
 ```bash
-claude plugin update mor@mor
+claude plugin uninstall mor
+claude plugin install mor
 ```
 
 ## MCP server (manual)
