@@ -23,14 +23,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # Pinned to the commit immediately before pnpm/action-setup#212, which
+      # broke the `version` input by switching to a bootstrap+self-update
+      # architecture. See pnpm/action-setup#225 — once that lands a fix,
+      # move back to a floating tag.
+      - uses: pnpm/action-setup@2e223e0f0d2b8fd9872cbadb8b7428e5f8b5556d
+        with:
+          version: 10.33.0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-      - name: Enable corepack
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.33.0 --activate
-          pnpm --version
+          cache: pnpm
+          cache-dependency-path: website/pnpm-lock.yaml
+      - name: Verify pnpm version
+        run: pnpm --version
       - run: pnpm install --frozen-lockfile
         working-directory: website
       - run: pnpm build
