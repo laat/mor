@@ -316,6 +316,20 @@ describe('notes_read', () => {
     const { isError } = await callTool('notes_read', { ids: [] });
     expect(isError).toBe(true);
   });
+
+  it('accepts a single id alias', async () => {
+    const mem = await ops.add({ title: 'Single Id', content: 'body' });
+
+    const { text } = await callTool('notes_read', { id: mem.id });
+    expect(text).toContain('title: Single Id');
+    expect(text).toContain('body');
+  });
+
+  it('returns error when neither id nor ids is provided', async () => {
+    const { text, isError } = await callTool('notes_read', {});
+    expect(isError).toBe(true);
+    expect(text).toContain('id');
+  });
 });
 
 describe('notes_update', () => {
@@ -369,6 +383,42 @@ describe('notes_update', () => {
     expect(isError).toBe(true);
     expect(text).toContain('not found');
   });
+
+  it('applies the same field changes to multiple ids', async () => {
+    const a = await ops.add({ title: 'Bulk A', content: 'a', tags: ['old'] });
+    const b = await ops.add({ title: 'Bulk B', content: 'b', tags: ['old'] });
+
+    const { text } = await callTool('notes_update', {
+      ids: [a.id, b.id],
+      tags: ['new'],
+    });
+    expect(text).toContain('Updated: Bulk A');
+    expect(text).toContain('Updated: Bulk B');
+    expect(text).toContain('[old] → [new]');
+
+    const reloadedA = await ops.read(a.id);
+    const reloadedB = await ops.read(b.id);
+    expect(reloadedA?.tags).toEqual(['new']);
+    expect(reloadedB?.tags).toEqual(['new']);
+  });
+
+  it('reports per-id failures while still applying to the rest', async () => {
+    const real = await ops.add({ title: 'Real', content: 'x', tags: ['a'] });
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    const { text } = await callTool('notes_update', {
+      ids: [real.id, fakeId],
+      tags: ['z'],
+    });
+    expect(text).toContain('Updated: Real');
+    expect(text).toContain('Failures:');
+    expect(text).toContain(fakeId);
+  });
+
+  it('returns error when neither id nor ids is provided', async () => {
+    const { isError } = await callTool('notes_update', { content: 'x' });
+    expect(isError).toBe(true);
+  });
 });
 
 describe('notes_remove', () => {
@@ -385,6 +435,35 @@ describe('notes_remove', () => {
     });
     expect(isError).toBe(true);
     expect(text).toContain('not found');
+  });
+
+  it('removes multiple memories via ids', async () => {
+    const a = await ops.add({ title: 'Bulk Rm A', content: 'x' });
+    const b = await ops.add({ title: 'Bulk Rm B', content: 'y' });
+
+    const { text } = await callTool('notes_remove', { ids: [a.id, b.id] });
+    expect(text).toContain('Bulk Rm A');
+    expect(text).toContain('Bulk Rm B');
+
+    expect(await ops.read(a.id)).toBeUndefined();
+    expect(await ops.read(b.id)).toBeUndefined();
+  });
+
+  it('reports per-id failures when some ids miss', async () => {
+    const real = await ops.add({ title: 'Real Rm', content: 'x' });
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    const { text } = await callTool('notes_remove', {
+      ids: [real.id, fakeId],
+    });
+    expect(text).toContain('Real Rm');
+    expect(text).toContain('Failures:');
+    expect(text).toContain(fakeId);
+  });
+
+  it('returns error when neither id nor ids is provided', async () => {
+    const { isError } = await callTool('notes_remove', {});
+    expect(isError).toBe(true);
   });
 });
 
@@ -447,6 +526,46 @@ describe('notes_patch', () => {
     });
     expect(isError).toBe(true);
     expect(text).toContain('not found');
+  });
+
+  it('applies the same patch to multiple ids', async () => {
+    const a = await ops.add({ title: 'Bulk Patch A', content: 'foo bar' });
+    const b = await ops.add({ title: 'Bulk Patch B', content: 'foo baz' });
+
+    const { text } = await callTool('notes_patch', {
+      ids: [a.id, b.id],
+      old_str: 'foo',
+      new_str: 'qux',
+    });
+    expect(text).toContain('Patched: Bulk Patch A');
+    expect(text).toContain('Patched: Bulk Patch B');
+
+    const reloadedA = await ops.read(a.id);
+    const reloadedB = await ops.read(b.id);
+    expect(reloadedA?.content).toBe('qux bar');
+    expect(reloadedB?.content).toBe('qux baz');
+  });
+
+  it('reports per-id failures when old_str is missing in some notes', async () => {
+    const a = await ops.add({ title: 'Has', content: 'apple' });
+    const b = await ops.add({ title: 'Missing', content: 'orange' });
+
+    const { text } = await callTool('notes_patch', {
+      ids: [a.id, b.id],
+      old_str: 'apple',
+      new_str: 'pear',
+    });
+    expect(text).toContain('Patched: Has');
+    expect(text).toContain('Failures:');
+    expect(text).toContain(b.id);
+  });
+
+  it('returns error when neither id nor ids is provided', async () => {
+    const { isError } = await callTool('notes_patch', {
+      old_str: 'a',
+      new_str: 'b',
+    });
+    expect(isError).toBe(true);
   });
 });
 

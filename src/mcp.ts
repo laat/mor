@@ -36,6 +36,28 @@ function shortId(id: string): string {
   return id.slice(0, 8);
 }
 
+// Accept either `id` (single) or `ids` (array) — or both, merged.
+// Throws if neither was provided.
+function resolveIds(input: { id?: string; ids?: string[] }): string[] {
+  const merged: string[] = [];
+  if (input.id) merged.push(input.id);
+  if (input.ids) merged.push(...input.ids);
+  if (merged.length === 0) {
+    throw new Error('Provide either `id` (single) or `ids` (array).');
+  }
+  return merged;
+}
+
+const idOrIdsSchema = {
+  id: z.string().optional().describe('UUID of the note. Alternative to `ids`.'),
+  ids: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Array of UUIDs to operate on in one call. Alternative to `id`. Pass an array, e.g. ["id1", "id2"].',
+    ),
+};
+
 function formatMemory(mem: Memory): string {
   const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
   const desc = mem.description ? `\n  ${mem.description}` : '';
@@ -180,21 +202,20 @@ export function createMcpServer(ops: Operations): McpServer {
   server.registerTool(
     'notes_read',
     {
-      description: 'Read full content of one or more notes by ID.',
-      inputSchema: {
-        ids: z
-          .array(z.string())
-          .describe(
-            'UUIDs of the notes to read — pass an array, e.g. ["id1", "id2"]',
-          ),
-      },
+      description:
+        'Read full content of one or more notes by ID. Pass `id` for a single note or `ids` for several in one call.',
+      inputSchema: idOrIdsSchema,
     },
-    async ({ ids }) => {
-      if (ids.length === 0)
-        return { ...text('No ids provided.'), isError: true };
+    async ({ id, ids }) => {
+      let resolved: string[];
+      try {
+        resolved = resolveIds({ id, ids });
+      } catch (e) {
+        return { ...error(e), isError: true };
+      }
       const blocks: Array<{ type: 'text'; text: string }> = [];
       const notFound: string[] = [];
-      for (const memId of ids) {
+      for (const memId of resolved) {
         const mem = await ops.read(memId);
         if (!mem) {
           notFound.push(memId);
@@ -260,18 +281,40 @@ export function createMcpServer(ops: Operations): McpServer {
     'notes_remove',
     {
       description:
-        'Delete a note by ID. Use notes_search to find the ID first.',
-      inputSchema: {
-        id: z.string().describe('Full UUID of the note'),
-      },
+        'Delete one or more notes by ID. Pass `id` for a single note or `ids` for several. Use notes_search to find IDs first.',
+      inputSchema: idOrIdsSchema,
     },
-    async ({ id }) => {
+    async ({ id, ids }) => {
+      let resolved: string[];
       try {
-        const result = await ops.remove(id);
-        return text(`Removed: ${result.title} (${result.id})`);
+        resolved = resolveIds({ id, ids });
       } catch (e) {
-        return error(e);
+        return { ...error(e), isError: true };
       }
+      const removed: string[] = [];
+      const failures: { id: string; message: string }[] = [];
+      for (const memId of resolved) {
+        try {
+          const result = await ops.remove(memId);
+          removed.push(`${result.title} (${shortId(result.id)})`);
+        } catch (e) {
+          failures.push({
+            id: memId,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+      if (removed.length === 0) {
+        const lines = ['Failed to remove any notes:'];
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+        return { ...text(lines.join('\n')), isError: true };
+      }
+      const lines = [`Removed: ${removed.join(', ')}`];
+      if (failures.length > 0) {
+        lines.push('', 'Failures:');
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+      }
+      return text(lines.join('\n'));
     },
   );
 
@@ -307,9 +350,9 @@ export function createMcpServer(ops: Operations): McpServer {
     'notes_update',
     {
       description:
-        'Update a note by ID. Use notes_search to find the ID first, then pass it here. Only the provided fields are changed.',
+        'Update one or more notes by ID. Pass `id` for a single note or `ids` to apply the same field changes to several notes. Only the provided fields are changed.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the note'),
+        ...idOrIdsSchema,
         title: z.string().optional().describe('New title'),
         description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
@@ -320,44 +363,71 @@ export function createMcpServer(ops: Operations): McpServer {
         type: z.enum(MEMORY_TYPES).optional().describe('New type'),
       },
     },
-    async ({ id, title, description, content, tags, type }) => {
+    async ({ id, ids, title, description, content, tags, type }) => {
+      let resolved: string[];
       try {
-        const before = await ops.read(id);
-        if (!before) throw new Error(`Note not found: ${id}`);
-        const updated = await ops.update(id, {
-          title,
-          description,
-          content,
-          tags,
-          type,
-        });
-        const meta: string[] = [];
-        if (title && title !== before.title)
-          meta.push(`title: ${before.title} → ${title}`);
-        if (description && description !== before.description)
-          meta.push(
-            `description: ${before.description ?? '(none)'} → ${description}`,
-          );
-        if (tags && JSON.stringify(tags) !== JSON.stringify(before.tags))
-          meta.push(`tags: [${before.tags.join(', ')}] → [${tags.join(', ')}]`);
-        if (type && type !== before.type)
-          meta.push(`type: ${before.type} → ${type}`);
-        const contentChanged = content && content !== before.content;
-        if (meta.length === 0 && !contentChanged) {
-          return text(
-            `No changes: ${before.title} (fields match current values)`,
-          );
-        }
-        const parts = [`Updated: ${updated.title}`];
-        if (meta.length > 0) parts.push(meta.join('\n'));
-        if (contentChanged) {
-          parts.push('--- content diff ---');
-          parts.push(unifiedDiff(before.content, content));
-        }
-        return text(parts.join('\n\n'));
+        resolved = resolveIds({ id, ids });
       } catch (e) {
-        return error(e);
+        return { ...error(e), isError: true };
       }
+      const blocks: string[] = [];
+      const failures: { id: string; message: string }[] = [];
+      for (const memId of resolved) {
+        try {
+          const before = await ops.read(memId);
+          if (!before) throw new Error(`Note not found: ${memId}`);
+          const updated = await ops.update(memId, {
+            title,
+            description,
+            content,
+            tags,
+            type,
+          });
+          const meta: string[] = [];
+          if (title && title !== before.title)
+            meta.push(`title: ${before.title} → ${title}`);
+          if (description && description !== before.description)
+            meta.push(
+              `description: ${before.description ?? '(none)'} → ${description}`,
+            );
+          if (tags && JSON.stringify(tags) !== JSON.stringify(before.tags))
+            meta.push(
+              `tags: [${before.tags.join(', ')}] → [${tags.join(', ')}]`,
+            );
+          if (type && type !== before.type)
+            meta.push(`type: ${before.type} → ${type}`);
+          const contentChanged = content && content !== before.content;
+          if (meta.length === 0 && !contentChanged) {
+            blocks.push(
+              `No changes: ${before.title} (fields match current values)`,
+            );
+            continue;
+          }
+          const parts = [`Updated: ${updated.title} (${shortId(updated.id)})`];
+          if (meta.length > 0) parts.push(meta.join('\n'));
+          if (contentChanged) {
+            parts.push('--- content diff ---');
+            parts.push(unifiedDiff(before.content, content));
+          }
+          blocks.push(parts.join('\n\n'));
+        } catch (e) {
+          failures.push({
+            id: memId,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+      if (blocks.length === 0) {
+        const lines = ['Failed to update any notes:'];
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+        return { ...text(lines.join('\n')), isError: true };
+      }
+      const out = [blocks.join('\n\n---\n\n')];
+      if (failures.length > 0) {
+        out.push('', 'Failures:');
+        for (const f of failures) out.push(`- ${f.id}: ${f.message}`);
+      }
+      return text(out.join('\n'));
     },
   );
 
@@ -365,29 +435,53 @@ export function createMcpServer(ops: Operations): McpServer {
     'notes_patch',
     {
       description:
-        'Apply a str_replace patch to a note. The old_str must appear exactly once in the content. Use empty new_str to delete text.',
+        'Apply a str_replace patch to one or more notes. Pass `id` for a single note or `ids` to apply the same patch to several. The old_str must appear exactly once in each note. Use empty new_str to delete text.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the note'),
+        ...idOrIdsSchema,
         old_str: z
           .string()
-          .describe('Exact substring to find (must be unique in content)'),
+          .describe('Exact substring to find (must be unique in each note)'),
         new_str: z
           .string()
           .describe('Replacement string (empty string to delete)'),
       },
     },
-    async ({ id, old_str, new_str }) => {
+    async ({ id, ids, old_str, new_str }) => {
+      let resolved: string[];
       try {
-        const before = await ops.read(id);
-        if (!before) throw new Error(`Note not found: ${id}`);
-        const updated = await ops.patch(id, old_str, new_str);
-        const parts = [`Patched: ${updated.title}`];
-        parts.push('--- content diff ---');
-        parts.push(unifiedDiff(before.content, updated.content));
-        return text(parts.join('\n\n'));
+        resolved = resolveIds({ id, ids });
       } catch (e) {
-        return error(e);
+        return { ...error(e), isError: true };
       }
+      const blocks: string[] = [];
+      const failures: { id: string; message: string }[] = [];
+      for (const memId of resolved) {
+        try {
+          const before = await ops.read(memId);
+          if (!before) throw new Error(`Note not found: ${memId}`);
+          const updated = await ops.patch(memId, old_str, new_str);
+          const parts = [`Patched: ${updated.title} (${shortId(updated.id)})`];
+          parts.push('--- content diff ---');
+          parts.push(unifiedDiff(before.content, updated.content));
+          blocks.push(parts.join('\n\n'));
+        } catch (e) {
+          failures.push({
+            id: memId,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+      if (blocks.length === 0) {
+        const lines = ['Failed to patch any notes:'];
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+        return { ...text(lines.join('\n')), isError: true };
+      }
+      const out = [blocks.join('\n\n---\n\n')];
+      if (failures.length > 0) {
+        out.push('', 'Failures:');
+        for (const f of failures) out.push(`- ${f.id}: ${f.message}`);
+      }
+      return text(out.join('\n'));
     },
   );
 
