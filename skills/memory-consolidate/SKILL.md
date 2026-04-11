@@ -1,9 +1,9 @@
 ---
 name: memory-consolidate
-description: Apply batch edits to memories using natural language — rename, retag, add cross-references, merge, or clean up a set of notes
+description: Apply batch edits to notes using natural language — rename, retag, add cross-references, merge, or clean up a set of notes
 ---
 
-Apply a natural language instruction across a set of memories, handling cross-reference updates automatically.
+Apply a natural language instruction across a set of notes, handling cross-reference updates automatically.
 
 ## Examples
 
@@ -18,37 +18,37 @@ Apply a natural language instruction across a set of memories, handling cross-re
 ## Steps
 
 1. **Parse the instruction**: Identify:
-   - **Scope** — which memories to target (tag filter, search query, explicit IDs, or "all")
+   - **Scope** — which notes to target (tag filter, search query, explicit IDs, or "all")
    - **Action** — what to do (rename, retag, add links, merge, update content, delete)
 
-2. **Find target memories**: Use `mor` MCP tools to find the memories:
-   - `memory_list` with tag/type filters for broad scopes
-   - `memory_search` for query-based scopes
-   - `memory_read` for explicit IDs
+2. **Find target notes**: Use `mor` MCP tools to find the notes:
+   - `notes_list` with tag/type filters for broad scopes
+   - `notes_search` for query-based scopes
+   - `notes_read` for explicit IDs
 
-   Read each target memory's full content to understand what changes are needed.
+   Read each target note's full content to understand what changes are needed.
 
-3. **Plan changes**: For each target memory, determine what needs to change. Present the plan to the user:
-   - List each memory and what will change (title, tags, content, etc.)
+3. **Plan changes**: For each target note, determine what needs to change. Present the plan to the user:
+   - List each note and what will change (title, tags, content, etc.)
    - If merging: show which notes combine and which get deleted
    - If adding cross-references: show which links will be added where
-   - Show total count: "X memories will be updated, Y unchanged"
+   - Show total count: "X notes will be updated, Y unchanged"
 
 4. **Ask for approval** before making any changes.
 
-5. **Execute changes**: Apply updates one at a time using `memory_update`. For each change:
-   - Update the memory
-   - If the change affects cross-references (title rename, ID change from merge, deletion), update all memories that link to it
+5. **Execute changes**: Apply updates one at a time using `notes_update`. For each change:
+   - Update the note
+   - If the change affects cross-references (title rename, ID change from merge, deletion), update all notes that link to it
 
 6. **Handle merges** (when the instruction is to combine notes):
    - Draft merged content — deduplicate, organize by topic, preserve all unique details
-   - Create the merged memory with `memory_create`
-   - Update all backlinks in other memories to point to the new ID
-   - Remove the original source memories with `memory_remove`
-   - Remove `mor:` links between source memories (they'd be self-references)
+   - Create the merged note with `notes_create`
+   - Update all backlinks in other notes to point to the new ID
+   - Remove the original source notes with `notes_remove`
+   - Remove `mor:` links between source notes (they'd be self-references)
 
 7. **Handle cross-reference additions**:
-   - Read all target memories
+   - Read all target notes
    - Identify genuine connections (shared concepts, imports, explicit references)
    - Add `[Title](mor:<id>)` links in content preambles or inline where natural
    - For file/snippet notes (content is a code block), add links as a preamble paragraph before the code
@@ -59,8 +59,8 @@ Apply a natural language instruction across a set of memories, handling cross-re
 
 - Content links: `[Title](mor:shortid)` — proper markdown links only
 - Use 8-char short IDs in links
-- When renaming a memory, no link updates needed (links use IDs, not titles)
-- When merging, replace all `mor:<old-id>` with `mor:<new-id>` in linking memories
+- When renaming a note, no link updates needed (links use IDs, not titles)
+- When merging, replace all `mor:<old-id>` with `mor:<new-id>` in linking notes
 - When deleting, warn about orphaned backlinks
 - Run `mor links --broken` after to verify no dangling references
 

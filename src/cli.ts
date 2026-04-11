@@ -340,7 +340,7 @@ program
         } else {
           // Interactive with --title: open $EDITOR
           const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
-          const tmpFile = path.join(tmpDir, 'new-memory.md');
+          const tmpFile = path.join(tmpDir, 'new-note.md');
           fs.writeFileSync(tmpFile, '');
           openInEditor(tmpFile);
           content = fs.readFileSync(tmpFile, 'utf-8').trim();
@@ -510,7 +510,7 @@ program
 
 program
   .command('patch <query...>')
-  .description('Apply a str_replace patch to a memory')
+  .description('Apply a str_replace patch to a note')
   .requiredOption('--old <text>', 'Exact substring to find')
   .requiredOption('--new <text>', 'Replacement string (empty to delete)')
   .action(async (queryParts: string[], opts: { old: string; new: string }) => {
@@ -520,7 +520,7 @@ program
     try {
       const before = await ops.read(query);
       if (!before) {
-        console.error(`Error: memory not found: ${query}`);
+        console.error(`Error: note not found: ${query}`);
         process.exit(1);
       }
       const updated = await ops.patch(before.id, opts.old, opts.new);

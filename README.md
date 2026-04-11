@@ -75,7 +75,7 @@ Add to your Claude Code or Claude Desktop config:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "command": "mor",
       "args": ["mcp"]
     }
@@ -83,7 +83,7 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-Tools: `memory_search`, `memory_read`, `memory_create`, `memory_update`, `memory_remove`, `memory_list`, `memory_grep`.
+Tools: `notes_search`, `notes_read`, `notes_create`, `notes_update`, `notes_remove`, `notes_list`, `notes_grep`.
 
 To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
 
@@ -91,8 +91,8 @@ To make sure Claude Code checks mor first when you ask it to recall something, a
 ## Notes
 
 When the user asks to recall, find, check, or reuse something they previously saved
-or remembered — use the `mor` MCP server tools (`memory_search`, `memory_read`,
-`memory_list`). This is the user's primary note store containing code snippets,
+or remembered — use the `mor` MCP server tools (`notes_search`, `notes_read`,
+`notes_list`). This is the user's primary note store containing code snippets,
 files, and reference notes. Always check mor before saying something wasn't found.
 ```
 
@@ -112,7 +112,7 @@ Point your MCP client at the server URL — no secret in the config:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "type": "url",
       "url": "http://mybox.tail1234.ts.net:7677/mcp"
     }

@@ -13,11 +13,11 @@ stores knowledge as plain markdown files with YAML frontmatter
 indexed by SQLite FTS5 with optional vector embeddings. AI assistants access
 your knowledge via MCP. You also get a CLI and HTTP API.
 .PP
-Memories are stored in
+Notes are stored in
 .I ~/.config/mor/memories/
 (overridable via
 .BR MOR_HOME ).
-Each memory has an ID (UUID), title, optional description, tags, type, and
+Each note has an ID (UUID), title, optional description, tags, type, and
 markdown content.
 .PP
 All commands accept multi-word queries without quoting. Options must come before
@@ -34,7 +34,7 @@ mor cat fastify server primer
 .TP
 .BI "find " "query..."
 Full-text search using FTS5 (tokenized, stemmed). When embeddings are configured,
-results are merged using Reciprocal Rank Fusion. Frequently accessed memories
+results are merged using Reciprocal Rank Fusion. Frequently accessed notes
 get a small ranking boost.
 .RS
 .TP
@@ -46,7 +46,7 @@ Minimum relevance score 0\-1 (default 0.3).
 .RE
 .TP
 .BI "grep " "pattern..."
-Search memory content by substring or regex.
+Search note content by substring or regex.
 .RS
 .TP
 .BI \-\-limit " " n
@@ -74,17 +74,17 @@ Show n lines before each match.
 Show n lines before and after each match.
 .TP
 .BR \-l ", " \-\-files\-with\-matches
-Show only memory titles, no matching lines.
+Show only note titles, no matching lines.
 .RE
 .SS Create and Edit
 .TP
 .BI "add " "[file|url]"
-Add a memory from a file, URL, stdin, or \fB$EDITOR\fR. Without arguments,
+Add a note from a file, URL, stdin, or \fB$EDITOR\fR. Without arguments,
 opens the editor.
 .RS
 .TP
 .BI \-t ", " \-\-title " " title
-Memory title.
+Note title.
 .TP
 .BI \-d ", " \-\-description " " text
 Short description.
@@ -93,11 +93,11 @@ Short description.
 Comma-separated tags.
 .TP
 .BI \-\-type " " type
-Memory type (see \fBTYPES\fR).
+Note type (see \fBTYPES\fR).
 .RE
 .TP
 .BI "edit " "query..."
-Open a memory in \fB$EDITOR\fR.
+Open a note in \fB$EDITOR\fR.
 .RS
 .TP
 .B \-\-raw
@@ -105,7 +105,7 @@ Edit frontmatter too.
 .RE
 .TP
 .BI "update " "query..."
-Update metadata or content of an existing memory. Options must come before the query.
+Update metadata or content of an existing note. Options must come before the query.
 .RS
 .TP
 .BI \-t ", " \-\-title " " title
@@ -126,7 +126,7 @@ Read new content from file or \fB\-\fR for stdin.
 .SS Read and Export
 .TP
 .BI "cat " "query..."
-Print memory content to stdout.
+Print note content to stdout.
 .RS
 .TP
 .B \-\-raw
@@ -137,7 +137,7 @@ Show cross-references after the content.
 .RE
 .TP
 .BI "cp " "query..."
-Copy memory content to a file.
+Copy note content to a file.
 .RS
 .TP
 .BI \-o ", " \-\-output " " dest
@@ -149,14 +149,14 @@ Include YAML frontmatter.
 .SS Cross-references
 .TP
 .BI "links " "[query...]"
-Show forward links and backlinks for a memory.
+Show forward links and backlinks for a note.
 .RS
 .TP
 .B \-\-broken
-List all memories with broken (dangling) references.
+List all notes with broken (dangling) references.
 .RE
 .PP
-Memories can link to each other using markdown links with the \fBmor:\fR scheme:
+Notes can link to each other using markdown links with the \fBmor:\fR scheme:
 .PP
 .RS
 .nf
@@ -170,10 +170,10 @@ bidirectional. They are derived from content and optional frontmatter
 .SS Manage
 .TP
 .BI "rm " "id..."
-Remove a memory by UUID or UUID prefix (8+ characters).
+Remove a note by UUID or UUID prefix (8+ characters).
 .TP
 .B ls
-List all memories, sorted by last updated.
+List all notes, sorted by last updated.
 .RS
 .TP
 .BI \-n ", " \-\-limit " " n
@@ -193,7 +193,7 @@ List all types with counts.
 Pull remote changes via git, commit and push local changes.
 .TP
 .B reindex
-Rebuild the search index and links table from memory files.
+Rebuild the search index and links table from note files.
 .TP
 .BI "import " dir
 Import \fI.md\fR files from a directory.
@@ -237,7 +237,7 @@ and
 .BR ls :
 .TP
 .BI \-\-type " " type
-Filter by memory type (comma-separated, glob patterns).
+Filter by note type (comma-separated, glob patterns).
 .TP
 .BI \-\-tag " " pattern
 Filter by tag (comma-separated, AND logic, glob patterns).
@@ -293,7 +293,7 @@ Configuration file.
 OAuth tokens (created by \fBmor login\fR).
 .TP
 .I ~/.config/mor/memories/
-Memory storage directory.
+Note storage directory.
 .TP
 .I ~/.config/mor/index.db
 SQLite search index (memories, FTS, links, embeddings).
@@ -301,7 +301,7 @@ SQLite search index (memories, FTS, links, embeddings).
 The configuration file supports:
 .TP
 .B memoryDir
-Path to memory storage directory.
+Path to note storage directory.
 .TP
 .B dbPath
 Path to SQLite database.
@@ -318,7 +318,7 @@ Remote server connection (url, token).
 .B serve
 HTTP server defaults (port, host, token, mcp).
 .SH EXAMPLES
-Add a memory from a file:
+Add a note from a file:
 .PP
 .RS
 .nf
@@ -326,7 +326,7 @@ mor add src/utils.ts
 .fi
 .RE
 .PP
-Search for memories:
+Search for notes:
 .PP
 .RS
 .nf
@@ -350,7 +350,7 @@ mor grep \-E "async\\s+function" \-i
 .fi
 .RE
 .PP
-List memories tagged with "config":
+List notes tagged with "config":
 .PP
 .RS
 .nf
@@ -358,7 +358,7 @@ mor ls \-\-tag config
 .fi
 .RE
 .PP
-Update tags on a memory:
+Update tags on a note:
 .PP
 .RS
 .nf
@@ -366,7 +366,7 @@ mor update \-\-tags "go,concurrency" 8da8d8f2
 .fi
 .RE
 .PP
-Copy a memory to a file:
+Copy a note to a file:
 .PP
 .RS
 .nf
@@ -374,7 +374,7 @@ mor cp \-o ./out.md fastify server primer
 .fi
 .RE
 .PP
-Show cross-references for a memory:
+Show cross-references for a note:
 .PP
 .RS
 .nf

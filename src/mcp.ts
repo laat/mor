@@ -365,9 +365,9 @@ export function createMcpServer(ops: Operations): McpServer {
     'notes_patch',
     {
       description:
-        'Apply a str_replace patch to a memory. The old_str must appear exactly once in the content. Use empty new_str to delete text.',
+        'Apply a str_replace patch to a note. The old_str must appear exactly once in the content. Use empty new_str to delete text.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the memory'),
+        id: z.string().describe('Full UUID of the note'),
         old_str: z
           .string()
           .describe('Exact substring to find (must be unique in content)'),
@@ -379,7 +379,7 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ id, old_str, new_str }) => {
       try {
         const before = await ops.read(id);
-        if (!before) throw new Error(`Memory not found: ${id}`);
+        if (!before) throw new Error(`Note not found: ${id}`);
         const updated = await ops.patch(id, old_str, new_str);
         const parts = [`Patched: ${updated.title}`];
         parts.push('--- content diff ---');

@@ -421,15 +421,15 @@ export class LocalOperations implements Operations {
 
   async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
     const existing = await this.resolveQuery(query);
-    if (!existing) throw new NotFoundError(`Memory not found: ${query}`);
+    if (!existing) throw new NotFoundError(`Note not found: ${query}`);
     const count = existing.content.split(oldStr).length - 1;
     if (count === 0)
       throw new Error(
-        `old_str not found in memory content. Make sure it appears exactly once.`,
+        `old_str not found in note content. Make sure it appears exactly once.`,
       );
     if (count > 1)
       throw new Error(
-        `old_str appears ${count} times in memory content. It must appear exactly once.`,
+        `old_str appears ${count} times in note content. It must appear exactly once.`,
       );
     const newContent = existing.content.replace(oldStr, newStr);
     return this.update(existing.id, { content: newContent });
@@ -549,7 +549,7 @@ export class LocalOperations implements Operations {
 
     const preStatus = git(['status', '--porcelain']);
     if (preStatus.status !== 0) {
-      throw new Error('Memory folder is not a git repository');
+      throw new Error('Notes folder is not a git repository');
     }
 
     const actions: string[] = [];
@@ -568,7 +568,7 @@ export class LocalOperations implements Operations {
       if (add.status !== 0)
         throw new Error(`git add failed: ${add.stderr.trim()}`);
 
-      const commit = git(['commit', '-m', commitMessage ?? 'update memory']);
+      const commit = git(['commit', '-m', commitMessage ?? 'update notes']);
       if (commit.status !== 0)
         throw new Error(`git commit failed: ${commit.stderr.trim()}`);
 
