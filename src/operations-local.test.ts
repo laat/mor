@@ -203,6 +203,50 @@ describe('remove', () => {
   });
 });
 
+describe('patch', () => {
+  it('replaces a substring', async () => {
+    const mem = await ops.add({ title: 'Patch Me', content: 'hello world' });
+    const updated = await ops.patch(mem.id, 'world', 'universe');
+    expect(updated.content).toBe('hello universe');
+    expect(updated.id).toBe(mem.id);
+  });
+
+  it('deletes text with empty new_str', async () => {
+    const mem = await ops.add({
+      title: 'Delete Part',
+      content: 'keep remove keep',
+    });
+    const updated = await ops.patch(mem.id, ' remove', '');
+    expect(updated.content).toBe('keep keep');
+  });
+
+  it('throws when old_str not found', async () => {
+    const mem = await ops.add({ title: 'No Match', content: 'hello' });
+    await expect(ops.patch(mem.id, 'missing', 'x')).rejects.toThrow(
+      'old_str not found',
+    );
+  });
+
+  it('throws when old_str appears multiple times', async () => {
+    const mem = await ops.add({ title: 'Multi', content: 'aaa' });
+    await expect(ops.patch(mem.id, 'a', 'b')).rejects.toThrow(
+      'appears 3 times',
+    );
+  });
+
+  it('works with UUID prefix query', async () => {
+    const mem = await ops.add({ title: 'Prefix Patch', content: 'old text' });
+    const updated = await ops.patch(mem.id.slice(0, 8), 'old', 'new');
+    expect(updated.content).toBe('new text');
+  });
+
+  it('throws on non-existent memory', async () => {
+    await expect(
+      ops.patch('00000000-0000-0000-0000-000000000000', 'a', 'b'),
+    ).rejects.toThrow('not found');
+  });
+});
+
 describe('search', () => {
   it('finds by FTS', async () => {
     await ops.add({

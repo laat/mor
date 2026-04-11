@@ -419,6 +419,22 @@ export class LocalOperations implements Operations {
     return mem;
   }
 
+  async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
+    const existing = await this.resolveQuery(query);
+    if (!existing) throw new NotFoundError(`Memory not found: ${query}`);
+    const count = existing.content.split(oldStr).length - 1;
+    if (count === 0)
+      throw new Error(
+        `old_str not found in memory content. Make sure it appears exactly once.`,
+      );
+    if (count > 1)
+      throw new Error(
+        `old_str appears ${count} times in memory content. It must appear exactly once.`,
+      );
+    const newContent = existing.content.replace(oldStr, newStr);
+    return this.update(existing.id, { content: newContent });
+  }
+
   async remove(query: string): Promise<{ title: string; id: string }> {
     const mem = this.resolveById(query);
     if (!mem)

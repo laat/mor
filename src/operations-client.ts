@@ -157,6 +157,24 @@ export class RemoteOperations implements Operations {
     return json.data;
   }
 
+  async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
+    const body = { old_str: oldStr, new_str: newStr };
+    let res = await fetch(
+      `${this.baseUrl}/memories/${encodeURIComponent(query)}/patch`,
+      { method: 'POST', headers: this.headers, body: JSON.stringify(body) },
+    );
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(
+        `${this.baseUrl}/memories/${encodeURIComponent(query)}/patch`,
+        { method: 'POST', headers: this.headers, body: JSON.stringify(body) },
+      );
+    }
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
+  }
+
   async remove(query: string): Promise<{ title: string; id: string }> {
     let res = await fetch(
       `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
