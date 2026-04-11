@@ -17,5 +17,11 @@
   },
   "devDependencies": {
     "unist-util-visit": "^5.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }
