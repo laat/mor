@@ -42,8 +42,6 @@ mor is configured via `~/.config/mor/config.json`, auto-created on first run. Ov
 | `autosync`  | boolean | `false`                  | Auto git pull/commit/push after every add, update, or remove                   |
 | `threshold` | number  | `0.3`                    | Minimum relevance score (0–1) for `find` results. Override per-query with `-s` |
 
-The legacy `memoryDir` key is still recognized as a fallback when `notesDir` is unset, so existing configs continue to work without changes.
-
 ## Embedding
 
 Optional vector embeddings to augment FTS search. See [Embeddings](/docs/embeddings/) for details.
