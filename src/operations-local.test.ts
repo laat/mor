@@ -515,3 +515,57 @@ describe('syncIndex', () => {
     expect(page.data.find((m) => m.id === mem.id)).toBeUndefined();
   });
 });
+
+describe('patch', () => {
+  it('replaces a unique substring', async () => {
+    const mem = await ops.add({ title: 'Patch Me', content: 'hello world' });
+    const patched = await ops.patch(mem.id, 'hello', 'goodbye');
+    expect(patched.content).toBe('goodbye world');
+    expect(patched.id).toBe(mem.id);
+  });
+
+  it('accepts UUID prefix', async () => {
+    const mem = await ops.add({ title: 'Prefix Patch', content: 'abc def' });
+    const patched = await ops.patch(mem.id.slice(0, 8), 'abc', 'xyz');
+    expect(patched.content).toBe('xyz def');
+  });
+
+  it('deletes text when new_str is empty', async () => {
+    const mem = await ops.add({
+      title: 'Delete Part',
+      content: 'keep remove keep',
+    });
+    const patched = await ops.patch(mem.id, ' remove', '');
+    expect(patched.content).toBe('keep keep');
+  });
+
+  it('throws when old_str is not found', async () => {
+    const mem = await ops.add({ title: 'No Match', content: 'hello world' });
+    await expect(ops.patch(mem.id, 'missing', 'x')).rejects.toThrow(
+      'old_str not found',
+    );
+  });
+
+  it('throws when old_str appears multiple times', async () => {
+    const mem = await ops.add({
+      title: 'Ambiguous',
+      content: 'aaa bbb aaa',
+    });
+    await expect(ops.patch(mem.id, 'aaa', 'ccc')).rejects.toThrow(
+      'old_str appears multiple times',
+    );
+  });
+
+  it('throws on non-existent ID', async () => {
+    await expect(
+      ops.patch('00000000-0000-0000-0000-000000000000', 'x', 'y'),
+    ).rejects.toThrow('not found');
+  });
+
+  it('persists the change to disk', async () => {
+    const mem = await ops.add({ title: 'Persist', content: 'old content' });
+    await ops.patch(mem.id, 'old', 'new');
+    const read = await ops.read(mem.id);
+    expect(read?.content).toBe('new content');
+  });
+});
