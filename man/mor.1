@@ -38,11 +38,14 @@ results are merged using Reciprocal Rank Fusion. Frequently accessed notes
 get a small ranking boost.
 .RS
 .TP
-.BI \-l ", " \-\-limit " " n
+.BI \-\-limit " " n
 Max results (default 20).
 .TP
 .BI \-s ", " \-\-threshold " " n
 Minimum relevance score 0\-1 (default 0.3).
+.TP
+.B \-\-json
+Output as JSON (includes content).
 .RE
 .TP
 .BI "grep " "pattern..."
@@ -123,6 +126,18 @@ New type.
 .BI \-\-content\-from " " source
 Read new content from file or \fB\-\fR for stdin.
 .RE
+.TP
+.BI "patch " "query..."
+Apply a str_replace patch to a note's content. Both \fB\-\-old\fR and
+\fB\-\-new\fR are required.
+.RS
+.TP
+.BI \-\-old " " text
+Exact substring to find (must appear exactly once in the note).
+.TP
+.BI \-\-new " " text
+Replacement string. Pass an empty string to delete.
+.RE
 .SS Read and Export
 .TP
 .BI "cat " "query..."
@@ -176,8 +191,11 @@ Remove a note by UUID or UUID prefix (8+ characters).
 List all notes, sorted by last updated.
 .RS
 .TP
-.BI \-n ", " \-\-limit " " n
+.BI \-\-limit " " n
 Max results.
+.TP
+.BR \-a ", " \-\-all
+Show all notes (no limit).
 .TP
 .BR \-l ", " \-\-long
 Show type, date, tags, and file path.

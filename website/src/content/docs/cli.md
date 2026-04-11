@@ -14,6 +14,7 @@ description: All mor commands and their options
 | `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
 | `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`  | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
+| `patch <query>`   | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
 | `rm <query>`      | Remove a note                                                                                                   |
 | `links [query]`   | Show cross-references (`--broken` to find dangling links)                                                       |
 | `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |

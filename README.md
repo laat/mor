@@ -54,6 +54,7 @@ mor ls -l
 | `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
 | `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`  | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
+| `patch <query>`   | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
 | `rm <query>`      | Remove a note                                                                                                   |
 | `links [query]`   | Show cross-references for a note (`--broken` to find dangling links)                                            |
 | `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
@@ -83,7 +84,7 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-Tools: `notes_search`, `notes_read`, `notes_create`, `notes_update`, `notes_remove`, `notes_list`, `notes_grep`.
+Tools: `notes_search`, `notes_read`, `notes_create`, `notes_update`, `notes_patch`, `notes_remove`, `notes_list`, `notes_grep`.
 
 To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
 
