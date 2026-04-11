@@ -543,7 +543,7 @@ describe('syncIndex', () => {
       '---',
       'External content',
     ].join('\n');
-    fs.writeFileSync(path.join(config.memoryDir, 'external-0000.md'), content);
+    fs.writeFileSync(path.join(config.notesDir, 'external-0000.md'), content);
 
     // Should be found after syncIndex triggers on read
     const found = await ops.read('00000000-0000-0000-0000-000000000001');

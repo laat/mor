@@ -300,8 +300,12 @@ SQLite search index (memories, FTS, links, embeddings).
 .SH CONFIGURATION
 The configuration file supports:
 .TP
+.B notesDir
+Path to note storage directory. The legacy
 .B memoryDir
-Path to note storage directory.
+key is still recognized when
+.B notesDir
+is unset.
 .TP
 .B dbPath
 Path to SQLite database.

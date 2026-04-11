@@ -24,7 +24,7 @@ afterEach(() => {
 describe('loadConfig', () => {
   it('creates default config on first run', () => {
     const config = loadConfig();
-    expect(config.memoryDir).toBe(path.join(testDir, 'notes'));
+    expect(config.notesDir).toBe(path.join(testDir, 'notes'));
     expect(config.dbPath).toBe(path.join(testDir, 'index.db'));
     expect(fs.existsSync(path.join(testDir, 'config.json'))).toBe(true);
   });
@@ -39,7 +39,7 @@ describe('loadConfig', () => {
     const raw = JSON.parse(
       fs.readFileSync(path.join(testDir, 'config.json'), 'utf-8'),
     );
-    expect(raw.memoryDir).toBeDefined();
+    expect(raw.notesDir).toBeDefined();
     expect(raw.dbPath).toBeDefined();
   });
 
@@ -47,26 +47,51 @@ describe('loadConfig', () => {
     fs.writeFileSync(
       path.join(testDir, 'config.json'),
       JSON.stringify({
-        memoryDir: path.join(testDir, 'custom-memories'),
+        notesDir: path.join(testDir, 'custom-notes'),
         dbPath: path.join(testDir, 'custom.db'),
       }),
     );
     const config = loadConfig();
-    expect(config.memoryDir).toBe(path.join(testDir, 'custom-memories'));
+    expect(config.notesDir).toBe(path.join(testDir, 'custom-notes'));
     expect(config.dbPath).toBe(path.join(testDir, 'custom.db'));
+  });
+
+  it('falls back to legacy memoryDir key when notesDir is unset', () => {
+    fs.writeFileSync(
+      path.join(testDir, 'config.json'),
+      JSON.stringify({
+        memoryDir: path.join(testDir, 'legacy-memories'),
+        dbPath: path.join(testDir, 'custom.db'),
+      }),
+    );
+    const config = loadConfig();
+    expect(config.notesDir).toBe(path.join(testDir, 'legacy-memories'));
+  });
+
+  it('prefers notesDir over legacy memoryDir when both are set', () => {
+    fs.writeFileSync(
+      path.join(testDir, 'config.json'),
+      JSON.stringify({
+        notesDir: path.join(testDir, 'new-notes'),
+        memoryDir: path.join(testDir, 'old-memories'),
+        dbPath: path.join(testDir, 'custom.db'),
+      }),
+    );
+    const config = loadConfig();
+    expect(config.notesDir).toBe(path.join(testDir, 'new-notes'));
   });
 
   it('expands ~ in paths', () => {
     fs.writeFileSync(
       path.join(testDir, 'config.json'),
       JSON.stringify({
-        memoryDir: '~/test-memories',
+        notesDir: '~/test-notes',
         dbPath: '~/test.db',
       }),
     );
     const config = loadConfig();
-    expect(config.memoryDir).toBe(
-      path.join(process.env.HOME ?? '', 'test-memories'),
+    expect(config.notesDir).toBe(
+      path.join(process.env.HOME ?? '', 'test-notes'),
     );
     expect(config.dbPath).toBe(path.join(process.env.HOME ?? '', 'test.db'));
   });
@@ -134,7 +159,7 @@ describe('loadConfig', () => {
 
   it('uses MOR_HOME env var', () => {
     const config = loadConfig();
-    expect(config.memoryDir).toContain(testDir);
+    expect(config.notesDir).toContain(testDir);
     expect(config.dbPath).toContain(testDir);
   });
 });

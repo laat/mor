@@ -11,7 +11,7 @@ export interface ServeConfig {
 }
 
 export interface Config {
-  memoryDir: string;
+  notesDir: string;
   dbPath: string;
   autosync?: boolean;
   threshold?: number;

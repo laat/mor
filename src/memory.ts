@@ -76,7 +76,7 @@ export function createMemory(
   });
 
   const filename = generateFilename(opts.title, id);
-  const filePath = path.join(config.memoryDir, filename);
+  const filePath = path.join(config.notesDir, filename);
   const raw = matter.stringify({ content: opts.content }, frontmatter);
   fs.writeFileSync(filePath, raw);
 
@@ -183,9 +183,9 @@ export function deleteMemory(filePath: string): void {
 export function listMemoryFiles(config: Config): string[] {
   try {
     return fs
-      .readdirSync(config.memoryDir)
+      .readdirSync(config.notesDir)
       .filter((f) => f.endsWith('.md'))
-      .map((f) => path.join(config.memoryDir, f));
+      .map((f) => path.join(config.notesDir, f));
   } catch {
     return [];
   }

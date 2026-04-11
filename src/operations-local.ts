@@ -539,7 +539,7 @@ export class LocalOperations implements Operations {
   }
 
   async sync(commitMessage?: string): Promise<{ message: string }> {
-    const dir = this.config.memoryDir;
+    const dir = this.config.notesDir;
     const git = (args: string[]) =>
       spawnSync('git', args, {
         cwd: dir,

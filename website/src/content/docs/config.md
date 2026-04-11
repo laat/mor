@@ -9,7 +9,7 @@ mor is configured via `~/.config/mor/config.json`, auto-created on first run. Ov
 
 ```json
 {
-  "memoryDir": "~/.config/mor/notes",
+  "notesDir": "~/.config/mor/notes",
   "dbPath": "~/.config/mor/index.db",
   "autosync": true,
   "threshold": 0.3,
@@ -37,10 +37,12 @@ mor is configured via `~/.config/mor/config.json`, auto-created on first run. Ov
 
 | Key         | Type    | Default                  | Description                                                                    |
 | ----------- | ------- | ------------------------ | ------------------------------------------------------------------------------ |
-| `memoryDir` | string  | `~/.config/mor/notes`    | Directory where note markdown files are stored                                 |
+| `notesDir`  | string  | `~/.config/mor/notes`    | Directory where note markdown files are stored                                 |
 | `dbPath`    | string  | `~/.config/mor/index.db` | Path to the SQLite search index                                                |
 | `autosync`  | boolean | `false`                  | Auto git pull/commit/push after every add, update, or remove                   |
 | `threshold` | number  | `0.3`                    | Minimum relevance score (0–1) for `find` results. Override per-query with `-s` |
+
+The legacy `memoryDir` key is still recognized as a fallback when `notesDir` is unset, so existing configs continue to work without changes.
 
 ## Embedding
 

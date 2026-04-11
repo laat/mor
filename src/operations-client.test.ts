@@ -24,7 +24,7 @@ beforeEach(async () => {
   const baseUrl = `http://127.0.0.1:${addr.port}`;
 
   ops = new RemoteOperations({
-    memoryDir: '',
+    notesDir: '',
     dbPath: '',
     server: { url: baseUrl },
   });

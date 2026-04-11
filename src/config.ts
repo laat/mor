@@ -11,7 +11,7 @@ export function getConfigDir(): string {
 }
 
 const DEFAULT_CONFIG: Config = {
-  memoryDir: '~/.config/mor/notes',
+  notesDir: '~/.config/mor/notes',
   dbPath: '~/.config/mor/index.db',
 };
 
@@ -24,16 +24,19 @@ export function loadConfig(): Config {
   let config: Config;
   if (fs.existsSync(configPath)) {
     const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    // Backwards compat: fall back to legacy `memoryDir` key if `notesDir` is unset
+    const notesDir = raw.notesDir ?? raw.memoryDir ?? DEFAULT_CONFIG.notesDir;
     config = {
       ...DEFAULT_CONFIG,
       ...raw,
+      notesDir,
       ...(raw.embedding ? { embedding: raw.embedding } : {}),
       ...(raw.server ? { server: raw.server } : {}),
       ...(raw.serve ? { serve: raw.serve } : {}),
     };
   } else {
     config = { ...DEFAULT_CONFIG };
-    config.memoryDir = path.join(configDir, 'notes');
+    config.notesDir = path.join(configDir, 'notes');
     config.dbPath = path.join(configDir, 'index.db');
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }
@@ -45,11 +48,11 @@ export function loadConfig(): Config {
   }
 
   // Resolve paths relative to configDir when they use ~
-  config.memoryDir = expandHome(config.memoryDir);
+  config.notesDir = expandHome(config.notesDir);
   config.dbPath = expandHome(config.dbPath);
 
-  // Ensure memory directory exists
-  fs.mkdirSync(config.memoryDir, { recursive: true });
+  // Ensure notes directory exists
+  fs.mkdirSync(config.notesDir, { recursive: true });
 
   return config;
 }
