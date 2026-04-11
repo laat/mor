@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 import remarkInclude from './remark-include.mjs';
 
 // https://astro.build/config
@@ -25,6 +26,15 @@ export default defineConfig({
       components: {
         ThemeSelect: './src/components/ThemeSelect.astro',
       },
+      plugins: [
+        starlightOpenAPI([
+          {
+            base: 'integration/api',
+            label: 'API Reference',
+            schema: './schemas/mor-api.yaml',
+          },
+        ]),
+      ],
       sidebar: [
         { label: 'Getting Started', slug: 'getting-started' },
         { label: 'CLI', slug: 'cli' },
@@ -35,6 +45,7 @@ export default defineConfig({
             { label: 'HTTP Server', slug: 'integration/http' },
             { label: 'Remote Access', slug: 'integration/remote' },
             { label: 'Claude Code', slug: 'integration/claude-code' },
+            ...openAPISidebarGroups,
           ],
         },
         { label: 'Search', slug: 'search' },

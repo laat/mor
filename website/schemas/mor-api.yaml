@@ -1,0 +1,563 @@
+openapi: 3.1.0
+info:
+  title: mor HTTP API
+  version: 0.15.5
+  description: |
+    REST API for the mor note store. All listing endpoints return paginated
+    results and share a common filter surface (tag, type, repo, ext).
+
+    When `--token` is configured on the server, every route outside the
+    OAuth discovery endpoints requires authentication via either a bearer
+    token or an OAuth access token obtained through the MCP-spec OAuth
+    flow.
+  license:
+    name: MIT
+    url: https://github.com/laat/mor/blob/main/LICENSE
+servers:
+  - url: http://127.0.0.1:7677
+    description: Local server (default)
+  - url: https://mor.example.com
+    description: Remote server
+
+security:
+  - bearerAuth: []
+  - queryToken: []
+  - oauth2: []
+
+tags:
+  - name: Health
+  - name: Notes
+  - name: Search
+  - name: Links
+  - name: Admin
+  - name: Hooks
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, version]
+                properties:
+                  ok: { type: boolean, const: true }
+                  version: { type: string, example: '0.15.5' }
+
+  /notes:
+    get:
+      tags: [Notes]
+      summary: List notes
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Tag'
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/Repo'
+        - $ref: '#/components/parameters/Ext'
+      responses:
+        '200':
+          description: Paginated list of notes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotes'
+    post:
+      tags: [Notes]
+      summary: Create a note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                content: { type: string, description: Markdown body }
+                tags:
+                  type: array
+                  items: { type: string }
+                type:
+                  $ref: '#/components/schemas/NoteType'
+                repository: { type: string }
+      responses:
+        '201':
+          description: Note created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/search:
+    get:
+      tags: [Search]
+      summary: Full-text search
+      description: |
+        FTS5 search over title, tags, and content. When embeddings are
+        configured, results are merged with vector similarity via
+        Reciprocal Rank Fusion. The `scoring` field on the response
+        indicates which ranking mode was used.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+          description: Search query
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Tag'
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/Repo'
+        - $ref: '#/components/parameters/Ext'
+      responses:
+        '200':
+          description: Scored, ranked search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/grep:
+    get:
+      tags: [Search]
+      summary: Substring or regex search
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+          description: Substring or regex pattern
+        - in: query
+          name: ignoreCase
+          schema: { type: string, enum: ['1'] }
+          description: Pass `1` for case-insensitive matching
+        - in: query
+          name: regex
+          schema: { type: string, enum: ['1'] }
+          description: Pass `1` to treat `q` as a JavaScript regular expression
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Tag'
+        - $ref: '#/components/parameters/Type'
+        - $ref: '#/components/parameters/Repo'
+        - $ref: '#/components/parameters/Ext'
+      responses:
+        '200':
+          description: Paginated notes that match the pattern
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotes'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /notes/{query}:
+    parameters:
+      - $ref: '#/components/parameters/Query'
+    get:
+      tags: [Notes]
+      summary: Read a note
+      description: |
+        Resolves the query in order: full UUID, UUID prefix (8+ chars),
+        filename, then FTS search (top hit).
+      responses:
+        '200':
+          description: Note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Notes]
+      summary: Update a note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                content: { type: string }
+                tags:
+                  type: array
+                  items: { type: string }
+                type:
+                  $ref: '#/components/schemas/NoteType'
+      responses:
+        '200':
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Notes]
+      summary: Delete a note
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [id, title]
+                    properties:
+                      id: { type: string, format: uuid }
+                      title: { type: string }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notes/{query}/links:
+    parameters:
+      - $ref: '#/components/parameters/Query'
+    get:
+      tags: [Links]
+      summary: Forward links and backlinks for a note
+      responses:
+        '200':
+          description: Forward and back references
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [forward, back]
+                    properties:
+                      forward:
+                        type: array
+                        items: { $ref: '#/components/schemas/LinkRef' }
+                      back:
+                        type: array
+                        items: { $ref: '#/components/schemas/LinkRef' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notes/{query}/patch:
+    parameters:
+      - $ref: '#/components/parameters/Query'
+    post:
+      tags: [Notes]
+      summary: Apply a str_replace patch to a note
+      description: |
+        Replaces `old_str` with `new_str` in the note's content. `old_str`
+        must appear exactly once in the current content; use an empty
+        `new_str` to delete text.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_str, new_str]
+              properties:
+                old_str: { type: string }
+                new_str: { type: string }
+      responses:
+        '200':
+          description: Patched note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reindex:
+    post:
+      tags: [Admin]
+      summary: Rebuild the search index from the notes folder
+      responses:
+        '200':
+          description: Reindex result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [count]
+                    properties:
+                      count:
+                        type: integer
+                        description: Number of notes reindexed
+                      embedding:
+                        type: object
+                        description: Embedding provider details, if configured
+                        properties:
+                          provider: { type: string }
+                          model: { type: string }
+                          dimensions: { type: integer }
+                          baseUrl: { type: string }
+
+  /sync:
+    post:
+      tags: [Admin]
+      summary: Git sync the notes folder
+      description: |
+        Runs `git pull --rebase --autostash`, then commits and pushes any
+        local changes. Fails if the notes folder is not a git repository.
+      responses:
+        '200':
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [message]
+                    properties:
+                      message: { type: string }
+
+  /hooks/memberberry:
+    post:
+      tags: [Hooks]
+      summary: Claude Code UserPromptSubmit hook
+      description: |
+        Returns lightweight hints about notes relevant to the current
+        prompt so Claude Code can decide whether to fetch them via MCP
+        tools. Results are deduplicated per session, short prompts and
+        slash commands are ignored.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id, prompt]
+              properties:
+                session_id: { type: string }
+                prompt: { type: string }
+      responses:
+        '200':
+          description: Hook result (empty when there is nothing to surface)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    additionalProperties: false
+                  - type: object
+                    required: [hookSpecificOutput]
+                    properties:
+                      hookSpecificOutput:
+                        type: object
+                        required: [hookEventName, additionalContext]
+                        properties:
+                          hookEventName:
+                            type: string
+                            const: UserPromptSubmit
+                          additionalContext: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Static passphrase configured via `--token`. Sent as
+        `Authorization: Bearer <passphrase>`.
+    queryToken:
+      type: apiKey
+      in: query
+      name: token
+      description: |
+        Alternative to the bearer header. Sent as `?token=<passphrase>`.
+    oauth2:
+      type: oauth2
+      description: |
+        MCP-spec OAuth 2.0 flow with PKCE. Clients discover metadata at
+        `/.well-known/oauth-authorization-server` and register dynamically
+        at `/oauth/register`.
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          refreshUrl: /oauth/token
+          scopes: {}
+
+  parameters:
+    Query:
+      in: path
+      name: query
+      required: true
+      description: Full UUID, 8+ char UUID prefix, or filename
+      schema: { type: string }
+    Limit:
+      in: query
+      name: limit
+      schema: { type: integer, minimum: 1, default: 20 }
+      description: Max results (default 20 for search/grep, 100 for list)
+    Offset:
+      in: query
+      name: offset
+      schema: { type: integer, minimum: 0, default: 0 }
+      description: Skip first N results
+    Tag:
+      in: query
+      name: tag
+      description: |
+        Filter by tag. Repeat the parameter for AND logic across multiple
+        tags. Glob patterns are supported.
+      schema:
+        type: array
+        items: { type: string }
+      style: form
+      explode: true
+    Type:
+      in: query
+      name: type
+      description: Filter by note type (comma-separated, glob patterns)
+      schema: { type: string }
+    Repo:
+      in: query
+      name: repo
+      description: Filter by repository (glob pattern)
+      schema: { type: string }
+    Ext:
+      in: query
+      name: ext
+      description: Filter by file extension in title
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Note not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+    NoteType:
+      type: string
+      enum:
+        - user
+        - feedback
+        - project
+        - reference
+        - knowledge
+        - snippet
+        - file
+
+    Note:
+      type: object
+      required:
+        - id
+        - title
+        - tags
+        - type
+        - created
+        - updated
+        - content
+        - filePath
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        type: { $ref: '#/components/schemas/NoteType' }
+        repository: { type: string }
+        created: { type: string, format: date-time }
+        updated: { type: string, format: date-time }
+        content: { type: string, description: Markdown body }
+        filePath:
+          type: string
+          description: Absolute path on the server's filesystem
+
+    LinkRef:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+
+    SearchResult:
+      type: object
+      required: [memory, score, matchType]
+      properties:
+        memory: { $ref: '#/components/schemas/Note' }
+        score:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        matchType:
+          type: string
+          enum: [uuid, filename, fts, vector]
+
+    PaginatedNotes:
+      type: object
+      required: [data, total, offset, limit]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Note' }
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+
+    SearchPage:
+      type: object
+      required: [data, total, offset, limit, scoring]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+        scoring:
+          type: string
+          enum: [fts, hybrid]
+          description: |
+            `hybrid` when embeddings are configured and contributed to the
+            ranking, `fts` otherwise.
