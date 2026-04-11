@@ -43,20 +43,20 @@ Options can also be set in `~/.config/mor/config.json`:
 
 ## REST API
 
-| Method   | Path                                                         | Description                                                          |
-| -------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `GET`    | `/health`                                                    | Health check                                                         |
-| `GET`    | `/memories?limit=N&offset=N`                                 | List all (paginated)                                                 |
-| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
-| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
-| `GET`    | `/memories/:query`                                           | Read one                                                             |
-| `GET`    | `/memories/:query/links`                                     | Get forward and backlinks                                            |
-| `POST`   | `/memories`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
-| `PUT`    | `/memories/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
-| `DELETE` | `/memories/:query`                                           | Remove                                                               |
-| `POST`   | `/reindex`                                                   | Rebuild search index                                                 |
-| `POST`   | `/sync`                                                      | Git pull + commit + push                                             |
-| `POST`   | `/hooks/memberberry`                                         | Claude Code hook — surface relevant notes                            |
+| Method   | Path                                                      | Description                                                          |
+| -------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
+| `GET`    | `/health`                                                 | Health check                                                         |
+| `GET`    | `/notes?limit=N&offset=N`                                 | List all (paginated)                                                 |
+| `GET`    | `/notes/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
+| `GET`    | `/notes/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
+| `GET`    | `/notes/:query`                                           | Read one                                                             |
+| `GET`    | `/notes/:query/links`                                     | Get forward and backlinks                                            |
+| `POST`   | `/notes`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
+| `PUT`    | `/notes/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
+| `DELETE` | `/notes/:query`                                           | Remove                                                               |
+| `POST`   | `/reindex`                                                | Rebuild search index                                                 |
+| `POST`   | `/sync`                                                   | Git pull + commit + push                                             |
+| `POST`   | `/hooks/memberberry`                                      | Claude Code hook — surface relevant notes                            |
 
 List, search, and grep endpoints return paginated responses:
 

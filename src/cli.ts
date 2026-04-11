@@ -898,7 +898,7 @@ addFilterOptions(
               ? `  ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
               : '';
           const loc = isRemote(config)
-            ? `${config.server!.url.replace(/\/+$/, '')}/memories/${encodeURIComponent(mem.id)}`
+            ? `${config.server!.url.replace(/\/+$/, '')}/notes/${encodeURIComponent(mem.id)}`
             : mem.filePath;
           console.log(
             truncate(

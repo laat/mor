@@ -53,8 +53,8 @@ describe('HTTP Server', () => {
     expect(json.version).toBeDefined();
   });
 
-  it('POST /memories creates a memory', async () => {
-    const { status, json } = await req('POST', '/memories', {
+  it('POST /notes creates a memory', async () => {
+    const { status, json } = await req('POST', '/notes', {
       title: 'Test Memory',
       content: 'Hello world',
       tags: ['test'],
@@ -65,64 +65,64 @@ describe('HTTP Server', () => {
     expect(json.data.id).toBeDefined();
   });
 
-  it('GET /memories lists memories', async () => {
-    await req('POST', '/memories', { title: 'Mem A', content: 'aaa' });
-    await req('POST', '/memories', { title: 'Mem B', content: 'bbb' });
+  it('GET /notes lists memories', async () => {
+    await req('POST', '/notes', { title: 'Mem A', content: 'aaa' });
+    await req('POST', '/notes', { title: 'Mem B', content: 'bbb' });
 
-    const { status, json } = await req('GET', '/memories');
+    const { status, json } = await req('GET', '/notes');
     expect(status).toBe(200);
     expect(json.data).toHaveLength(2);
   });
 
-  it('GET /memories/:id reads a memory by UUID', async () => {
-    const { json: created } = await req('POST', '/memories', {
+  it('GET /notes/:id reads a memory by UUID', async () => {
+    const { json: created } = await req('POST', '/notes', {
       title: 'Read Me',
       content: 'content here',
     });
     const id = created.data.id;
 
-    const { status, json } = await req('GET', `/memories/${id}`);
+    const { status, json } = await req('GET', `/notes/${id}`);
     expect(status).toBe(200);
     expect(json.data.title).toBe('Read Me');
     expect(json.data.content).toBe('content here');
   });
 
-  it('GET /memories/:prefix reads by UUID prefix', async () => {
-    const { json: created } = await req('POST', '/memories', {
+  it('GET /notes/:prefix reads by UUID prefix', async () => {
+    const { json: created } = await req('POST', '/notes', {
       title: 'Prefix Test',
       content: 'prefix content',
     });
     const prefix = created.data.id.slice(0, 8);
 
-    const { status, json } = await req('GET', `/memories/${prefix}`);
+    const { status, json } = await req('GET', `/notes/${prefix}`);
     expect(status).toBe(200);
     expect(json.data.title).toBe('Prefix Test');
   });
 
-  it('GET /memories/search?q=... searches memories', async () => {
-    await req('POST', '/memories', {
+  it('GET /notes/search?q=... searches memories', async () => {
+    await req('POST', '/notes', {
       title: 'TypeScript Patterns',
       content: 'generics and types',
     });
-    await req('POST', '/memories', {
+    await req('POST', '/notes', {
       title: 'Cooking Recipe',
       content: 'pasta carbonara',
     });
 
-    const { status, json } = await req('GET', '/memories/search?q=typescript');
+    const { status, json } = await req('GET', '/notes/search?q=typescript');
     expect(status).toBe(200);
     expect(json.data.length).toBeGreaterThan(0);
     expect(json.data[0].memory.title).toBe('TypeScript Patterns');
   });
 
-  it('PUT /memories/:id updates a memory', async () => {
-    const { json: created } = await req('POST', '/memories', {
+  it('PUT /notes/:id updates a memory', async () => {
+    const { json: created } = await req('POST', '/notes', {
       title: 'Old Title',
       content: 'old content',
     });
     const id = created.data.id;
 
-    const { status, json } = await req('PUT', `/memories/${id}`, {
+    const { status, json } = await req('PUT', `/notes/${id}`, {
       title: 'New Title',
       content: 'new content',
     });
@@ -131,40 +131,37 @@ describe('HTTP Server', () => {
     expect(json.data.content).toBe('new content');
   });
 
-  it('DELETE /memories/:id removes a memory', async () => {
-    const { json: created } = await req('POST', '/memories', {
+  it('DELETE /notes/:id removes a memory', async () => {
+    const { json: created } = await req('POST', '/notes', {
       title: 'Delete Me',
       content: 'gone soon',
     });
     const id = created.data.id;
 
-    const { status, json } = await req('DELETE', `/memories/${id}`);
+    const { status, json } = await req('DELETE', `/notes/${id}`);
     expect(status).toBe(200);
     expect(json.data.title).toBe('Delete Me');
 
     // Verify it's gone
-    const { status: getStatus } = await req('GET', `/memories/${id}`);
+    const { status: getStatus } = await req('GET', `/notes/${id}`);
     expect(getStatus).toBe(404);
   });
 
   it('returns 404 for unknown memory', async () => {
-    const { status, json } = await req(
-      'GET',
-      '/memories/nonexistent-id-00000000',
-    );
+    const { status, json } = await req('GET', '/notes/nonexistent-id-00000000');
     expect(status).toBe(404);
     expect(json.error).toBeDefined();
   });
 
   it('returns 400 for missing title on POST', async () => {
-    const { status } = await req('POST', '/memories', { content: 'no title' });
+    const { status } = await req('POST', '/notes', { content: 'no title' });
     expect(status).toBe(400);
   });
 
   it('returns 404 on PUT for non-existent memory', async () => {
     const { status, json } = await req(
       'PUT',
-      '/memories/00000000-0000-0000-0000-000000000000',
+      '/notes/00000000-0000-0000-0000-000000000000',
       { content: 'x' },
     );
     expect(status).toBe(404);
@@ -174,23 +171,23 @@ describe('HTTP Server', () => {
   it('returns 404 on DELETE for non-existent memory', async () => {
     const { status, json } = await req(
       'DELETE',
-      '/memories/00000000-0000-0000-0000-000000000000',
+      '/notes/00000000-0000-0000-0000-000000000000',
     );
     expect(status).toBe(404);
     expect(json.error).toContain('not found');
   });
 
   it('returns JSON error for search failures', async () => {
-    const { status } = await req('GET', '/memories/search');
+    const { status } = await req('GET', '/notes/search');
     expect(status).toBe(400);
   });
 
-  it('GET /memories/:id/links returns forward and backlinks', async () => {
-    const { json: target } = await req('POST', '/memories', {
+  it('GET /notes/:id/links returns forward and backlinks', async () => {
+    const { json: target } = await req('POST', '/notes', {
       title: 'Link Target',
       content: 'target body',
     });
-    const { json: source } = await req('POST', '/memories', {
+    const { json: source } = await req('POST', '/notes', {
       title: 'Link Source',
       content: `See [Link Target](mor:${target.data.id})`,
     });
@@ -198,7 +195,7 @@ describe('HTTP Server', () => {
     // Forward links from source
     const { status: srcStatus, json: srcLinks } = await req(
       'GET',
-      `/memories/${source.data.id}/links`,
+      `/notes/${source.data.id}/links`,
     );
     expect(srcStatus).toBe(200);
     expect(srcLinks.data.forward).toHaveLength(1);
@@ -208,7 +205,7 @@ describe('HTTP Server', () => {
     // Backlinks on target
     const { status: tgtStatus, json: tgtLinks } = await req(
       'GET',
-      `/memories/${target.data.id}/links`,
+      `/notes/${target.data.id}/links`,
     );
     expect(tgtStatus).toBe(200);
     expect(tgtLinks.data.forward).toHaveLength(0);
@@ -216,29 +213,29 @@ describe('HTTP Server', () => {
     expect(tgtLinks.data.back[0].title).toBe('Link Source');
   });
 
-  it('GET /memories/:id/links returns empty arrays for unlinked memory', async () => {
-    const { json: mem } = await req('POST', '/memories', {
+  it('GET /notes/:id/links returns empty arrays for unlinked memory', async () => {
+    const { json: mem } = await req('POST', '/notes', {
       title: 'No Links',
       content: 'standalone',
     });
 
-    const { status, json } = await req('GET', `/memories/${mem.data.id}/links`);
+    const { status, json } = await req('GET', `/notes/${mem.data.id}/links`);
     expect(status).toBe(200);
     expect(json.data.forward).toHaveLength(0);
     expect(json.data.back).toHaveLength(0);
   });
 
-  it('GET /memories/:id/links returns 404 for unknown memory', async () => {
+  it('GET /notes/:id/links returns 404 for unknown memory', async () => {
     const { status } = await req(
       'GET',
-      '/memories/00000000-0000-0000-0000-000000000000/links',
+      '/notes/00000000-0000-0000-0000-000000000000/links',
     );
     expect(status).toBe(404);
   });
 
   it('round-trip: add → search → read → update → delete', async () => {
     // Add
-    const { json: addRes } = await req('POST', '/memories', {
+    const { json: addRes } = await req('POST', '/notes', {
       title: 'Round Trip',
       content: 'initial content',
       tags: ['roundtrip'],
@@ -247,29 +244,26 @@ describe('HTTP Server', () => {
     const id = addRes.data.id;
 
     // Search
-    const { json: searchRes } = await req(
-      'GET',
-      '/memories/search?q=round+trip',
-    );
+    const { json: searchRes } = await req('GET', '/notes/search?q=round+trip');
     expect(searchRes.data.length).toBeGreaterThan(0);
 
     // Read
-    const { json: readRes } = await req('GET', `/memories/${id}`);
+    const { json: readRes } = await req('GET', `/notes/${id}`);
     expect(readRes.data.content).toBe('initial content');
 
     // Update
-    const { json: updateRes } = await req('PUT', `/memories/${id}`, {
+    const { json: updateRes } = await req('PUT', `/notes/${id}`, {
       content: 'updated content',
     });
     expect(updateRes.data.content).toBe('updated content');
 
     // Verify update
-    const { json: readRes2 } = await req('GET', `/memories/${id}`);
+    const { json: readRes2 } = await req('GET', `/notes/${id}`);
     expect(readRes2.data.content).toBe('updated content');
 
     // Delete
-    await req('DELETE', `/memories/${id}`);
-    const { status } = await req('GET', `/memories/${id}`);
+    await req('DELETE', `/notes/${id}`);
+    const { status } = await req('GET', `/notes/${id}`);
     expect(status).toBe(404);
   });
 });
@@ -294,7 +288,7 @@ describe('Memberberry Hook', () => {
   });
 
   it('returns additionalContext with matching memories', async () => {
-    await req('POST', '/memories', {
+    await req('POST', '/notes', {
       title: 'TypeScript Generics Guide',
       description: 'How to use generics in TS',
       content: 'Generics allow you to write reusable typed functions',
@@ -314,7 +308,7 @@ describe('Memberberry Hook', () => {
   });
 
   it('deduplicates within same session_id', async () => {
-    await req('POST', '/memories', {
+    await req('POST', '/notes', {
       title: 'React Hooks Tutorial',
       content: 'useState and useEffect are the most common hooks',
     });
@@ -337,7 +331,7 @@ describe('Memberberry Hook', () => {
   });
 
   it('different session_ids get independent dedup', async () => {
-    await req('POST', '/memories', {
+    await req('POST', '/notes', {
       title: 'Docker Compose Setup',
       content: 'docker compose up to start all services',
     });

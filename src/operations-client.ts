@@ -69,11 +69,11 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
     });
     appendFilterParams(params, filter);
-    let res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
+    let res = await fetch(`${this.baseUrl}/notes/search?${params}`, {
       headers: this.headers,
     });
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(`${this.baseUrl}/memories/search?${params}`, {
+      res = await fetch(`${this.baseUrl}/notes/search?${params}`, {
         headers: this.headers,
       });
     }
@@ -85,14 +85,13 @@ export class RemoteOperations implements Operations {
 
   async read(query: string): Promise<Memory | undefined> {
     let res = await fetch(
-      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      `${this.baseUrl}/notes/${encodeURIComponent(query)}`,
       { headers: this.headers },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(
-        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
-        { headers: this.headers },
-      );
+      res = await fetch(`${this.baseUrl}/notes/${encodeURIComponent(query)}`, {
+        headers: this.headers,
+      });
     }
     if (res.status === 404) return undefined;
     const json = await res.json();
@@ -109,13 +108,13 @@ export class RemoteOperations implements Operations {
     type?: string;
     repository?: string;
   }): Promise<Memory> {
-    let res = await fetch(`${this.baseUrl}/memories`, {
+    let res = await fetch(`${this.baseUrl}/notes`, {
       method: 'POST',
       headers: this.headers,
       body: JSON.stringify(opts),
     });
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(`${this.baseUrl}/memories`, {
+      res = await fetch(`${this.baseUrl}/notes`, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify(opts),
@@ -138,18 +137,15 @@ export class RemoteOperations implements Operations {
     },
   ): Promise<Memory> {
     let res = await fetch(
-      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      `${this.baseUrl}/notes/${encodeURIComponent(query)}`,
       { method: 'PUT', headers: this.headers, body: JSON.stringify(updates) },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(
-        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
-        {
-          method: 'PUT',
-          headers: this.headers,
-          body: JSON.stringify(updates),
-        },
-      );
+      res = await fetch(`${this.baseUrl}/notes/${encodeURIComponent(query)}`, {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify(updates),
+      });
     }
     const json = await res.json();
     if (!res.ok)
@@ -160,12 +156,12 @@ export class RemoteOperations implements Operations {
   async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
     const body = { old_str: oldStr, new_str: newStr };
     let res = await fetch(
-      `${this.baseUrl}/memories/${encodeURIComponent(query)}/patch`,
+      `${this.baseUrl}/notes/${encodeURIComponent(query)}/patch`,
       { method: 'POST', headers: this.headers, body: JSON.stringify(body) },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
       res = await fetch(
-        `${this.baseUrl}/memories/${encodeURIComponent(query)}/patch`,
+        `${this.baseUrl}/notes/${encodeURIComponent(query)}/patch`,
         { method: 'POST', headers: this.headers, body: JSON.stringify(body) },
       );
     }
@@ -177,14 +173,14 @@ export class RemoteOperations implements Operations {
 
   async remove(query: string): Promise<{ title: string; id: string }> {
     let res = await fetch(
-      `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
+      `${this.baseUrl}/notes/${encodeURIComponent(query)}`,
       { method: 'DELETE', headers: this.headers },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(
-        `${this.baseUrl}/memories/${encodeURIComponent(query)}`,
-        { method: 'DELETE', headers: this.headers },
-      );
+      res = await fetch(`${this.baseUrl}/notes/${encodeURIComponent(query)}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
     }
     const json = await res.json();
     if (!res.ok)
@@ -208,11 +204,11 @@ export class RemoteOperations implements Operations {
       ...(regex ? { regex: '1' } : {}),
     });
     appendFilterParams(params, filter);
-    let res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
+    let res = await fetch(`${this.baseUrl}/notes/grep?${params}`, {
       headers: this.headers,
     });
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(`${this.baseUrl}/memories/grep?${params}`, {
+      res = await fetch(`${this.baseUrl}/notes/grep?${params}`, {
         headers: this.headers,
       });
     }
@@ -232,11 +228,11 @@ export class RemoteOperations implements Operations {
       offset: String(offset),
     });
     appendFilterParams(params, filter);
-    let res = await fetch(`${this.baseUrl}/memories?${params}`, {
+    let res = await fetch(`${this.baseUrl}/notes?${params}`, {
       headers: this.headers,
     });
     if (res.status === 401 && (await this.tryRefresh())) {
-      res = await fetch(`${this.baseUrl}/memories?${params}`, {
+      res = await fetch(`${this.baseUrl}/notes?${params}`, {
         headers: this.headers,
       });
     }
@@ -251,12 +247,12 @@ export class RemoteOperations implements Operations {
     back: Array<{ id: string; title: string }>;
   }> {
     let res = await fetch(
-      `${this.baseUrl}/memories/${encodeURIComponent(memId)}/links`,
+      `${this.baseUrl}/notes/${encodeURIComponent(memId)}/links`,
       { headers: this.headers },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
       res = await fetch(
-        `${this.baseUrl}/memories/${encodeURIComponent(memId)}/links`,
+        `${this.baseUrl}/notes/${encodeURIComponent(memId)}/links`,
         { headers: this.headers },
       );
     }

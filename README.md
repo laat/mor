@@ -157,18 +157,18 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 
 ### HTTP API
 
-| Method   | Path                                                         | Description                                                          |
-| -------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `GET`    | `/health`                                                    | Health check                                                         |
-| `GET`    | `/memories?limit=N&offset=N`                                 | List all                                                             |
-| `GET`    | `/memories/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
-| `GET`    | `/memories/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
-| `GET`    | `/memories/:query`                                           | Read one                                                             |
-| `GET`    | `/memories/:query/links`                                     | Get forward and backlinks                                            |
-| `POST`   | `/memories`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
-| `PUT`    | `/memories/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
-| `DELETE` | `/memories/:query`                                           | Remove                                                               |
-| `POST`   | `/mcp`                                                       | MCP protocol (streamable HTTP)                                       |
+| Method   | Path                                                      | Description                                                          |
+| -------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
+| `GET`    | `/health`                                                 | Health check                                                         |
+| `GET`    | `/notes?limit=N&offset=N`                                 | List all                                                             |
+| `GET`    | `/notes/search?q=...&limit=N&offset=N`                    | FTS search                                                           |
+| `GET`    | `/notes/grep?q=...&limit=N&offset=N&ignoreCase=1&regex=1` | Substring or regex search                                            |
+| `GET`    | `/notes/:query`                                           | Read one                                                             |
+| `GET`    | `/notes/:query/links`                                     | Get forward and backlinks                                            |
+| `POST`   | `/notes`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
+| `PUT`    | `/notes/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
+| `DELETE` | `/notes/:query`                                           | Remove                                                               |
+| `POST`   | `/mcp`                                                    | MCP protocol (streamable HTTP)                                       |
 
 ## Embeddings
 

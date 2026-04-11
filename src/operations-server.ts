@@ -130,7 +130,7 @@ export function startServer(
 
   app.get('/health', (c) => c.json({ ok: true, version }));
 
-  app.get('/memories/search', async (c) => {
+  app.get('/notes/search', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
     try {
@@ -148,7 +148,7 @@ export function startServer(
     }
   });
 
-  app.get('/memories/grep', async (c) => {
+  app.get('/notes/grep', async (c) => {
     const q = c.req.query('q');
     if (!q) return c.json({ error: 'Missing query parameter: q' }, 400);
     try {
@@ -167,7 +167,7 @@ export function startServer(
     }
   });
 
-  app.get('/memories', async (c) => {
+  app.get('/notes', async (c) => {
     try {
       return c.json(
         await ops.list(
@@ -182,7 +182,7 @@ export function startServer(
     }
   });
 
-  app.post('/memories', async (c) => {
+  app.post('/notes', async (c) => {
     const body = await c.req.json();
     if (!body.title || !body.content) {
       return c.json({ error: 'Missing required fields: title, content' }, 400);
@@ -203,7 +203,7 @@ export function startServer(
     );
   });
 
-  app.get('/memories/:query', async (c) => {
+  app.get('/notes/:query', async (c) => {
     const mem = await ops.read(c.req.param('query'));
     if (!mem) {
       return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
@@ -211,7 +211,7 @@ export function startServer(
     return c.json({ data: mem });
   });
 
-  app.get('/memories/:query/links', async (c) => {
+  app.get('/notes/:query/links', async (c) => {
     const mem = await ops.read(c.req.param('query'));
     if (!mem) {
       return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
@@ -219,7 +219,7 @@ export function startServer(
     return c.json({ data: await ops.getLinks(mem.id) });
   });
 
-  app.post('/memories/:query/patch', async (c) => {
+  app.post('/notes/:query/patch', async (c) => {
     try {
       const { old_str, new_str } = await c.req.json();
       if (typeof old_str !== 'string')
@@ -235,7 +235,7 @@ export function startServer(
     }
   });
 
-  app.put('/memories/:query', async (c) => {
+  app.put('/notes/:query', async (c) => {
     try {
       const { title, description, content, tags, type } = await c.req.json();
       return c.json({
@@ -253,7 +253,7 @@ export function startServer(
     }
   });
 
-  app.delete('/memories/:query', async (c) => {
+  app.delete('/notes/:query', async (c) => {
     try {
       return c.json({ data: await ops.remove(c.req.param('query')) });
     } catch (e) {
