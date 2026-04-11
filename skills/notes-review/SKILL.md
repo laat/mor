@@ -1,17 +1,17 @@
 ---
-name: memory-review
+name: notes-review
 description: Review the note store for quality issues — duplicates, stale content, broken links, tag inconsistencies, and cleanup opportunities
 ---
 
-Audit the note store and produce a structured report of proposed changes. Do NOT apply changes — present proposals for user approval, then use `/memory-consolidate` or individual `notes_update`/`notes_remove` calls to execute approved changes.
+Audit the note store and produce a structured report of proposed changes. Do NOT apply changes — present proposals for user approval, then use `/notes-consolidate` or individual `notes_update`/`notes_remove` calls to execute approved changes.
 
 ## Examples
 
 ```
-/memory-review
-/memory-review tag hygiene
-/memory-review duplicates
-/memory-review stale
+/notes-review
+/notes-review tag hygiene
+/notes-review duplicates
+/notes-review stale
 ```
 
 ## Steps
@@ -75,7 +75,7 @@ End with a summary: "X notes reviewed, Y issues found across Z categories"
 After the user approves specific proposals:
 
 - Use `notes_update` for retags, title changes, content updates
-- Use `/memory-consolidate` for batch operations (retagging many notes, merging)
+- Use `/notes-consolidate` for batch operations (retagging many notes, merging)
 - Use `notes_remove` for deletions
 - Report what was changed
 

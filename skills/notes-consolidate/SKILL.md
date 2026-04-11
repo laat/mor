@@ -1,5 +1,5 @@
 ---
-name: memory-consolidate
+name: notes-consolidate
 description: Apply batch edits to notes using natural language — rename, retag, add cross-references, merge, or clean up a set of notes
 ---
 
@@ -8,11 +8,11 @@ Apply a natural language instruction across a set of notes, handling cross-refer
 ## Examples
 
 ```
-/memory-consolidate all pipeline notes should have Pipeline prefix in title
-/memory-consolidate normalize fsharp tags — use "fsharp" not "f#"
-/memory-consolidate add cross-references between related pipeline notes
-/memory-consolidate merge the two ID model notes into one
-/memory-consolidate remove the todo tag from completed items
+/notes-consolidate all pipeline notes should have Pipeline prefix in title
+/notes-consolidate normalize fsharp tags — use "fsharp" not "f#"
+/notes-consolidate add cross-references between related pipeline notes
+/notes-consolidate merge the two ID model notes into one
+/notes-consolidate remove the todo tag from completed items
 ```
 
 ## Steps
