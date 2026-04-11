@@ -13,7 +13,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'mor',
-      description: 'A shared memory store for humans and AI',
+      description: 'A shared note store for humans and AI',
       social: [
         {
           icon: 'github',

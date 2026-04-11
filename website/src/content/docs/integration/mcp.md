@@ -3,7 +3,7 @@ title: MCP Server
 description: Use mor as an MCP server for AI assistants
 ---
 
-The MCP server exposes your memory store to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
+The MCP server exposes your note store to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
 
 ## Setup
 
@@ -12,7 +12,7 @@ Add to your Claude Code or Claude Desktop MCP config:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "command": "mor",
       "args": ["mcp"]
     }
@@ -22,37 +22,38 @@ Add to your Claude Code or Claude Desktop MCP config:
 
 ## Tools
 
-| Tool            | Description                                                                     |
-| --------------- | ------------------------------------------------------------------------------- |
-| `memory_search` | Full-text search. Returns top result with full content, summaries for rest.     |
-| `memory_grep`   | Substring or regex search. For exact strings, code identifiers, and patterns.   |
-| `memory_read`   | Read memory by ID. Returns separate blocks: metadata, content, links.           |
-| `memory_create` | Create a new memory with title, content, optional tags and type.                |
-| `memory_update` | Update a memory by ID. Returns a diff of changes, or "no changes" if identical. |
-| `memory_remove` | Delete a memory by ID.                                                          |
-| `memory_list`   | List all memories with titles, IDs, and tags. Supports pagination.              |
+| Tool           | Description                                                                   |
+| -------------- | ----------------------------------------------------------------------------- |
+| `notes_search` | Full-text search. Returns top result with full content, summaries for rest.   |
+| `notes_grep`   | Substring or regex search. For exact strings, code identifiers, and patterns. |
+| `notes_read`   | Read note by ID. Returns separate blocks: metadata, content, links.           |
+| `notes_create` | Create a new note with title, content, optional tags and type.                |
+| `notes_update` | Update a note by ID. Returns a diff of changes, or "no changes" if identical. |
+| `notes_patch`  | Apply a str_replace patch to a note's content.                                |
+| `notes_remove` | Delete a note by ID.                                                          |
+| `notes_list`   | List all notes with titles, IDs, and tags. Supports pagination.               |
 
 ### Filtering
 
-`memory_search`, `memory_grep`, and `memory_list` accept optional parameters:
+`notes_search`, `notes_grep`, and `notes_list` accept optional parameters:
 
 - `tag` — array of glob patterns matched against tags with AND logic (e.g. `["rxjs", "typescript"]`)
-- `type` — memory type filter (e.g. `"file"`, `"snippet"`)
+- `type` — note type filter (e.g. `"file"`, `"snippet"`)
 - `limit` — max results (default 20 for search/grep, 100 for list)
 - `offset` — skip first N results for pagination
 
-`memory_grep` also accepts:
+`notes_grep` also accepts:
 
 - `regex` — treat pattern as a JavaScript regular expression
 - `ignore_case` — case-insensitive matching
 
 ## Cross-references
 
-`memory_read` automatically includes cross-references as a separate content block:
+`notes_read` automatically includes cross-references as a separate content block:
 
-- **Forward links** (`→`) — this memory references another
-- **Backlinks** (`←`) — another memory references this one
-- Links are omitted if the memory has no connections
+- **Forward links** (`→`) — this note references another
+- **Backlinks** (`←`) — another note references this one
+- Links are omitted if the note has no connections
 
 Links are derived from `[text](mor:<id>)` markdown links in content and `links` arrays in frontmatter. They use 8-char short IDs consistent with list/search output.
 
@@ -61,9 +62,9 @@ Links are derived from `[text](mor:<id>)` markdown links in content and `links` 
 The MCP tools are designed to minimize token usage:
 
 - **8-char short IDs** in all output — full UUIDs are never shown
-- `memory_search` **top result** includes full content — no extra round trip for the best match
-- **Other results** show title, tags, description, and score — enough to decide whether to `memory_read`
-- `memory_read` returns **separate content blocks** (metadata, content, links) — prevents AI from treating metadata as note content when updating
+- `notes_search` **top result** includes full content — no extra round trip for the best match
+- **Other results** show title, tags, description, and score — enough to decide whether to `notes_read`
+- `notes_read` returns **separate content blocks** (metadata, content, links) — prevents AI from treating metadata as note content when updating
 
 ## Remote MCP
 
@@ -78,7 +79,7 @@ Then add just the URL to your MCP client config — no secret needed:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "type": "url",
       "url": "http://100.64.0.1:7677/mcp"
     }

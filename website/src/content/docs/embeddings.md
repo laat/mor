@@ -76,11 +76,11 @@ Default base URL is `http://localhost:11434`. No API key needed.
 
 ## How it works
 
-1. On `add`/`update`, the memory's title + tags + content are concatenated and sent to the embedding provider
+1. On `add`/`update`, the note's title + tags + content are concatenated and sent to the embedding provider
 2. The resulting vector is stored in the `embeddings` table and indexed via sqlite-vec for fast KNN search
 3. On `find`, the query is embedded and compared against stored vectors using cosine distance
 4. FTS and vector rankings are combined using Reciprocal Rank Fusion (RRF)
-5. Frequently accessed memories get a small ranking boost (~5% max)
+5. Frequently accessed notes get a small ranking boost (~5% max)
 
 ## When to use embeddings
 
@@ -91,8 +91,8 @@ Embeddings help when:
 
 Embeddings may not help when:
 
-- Your memory store is small (FTS + grep cover most cases)
+- Your note store is small (FTS + grep cover most cases)
 - You search for exact strings (use `grep` instead)
 - Score distributions are flat (all results score similarly)
 
-For most personal use, FTS + grep is sufficient. Embeddings are worth trying if you have hundreds of memories and find yourself refining searches often.
+For most personal use, FTS + grep is sufficient. Embeddings are worth trying if you have hundreds of notes and find yourself refining searches often.

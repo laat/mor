@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Memberberry hook for Claude Code
-# Hints at relevant mor memories so Claude can choose to read them.
+# Hints at relevant mor notes so Claude can choose to read them.
 #
 # Configure in ~/.claude/settings.json:
 #   "hooks": {
@@ -25,7 +25,7 @@ touch "$cache_file"
 
 hits=$(mor find "$prompt" --limit 3 --json 2>/dev/null) || exit 0
 
-# Filter out already-surfaced memories
+# Filter out already-surfaced notes
 new=$(echo "$hits" | jq --slurpfile seen <(jq -R . "$cache_file") '
   [.[] | select(.id as $id | $seen | map(select(. == $id)) | length == 0)]
 ')
@@ -38,5 +38,5 @@ echo "$new" | jq -r '.[].id' >> "$cache_file"
 
 # Output hints — just enough for Claude to decide whether to read more
 echo ""
-echo "[mor] Potentially relevant memories (use mor MCP tools to read if needed):"
+echo "[mor] Potentially relevant notes (use mor MCP tools to read if needed):"
 echo "$new" | jq -r '.[] | "  - \(.title) [\(.id[0:8])]" + (if .description then " — \(.description)" else "" end)'

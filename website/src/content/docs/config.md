@@ -37,7 +37,7 @@ mor is configured via `~/.config/mor/config.json`, auto-created on first run. Ov
 
 | Key         | Type    | Default                  | Description                                                                    |
 | ----------- | ------- | ------------------------ | ------------------------------------------------------------------------------ |
-| `memoryDir` | string  | `~/.config/mor/memories` | Directory where memory markdown files are stored                               |
+| `memoryDir` | string  | `~/.config/mor/memories` | Directory where note markdown files are stored                                 |
 | `dbPath`    | string  | `~/.config/mor/index.db` | Path to the SQLite search index                                                |
 | `autosync`  | boolean | `false`                  | Auto git pull/commit/push after every add, update, or remove                   |
 | `threshold` | number  | `0.3`                    | Minimum relevance score (0–1) for `find` results. Override per-query with `-s` |

@@ -1,11 +1,11 @@
 ---
 title: Storage
-description: How mor stores memories on disk
+description: How mor stores notes on disk
 ---
 
 ## File format
 
-Memories are markdown files with YAML frontmatter:
+Notes are markdown files with YAML frontmatter:
 
 ````markdown
 ---
@@ -68,20 +68,20 @@ The index at `index.db` contains:
 
 - **memories** table — metadata + content for fast queries
 - **memories_fts** — FTS5 virtual table for full-text search
-- **links** — cross-references between memories (derived from content and frontmatter)
+- **links** — cross-references between notes (derived from content and frontmatter)
 - **embeddings** — vector blobs for semantic search (optional)
 
 The index auto-syncs from the markdown files. If it gets out of sync, run `mor reindex`.
 
 ## Cross-references
 
-Memories can reference each other using markdown links with the `mor:` scheme:
+Notes can reference each other using markdown links with the `mor:` scheme:
 
 ```markdown
 See [Fastify Chaos Plugin](mor:22f6b489) for resilience testing.
 ```
 
-For file/snippet memories where content is a code block, use frontmatter links:
+For file/snippet notes where content is a code block, use frontmatter links:
 
 ```yaml
 links:
@@ -93,12 +93,12 @@ The `links` table is a derived index — rebuilt from content and frontmatter on
 
 ## Git integration
 
-The memory folder can be a git repository. Use `mor sync` to pull remote changes and push local ones:
+The notes folder can be a git repository. Use `mor sync` to pull remote changes and push local ones:
 
 ```sh
 cd ~/.config/mor/memories
 git init
-git remote add origin git@github.com:you/memories.git
+git remote add origin git@github.com:you/notes.git
 
 # Then from anywhere:
 mor sync

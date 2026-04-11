@@ -18,7 +18,7 @@ Requires Node.js 20+.
 ## Quick start
 
 ```sh
-# Add a memory from a file
+# Add a note from a file
 mor add retryWithBackoff.ts -d "RxJS retry with exponential backoff"
 
 # Add from stdin
@@ -52,7 +52,7 @@ Add to your Claude Code or Claude Desktop config:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "command": "mor",
       "args": ["mcp"]
     }

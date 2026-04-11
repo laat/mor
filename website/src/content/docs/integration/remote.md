@@ -1,13 +1,13 @@
 ---
 title: Remote Access
-description: Access your memories from any machine
+description: Access your notes from any machine
 ---
 
-Run a central memory server on one machine and access it from any other.
+Run a central note server on one machine and access it from any other.
 
 ## Server setup
 
-On the machine that stores your memories, bind to the network interface you want to expose:
+On the machine that stores your notes, bind to the network interface you want to expose:
 
 ```sh
 mor serve --port 7677 --host 100.64.0.1 --token your-passphrase --mcp
@@ -24,7 +24,7 @@ Point your MCP client at the server URL — no secret needed in the config:
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "mor": {
       "type": "url",
       "url": "http://100.64.0.1:7677/mcp"
     }

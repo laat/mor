@@ -14,10 +14,10 @@ description: All mor commands and their options
 | `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
 | `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`  | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
-| `rm <query>`      | Remove a memory                                                                                                 |
+| `rm <query>`      | Remove a note                                                                                                   |
 | `links [query]`   | Show cross-references (`--broken` to find dangling links)                                                       |
 | `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
-| `sync`            | Pull, commit, and push the memory folder via git                                                                |
+| `sync`            | Pull, commit, and push the notes folder via git                                                                 |
 | `reindex`         | Rebuild search index                                                                                            |
 | `import <dir>`    | Import `.md` files from a directory                                                                             |
 | `mcp`             | Start MCP server (stdio)                                                                                        |
@@ -47,20 +47,20 @@ Queries resolve in order:
 
 `find`, `grep`, and `ls` support shared filter options:
 
-| Option             | Description                                   |
-| ------------------ | --------------------------------------------- |
-| `--type <type>`    | Filter by memory type (comma-separated, glob) |
-| `--tag <pattern>`  | Filter by tag (glob)                          |
-| `--repo <pattern>` | Filter by repository (glob)                   |
-| `--ext <ext>`      | Filter by file extension in title             |
+| Option             | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `--type <type>`    | Filter by note type (comma-separated, glob) |
+| `--tag <pattern>`  | Filter by tag (glob)                        |
+| `--repo <pattern>` | Filter by repository (glob)                 |
+| `--ext <ext>`      | Filter by file extension in title           |
 
 ### Examples
 
 ```sh
-# List only file-type memories
+# List only file-type notes
 mor ls --type file
 
-# Find typescript memories about http
+# Find typescript notes about http
 mor find --tag typescript http
 
 # List all rxjs snippets
@@ -73,7 +73,7 @@ mor ls --repo "github.com/myorg/*"
 mor ls --ext .ts
 ```
 
-## Adding memories
+## Adding notes
 
 ```sh
 # From a local file (auto-detects type and language tag)
@@ -92,7 +92,7 @@ mor add -t "Meeting notes"
 mor add file.py -t "Custom title" -d "Description" --tags "python,ml" --type file
 ```
 
-## Updating memories
+## Updating notes
 
 ```sh
 # Update metadata only
@@ -123,7 +123,7 @@ mor ls --tags
 
 ## Git sync
 
-If your memory folder is a git repository:
+If your notes folder is a git repository:
 
 ```sh
 # Pull remote changes, commit and push local changes
@@ -146,7 +146,7 @@ Each mutation commits with a descriptive message (e.g. `add: Shopping List`) and
 
 ## Cross-references
 
-Memories can link to each other using markdown links with the `mor:` scheme:
+Notes can link to each other using markdown links with the `mor:` scheme:
 
 ```markdown
 See [Fastify Chaos Plugin](mor:22f6b489) for resilience testing.
@@ -157,19 +157,19 @@ Links are extracted from content automatically — the `links` table is a derive
 ### Viewing links
 
 ```sh
-# Show all links for a memory (→ forward, ← backlinks, ↔ bidirectional)
+# Show all links for a note (→ forward, ← backlinks, ↔ bidirectional)
 mor links fastify chaos plugin
 
 # Show links inline with content
 mor cat --links fastify chaos plugin
 
-# Find all memories with broken references
+# Find all notes with broken references
 mor links --broken
 ```
 
 ### Frontmatter links
 
-For file/snippet memories where content is a code block, add links in the frontmatter:
+For file/snippet notes where content is a code block, add links in the frontmatter:
 
 ```yaml
 links:

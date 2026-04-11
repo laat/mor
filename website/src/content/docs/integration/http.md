@@ -3,7 +3,7 @@ title: HTTP Server
 description: REST API and remote MCP transport
 ---
 
-Run a memory server and access it from anywhere.
+Run a note server and access it from anywhere.
 
 ## Start the server
 
@@ -56,7 +56,7 @@ Options can also be set in `~/.config/mor/config.json`:
 | `DELETE` | `/memories/:query`                                           | Remove                                                               |
 | `POST`   | `/reindex`                                                   | Rebuild search index                                                 |
 | `POST`   | `/sync`                                                      | Git pull + commit + push                                             |
-| `POST`   | `/hooks/memberberry`                                         | Claude Code hook — surface relevant memories                         |
+| `POST`   | `/hooks/memberberry`                                         | Claude Code hook — surface relevant notes                            |
 
 List, search, and grep endpoints return paginated responses:
 
