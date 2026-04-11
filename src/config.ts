@@ -11,7 +11,7 @@ export function getConfigDir(): string {
 }
 
 const DEFAULT_CONFIG: Config = {
-  memoryDir: '~/.config/mor/memories',
+  memoryDir: '~/.config/mor/notes',
   dbPath: '~/.config/mor/index.db',
 };
 
@@ -33,7 +33,7 @@ export function loadConfig(): Config {
     };
   } else {
     config = { ...DEFAULT_CONFIG };
-    config.memoryDir = path.join(configDir, 'memories');
+    config.memoryDir = path.join(configDir, 'notes');
     config.dbPath = path.join(configDir, 'index.db');
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }

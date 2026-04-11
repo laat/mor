@@ -190,7 +190,7 @@ Azure OpenAI uses `AZURE_OPENAI_API_KEY` (or `apiKey` in config) and requires a 
 
 ## Storage
 
-Notes are markdown files with YAML frontmatter, stored in `~/.config/mor/memories/` with a SQLite index at `~/.config/mor/index.db`. Override with `MOR_HOME`.
+Notes are markdown files with YAML frontmatter, stored in `~/.config/mor/notes/` with a SQLite index at `~/.config/mor/index.db`. Override with `MOR_HOME`.
 
 ```
 ~/.config/mor/
@@ -198,7 +198,7 @@ Notes are markdown files with YAML frontmatter, stored in `~/.config/mor/memorie
   credentials.json   # OAuth tokens (created by `mor login`)
   index.db           # search index
   oauth.db           # OAuth clients and tokens (server-side)
-  memories/
+  notes/
     python-naming-a1b2.md
     meeting-notes-c3d4.md
 ```

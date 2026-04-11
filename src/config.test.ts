@@ -24,14 +24,14 @@ afterEach(() => {
 describe('loadConfig', () => {
   it('creates default config on first run', () => {
     const config = loadConfig();
-    expect(config.memoryDir).toBe(path.join(testDir, 'memories'));
+    expect(config.memoryDir).toBe(path.join(testDir, 'notes'));
     expect(config.dbPath).toBe(path.join(testDir, 'index.db'));
     expect(fs.existsSync(path.join(testDir, 'config.json'))).toBe(true);
   });
 
-  it('creates memory directory', () => {
+  it('creates notes directory', () => {
     loadConfig();
-    expect(fs.existsSync(path.join(testDir, 'memories'))).toBe(true);
+    expect(fs.existsSync(path.join(testDir, 'notes'))).toBe(true);
   });
 
   it('writes valid JSON config file', () => {

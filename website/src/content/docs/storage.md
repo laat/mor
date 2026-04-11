@@ -37,7 +37,7 @@ export const retryWithBackoff = <T>(count: number) => {
   credentials.json     # OAuth tokens (created by `mor login`)
   index.db             # SQLite FTS + embeddings index
   oauth.db             # OAuth clients and tokens (server-side)
-  memories/
+  notes/
     retry-with-backoff-4056.md
     python-naming-a1b2.md
     meeting-notes-c3d4.md
@@ -96,7 +96,7 @@ The `links` table is a derived index — rebuilt from content and frontmatter on
 The notes folder can be a git repository. Use `mor sync` to pull remote changes and push local ones:
 
 ```sh
-cd ~/.config/mor/memories
+cd ~/.config/mor/notes
 git init
 git remote add origin git@github.com:you/notes.git
 

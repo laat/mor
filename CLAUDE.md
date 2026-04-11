@@ -41,7 +41,7 @@ All listing APIs (`search`, `grep`, `list`) return paginated results via `Pagina
 
 ### Storage Format
 
-Memories are markdown files in `~/.config/mor/memories/` (overridable via `MOR_HOME`). Frontmatter: id (UUID), title, tags, type, repository, created, updated. Filenames are slugified title + 4-char hash suffix.
+Notes are markdown files in `~/.config/mor/notes/` (overridable via `MOR_HOME`). Frontmatter: id (UUID), title, tags, type, repository, created, updated. Filenames are slugified title + 4-char hash suffix.
 
 ### Database
 
