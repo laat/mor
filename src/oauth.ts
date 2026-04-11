@@ -125,7 +125,7 @@ function authorizeFormHtml(params: Record<string, string>): string {
 <body>
   <div class="card">
     <h1>mor</h1>
-    <p>An application is requesting access to your memory store.</p>
+    <p>An application is requesting access to your notes store.</p>
     <form method="POST" autocomplete="off">
       ${hidden}
       <label for="passphrase">Passphrase</label>

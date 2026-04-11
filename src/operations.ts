@@ -145,6 +145,7 @@ export interface Operations {
       baseUrl?: string;
     };
   }>;
+  patch(query: string, oldStr: string, newStr: string): Promise<Memory>;
   sync(commitMessage?: string): Promise<{ message: string }>;
   close(): void | Promise<void>;
 }

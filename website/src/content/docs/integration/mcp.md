@@ -3,7 +3,7 @@ title: MCP Server
 description: Use mor as an MCP server for AI assistants
 ---
 
-The MCP server exposes your memory store to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
+The MCP server exposes your notes store to AI assistants via the [Model Context Protocol](https://modelcontextprotocol.io/).
 
 ## Setup
 

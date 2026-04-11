@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "mor",
-      "description": "AI-accessible knowledge you actually own — plain markdown on your disk",
+      "description": "AI-accessible notes you actually own — plain markdown on your disk",
       "source": {
         "source": "npm",
         "package": "mor"

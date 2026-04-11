@@ -68,7 +68,7 @@ function parseFilterOpts(opts: Record<string, any>): MemoryFilter {
 
 program
   .name(path.basename(process.argv[1]))
-  .description('AI-accessible knowledge you actually own');
+  .description('AI-accessible notes you actually own');
 
 program
   .command('version')
@@ -507,6 +507,32 @@ program
       }
     },
   );
+
+program
+  .command('patch <query> <old_str> <new_str>')
+  .description('Replace a unique substring in a memory (str_replace semantics)')
+  .action(async (query: string, oldStr: string, newStr: string) => {
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      const before = await ops.read(query);
+      if (!before) {
+        console.error(`Error: memory not found: ${query}`);
+        process.exit(1);
+      }
+      const mem = await ops.patch(before.id, oldStr, newStr);
+      console.log(
+        `${chalk.green('Patched:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+      );
+      console.log(chalk.dim('\n--- content diff ---'));
+      console.log(unifiedDiff(before.content, mem.content));
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      await ops.close();
+    }
+  });
 
 function exportMemory(mem: Memory, raw?: boolean): string {
   if (raw) return serializeMemory(mem);

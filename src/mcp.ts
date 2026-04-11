@@ -90,14 +90,14 @@ export function createMcpServer(ops: Operations): McpServer {
     name: 'mor',
     version,
     description:
-      "The user's primary memory store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
+      "The user's primary notes store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
   });
 
   server.registerTool(
-    'memory_search',
+    'notes_search',
     {
       description:
-        'Semantic search over memories using natural language. Best for finding memories about a topic. Returns scored, ranked results with the top result shown in full.',
+        'Semantic search over notes using natural language. Best for finding notes about a topic. Returns scored, ranked results with the top result shown in full.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -111,7 +111,7 @@ export function createMcpServer(ops: Operations): McpServer {
           .describe(
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
-        type: z.string().optional().describe('Filter by memory type'),
+        type: z.string().optional().describe('Filter by note type'),
       },
     },
     async ({ query, limit, offset, tag, type }) => {
@@ -121,7 +121,7 @@ export function createMcpServer(ops: Operations): McpServer {
         { tag, type },
         offset ?? 0,
       );
-      if (page.data.length === 0) return text('No memories found.');
+      if (page.data.length === 0) return text('No notes found.');
       const lines = page.data.map((r) => {
         const score = `  (${r.score.toFixed(2)})`;
         return formatMemory(r.memory) + score;
@@ -133,10 +133,10 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_grep',
+    'notes_grep',
     {
       description:
-        'Exact text search over memory content and titles. Use when you know the precise string, identifier, URL, or regex pattern to match. Unlike memory_search, this finds literal text rather than semantically similar content.',
+        'Exact text search over note content and titles. Use when you know the precise string, identifier, URL, or regex pattern to match. Unlike notes_search, this finds literal text rather than semantically similar content.',
       inputSchema: {
         pattern: z.string().describe('Substring or regex pattern'),
         limit: z.number().optional().describe('Max results (default 20)'),
@@ -158,7 +158,7 @@ export function createMcpServer(ops: Operations): McpServer {
           .describe(
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
-        type: z.string().optional().describe('Filter by memory type'),
+        type: z.string().optional().describe('Filter by note type'),
       },
     },
     async ({ pattern, limit, offset, ignore_case, regex, tag, type }) => {
@@ -169,7 +169,7 @@ export function createMcpServer(ops: Operations): McpServer {
         offset: offset ?? 0,
         regex,
       });
-      if (page.data.length === 0) return text('No memories found.');
+      if (page.data.length === 0) return text('No notes found.');
       const lines = page.data.map(formatMemory);
       const top = page.data[0];
       const topContent = `\n\n---\n\nTop result: ${shortId(top.id)}  ${top.title}\n\n${top.content}`;
@@ -178,14 +178,14 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_read',
+    'notes_read',
     {
-      description: 'Read full content of one or more memories by ID.',
+      description: 'Read full content of one or more notes by ID.',
       inputSchema: {
         ids: z
           .array(z.string())
           .describe(
-            'UUIDs of the memories to read — pass an array, e.g. ["id1", "id2"]',
+            'UUIDs of the notes to read — pass an array, e.g. ["id1", "id2"]',
           ),
       },
     },
@@ -207,7 +207,7 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       if (blocks.length === 0) {
         return {
-          ...text(`Memory not found: ${notFound.join(', ')}`),
+          ...text(`Note not found: ${notFound.join(', ')}`),
           isError: true,
         };
       }
@@ -222,14 +222,14 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_create',
+    'notes_create',
     {
       description:
-        'Create a new memory with title, content, optional tags and type.',
+        'Create a new note with title, content, optional tags and type.',
       inputSchema: {
-        title: z.string().describe('Memory title'),
+        title: z.string().describe('Note title'),
         description: z.string().optional().describe('Short description'),
-        content: z.string().describe('Memory content (markdown)'),
+        content: z.string().describe('Note content (markdown)'),
         tags: z
           .array(z.string())
           .nullish()
@@ -237,7 +237,7 @@ export function createMcpServer(ops: Operations): McpServer {
         type: z
           .enum(MEMORY_TYPES)
           .nullish()
-          .describe('Memory type (default: knowledge)'),
+          .describe('Note type (default: knowledge)'),
       },
     },
     async ({ title, description, content, tags, type }) => {
@@ -257,12 +257,12 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_remove',
+    'notes_remove',
     {
       description:
-        'Delete a memory by ID. Use memory_search to find the ID first.',
+        'Delete a note by ID. Use notes_search to find the ID first.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the memory'),
+        id: z.string().describe('Full UUID of the note'),
       },
     },
     async ({ id }) => {
@@ -276,10 +276,10 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
-    'memory_list',
+    'notes_list',
     {
       description:
-        'List all memories with titles, IDs, and tags. Use tag/type params to filter.',
+        'List all notes with titles, IDs, and tags. Use tag/type params to filter.',
       inputSchema: {
         limit: z.number().optional().describe('Max results (default 100)'),
         offset: z
@@ -292,24 +292,24 @@ export function createMcpServer(ops: Operations): McpServer {
           .describe(
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
-        type: z.string().optional().describe('Filter by memory type'),
+        type: z.string().optional().describe('Filter by note type'),
       },
     },
     async ({ limit, offset, tag, type }) => {
       const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
-      if (page.data.length === 0) return text('No memories stored.');
+      if (page.data.length === 0) return text('No notes stored.');
       const lines = page.data.map(formatMemory);
       return text(paginatedHeader(page) + lines.join('\n'));
     },
   );
 
   server.registerTool(
-    'memory_update',
+    'notes_update',
     {
       description:
-        'Update a memory by ID. Use memory_search to find the ID first, then pass it here. Only the provided fields are changed.',
+        'Update a note by ID. Use notes_search to find the ID first, then pass it here. Only the provided fields are changed.',
       inputSchema: {
-        id: z.string().describe('Full UUID of the memory'),
+        id: z.string().describe('Full UUID of the note'),
         title: z.string().optional().describe('New title'),
         description: z.string().optional().describe('New description'),
         content: z.string().optional().describe('New content'),
@@ -323,7 +323,7 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ id, title, description, content, tags, type }) => {
       try {
         const before = await ops.read(id);
-        if (!before) throw new Error(`Memory not found: ${id}`);
+        if (!before) throw new Error(`Note not found: ${id}`);
         const updated = await ops.update(id, {
           title,
           description,
@@ -354,6 +354,36 @@ export function createMcpServer(ops: Operations): McpServer {
           parts.push('--- content diff ---');
           parts.push(unifiedDiff(before.content, content));
         }
+        return text(parts.join('\n\n'));
+      } catch (e) {
+        return error(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'notes_patch',
+    {
+      description:
+        'Apply a str_replace patch to a note. The old_str must appear exactly once in the content. Use empty new_str to delete text.',
+      inputSchema: {
+        id: z.string().describe('Full UUID of the note'),
+        old_str: z
+          .string()
+          .describe('Exact substring to find (must be unique in content)'),
+        new_str: z
+          .string()
+          .describe('Replacement string (empty string to delete)'),
+      },
+    },
+    async ({ id, old_str, new_str }) => {
+      try {
+        const before = await ops.read(id);
+        if (!before) throw new Error(`Note not found: ${id}`);
+        const updated = await ops.patch(id, old_str, new_str);
+        const parts = [`Patched: ${updated.title}`];
+        parts.push('--- content diff ---');
+        parts.push(unifiedDiff(before.content, updated.content));
         return text(parts.join('\n\n'));
       } catch (e) {
         return error(e);

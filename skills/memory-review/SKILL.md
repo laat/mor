@@ -1,9 +1,9 @@
 ---
 name: memory-review
-description: Review the memory store for quality issues — duplicates, stale content, broken links, tag inconsistencies, and cleanup opportunities
+description: Review the notes store for quality issues — duplicates, stale content, broken links, tag inconsistencies, and cleanup opportunities
 ---
 
-Audit the memory store and produce a structured report of proposed changes. Do NOT apply changes — present proposals for user approval, then use `/memory-consolidate` or individual `memory_update`/`memory_remove` calls to execute approved changes.
+Audit the notes store and produce a structured report of proposed changes. Do NOT apply changes — present proposals for user approval, then use `/memory-consolidate` or individual `memory_update`/`memory_remove` calls to execute approved changes.
 
 ## Examples
 

@@ -225,6 +225,20 @@ export function startServer(
     return c.json({ data: await ops.getLinks(mem.id) });
   });
 
+  app.post('/memories/:query/patch', async (c) => {
+    try {
+      const { old_str, new_str } = await c.req.json();
+      if (typeof old_str !== 'string')
+        return c.json({ error: 'Missing required field: old_str' }, 400);
+      return c.json({
+        data: await ops.patch(c.req.param('query'), old_str, new_str ?? ''),
+      });
+    } catch (e) {
+      const { msg, status } = errMsg(e);
+      return c.json({ error: msg }, status);
+    }
+  });
+
   app.put('/memories/:query', async (c) => {
     try {
       const { title, description, content, tags, type } = await c.req.json();

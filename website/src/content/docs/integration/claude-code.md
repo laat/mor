@@ -1,6 +1,6 @@
 ---
 title: Claude Code
-description: Set up mor as a memory store for Claude Code
+description: Set up mor as a notes store for Claude Code
 ---
 
 ## Plugin
@@ -46,7 +46,7 @@ Claude Code has its own built-in memory system. To make it check mor first, add 
 When the user asks to recall, find, check, or reuse something they
 previously saved or remembered — use the `mor` MCP server tools
 (`memory_search`, `memory_read`, `memory_list`). This is the user's
-primary memory store containing code snippets, files, and reference
+primary notes store containing code snippets, files, and reference
 notes. Always check mor before saying something wasn't found.
 ```
 

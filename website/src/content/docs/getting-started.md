@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: AI-accessible knowledge you actually own
+description: AI-accessible notes you actually own
 ---
 
 :::caution[Personal project]

@@ -3,7 +3,7 @@
 > [!WARNING]
 > This is a personal project. I maintain it for my own use and share it because others might find it useful. Feature PRs are unlikely to be merged — if you have an idea, [start a discussion](https://github.com/laat/mor/discussions) first. Fork freely — it's MIT licensed.
 
-AI-accessible knowledge you actually own. **Plain markdown files on your disk**, searchable by AI via MCP.
+AI-accessible notes you actually own. **Plain markdown files on your disk**, searchable by AI via MCP.
 
 Your notes live on your disk as plain markdown with YAML frontmatter — readable without mor, portable to any tool, git-syncable across machines. The MCP server gives AI assistants (Claude Code, Claude Desktop, Cursor, etc.) persistent memory that survives context windows. You also get a CLI and HTTP API.
 
@@ -92,7 +92,7 @@ To make sure Claude Code checks mor first when you ask it to recall something, a
 
 When the user asks to recall, find, check, or reuse something they previously saved
 or remembered — use the `mor` MCP server tools (`memory_search`, `memory_read`,
-`memory_list`). This is the user's primary memory store containing code snippets,
+`memory_list`). This is the user's primary notes store containing code snippets,
 files, and reference notes. Always check mor before saying something wasn't found.
 ```
 

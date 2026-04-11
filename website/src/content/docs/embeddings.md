@@ -91,7 +91,7 @@ Embeddings help when:
 
 Embeddings may not help when:
 
-- Your memory store is small (FTS + grep cover most cases)
+- Your notes store is small (FTS + grep cover most cases)
 - You search for exact strings (use `grep` instead)
 - Score distributions are flat (all results score similarly)
 

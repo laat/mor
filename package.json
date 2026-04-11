@@ -1,7 +1,7 @@
 {
   "name": "mor",
   "version": "0.15.5",
-  "description": "AI-accessible knowledge you actually own — plain markdown on your disk",
+  "description": "AI-accessible notes you actually own — plain markdown on your disk",
   "type": "module",
   "license": "MIT",
   "author": "Sigurd Fosseng <sigurd@fosseng.net>",

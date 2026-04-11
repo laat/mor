@@ -431,6 +431,29 @@ export class LocalOperations implements Operations {
     return { title: mem.title, id: mem.id };
   }
 
+  async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
+    const existing = this.resolveById(query);
+    if (!existing)
+      throw new NotFoundError(
+        `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+      );
+    const idx = existing.content.indexOf(oldStr);
+    if (idx === -1) throw new Error('old_str not found in memory content');
+    if (existing.content.indexOf(oldStr, idx + 1) !== -1)
+      throw new Error('old_str appears multiple times in memory content');
+    const newContent =
+      existing.content.slice(0, idx) +
+      newStr +
+      existing.content.slice(idx + oldStr.length);
+    const { mem, raw } = updateMemory(existing.filePath, {
+      content: newContent,
+    });
+    this.upsertFromMemory(mem, raw);
+    await this.computeEmbedding(mem);
+    this.autoSync(`patch: ${mem.title}`);
+    return mem;
+  }
+
   async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
     const {
       limit = 20,

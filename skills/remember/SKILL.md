@@ -1,9 +1,9 @@
 ---
 name: remember
-description: Save a code snippet or piece of knowledge to the memory store. Use when the user asks to remember, save, or store something for later.
+description: Save a code snippet or piece of knowledge to the notes store. Use when the user asks to remember, save, or store something for later.
 ---
 
-Save a code snippet or piece of knowledge to the memory store.
+Save a code snippet or piece of knowledge to the notes store.
 
 $ARGUMENTS describes what to remember. It can be a function name, a concept, a piece of code in the current project, or general knowledge.
 
