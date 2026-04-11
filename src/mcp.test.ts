@@ -158,7 +158,7 @@ describe('notes_search', () => {
     const { text } = await callTool('notes_search', {
       query: 'nonexistent-xyzzy',
     });
-    expect(text).toBe('No memories found.');
+    expect(text).toBe('No notes found.');
   });
 
   it('shows pagination header', async () => {
@@ -258,7 +258,7 @@ describe('notes_grep', () => {
     const { text } = await callTool('notes_grep', {
       pattern: 'nonexistent-xyzzy',
     });
-    expect(text).toBe('No memories found.');
+    expect(text).toBe('No notes found.');
   });
 });
 
@@ -309,7 +309,7 @@ describe('notes_read', () => {
       ids: ['00000000-0000-0000-0000-000000000000'],
     });
     expect(isError).toBe(true);
-    expect(text).toContain('Memory not found');
+    expect(text).toContain('Note not found');
   });
 
   it('returns error for empty ids', async () => {
@@ -507,7 +507,7 @@ describe('notes_list', () => {
 
   it('returns empty message', async () => {
     const { text } = await callTool('notes_list', {});
-    expect(text).toBe('No memories stored.');
+    expect(text).toBe('No notes stored.');
   });
 });
 

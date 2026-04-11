@@ -18,7 +18,7 @@ Requires Node.js 20+.
 ## Quick start
 
 ```sh
-# Add memories
+# Add notes
 echo "Always use snake_case for Python variables" | mor add -t "Python naming"
 mor add notes.md -t "Meeting notes" --tags "meeting,project-x"
 mor add https://raw.githubusercontent.com/owner/repo/main/config.ts
@@ -54,10 +54,10 @@ mor ls -l
 | `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
 | `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
 | `update <query>`  | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
-| `rm <query>`      | Remove a memory                                                                                                 |
-| `links [query]`   | Show cross-references for a memory (`--broken` to find dangling links)                                          |
+| `rm <query>`      | Remove a note                                                                                                   |
+| `links [query]`   | Show cross-references for a note (`--broken` to find dangling links)                                            |
 | `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
-| `sync`            | Pull, commit, and push the memory folder via git                                                                |
+| `sync`            | Pull, commit, and push the notes folder via git                                                                 |
 | `reindex`         | Rebuild search index                                                                                            |
 | `import <dir>`    | Import `.md` files from a directory                                                                             |
 | `mcp`             | Start MCP server (stdio)                                                                                        |
@@ -88,11 +88,11 @@ Tools: `memory_search`, `memory_read`, `memory_create`, `memory_update`, `memory
 To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
 
 ```markdown
-## Memory
+## Notes
 
 When the user asks to recall, find, check, or reuse something they previously saved
 or remembered — use the `mor` MCP server tools (`memory_search`, `memory_read`,
-`memory_list`). This is the user's primary memory store containing code snippets,
+`memory_list`). This is the user's primary note store containing code snippets,
 files, and reference notes. Always check mor before saying something wasn't found.
 ```
 
@@ -190,7 +190,7 @@ Azure OpenAI uses `AZURE_OPENAI_API_KEY` (or `apiKey` in config) and requires a 
 
 ## Storage
 
-Memories are markdown files with YAML frontmatter, stored in `~/.config/mor/memories/` with a SQLite index at `~/.config/mor/index.db`. Override with `MOR_HOME`.
+Notes are markdown files with YAML frontmatter, stored in `~/.config/mor/memories/` with a SQLite index at `~/.config/mor/index.db`. Override with `MOR_HOME`.
 
 ```
 ~/.config/mor/
@@ -203,7 +203,7 @@ Memories are markdown files with YAML frontmatter, stored in `~/.config/mor/memo
     meeting-notes-c3d4.md
 ```
 
-Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the memory folder is a git repo. Enable `autosync` to sync automatically after every add, update, or remove:
+Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the notes folder is a git repo. Enable `autosync` to sync automatically after every add, update, or remove:
 
 ```json
 {

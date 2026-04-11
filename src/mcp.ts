@@ -90,7 +90,7 @@ export function createMcpServer(ops: Operations): McpServer {
     name: 'mor',
     version,
     description:
-      "The user's primary memory store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
+      "The user's primary note store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
   });
 
   server.registerTool(
@@ -121,7 +121,7 @@ export function createMcpServer(ops: Operations): McpServer {
         { tag, type },
         offset ?? 0,
       );
-      if (page.data.length === 0) return text('No memories found.');
+      if (page.data.length === 0) return text('No notes found.');
       const lines = page.data.map((r) => {
         const score = `  (${r.score.toFixed(2)})`;
         return formatMemory(r.memory) + score;
@@ -169,7 +169,7 @@ export function createMcpServer(ops: Operations): McpServer {
         offset: offset ?? 0,
         regex,
       });
-      if (page.data.length === 0) return text('No memories found.');
+      if (page.data.length === 0) return text('No notes found.');
       const lines = page.data.map(formatMemory);
       const top = page.data[0];
       const topContent = `\n\n---\n\nTop result: ${shortId(top.id)}  ${top.title}\n\n${top.content}`;
@@ -207,7 +207,7 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       if (blocks.length === 0) {
         return {
-          ...text(`Memory not found: ${notFound.join(', ')}`),
+          ...text(`Note not found: ${notFound.join(', ')}`),
           isError: true,
         };
       }
@@ -297,7 +297,7 @@ export function createMcpServer(ops: Operations): McpServer {
     },
     async ({ limit, offset, tag, type }) => {
       const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
-      if (page.data.length === 0) return text('No memories stored.');
+      if (page.data.length === 0) return text('No notes stored.');
       const lines = page.data.map(formatMemory);
       return text(paginatedHeader(page) + lines.join('\n'));
     },
@@ -323,7 +323,7 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ id, title, description, content, tags, type }) => {
       try {
         const before = await ops.read(id);
-        if (!before) throw new Error(`Memory not found: ${id}`);
+        if (!before) throw new Error(`Note not found: ${id}`);
         const updated = await ops.update(id, {
           title,
           description,

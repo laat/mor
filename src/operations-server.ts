@@ -206,10 +206,7 @@ export function startServer(
   app.get('/memories/:query', async (c) => {
     const mem = await ops.read(c.req.param('query'));
     if (!mem) {
-      return c.json(
-        { error: `Memory not found: ${c.req.param('query')}` },
-        404,
-      );
+      return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
     }
     return c.json({ data: mem });
   });
@@ -217,10 +214,7 @@ export function startServer(
   app.get('/memories/:query/links', async (c) => {
     const mem = await ops.read(c.req.param('query'));
     if (!mem) {
-      return c.json(
-        { error: `Memory not found: ${c.req.param('query')}` },
-        404,
-      );
+      return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
     }
     return c.json({ data: await ops.getLinks(mem.id) });
   });
@@ -268,7 +262,7 @@ export function startServer(
     }
   });
 
-  // Memberberry hook — Claude Code HTTP hook for surfacing relevant memories
+  // Memberberry hook — Claude Code HTTP hook for surfacing relevant notes
   const SESSION_TTL = 60 * 60 * 1000; // 1 hour
   const SWEEP_INTERVAL = 10 * 60 * 1000; // 10 minutes
   const memberberrySessions = new Map<
@@ -316,7 +310,7 @@ export function startServer(
         const desc = r.memory.description ? ` — ${r.memory.description}` : '';
         return `  - ${r.memory.title} [${r.memory.id.slice(0, 8)}]${desc}`;
       });
-      const context = `[mor] Potentially relevant memories (use mor MCP tools to read if needed):\n${lines.join('\n')}`;
+      const context = `[mor] Potentially relevant notes (use mor MCP tools to read if needed):\n${lines.join('\n')}`;
 
       return c.json({
         hookSpecificOutput: {

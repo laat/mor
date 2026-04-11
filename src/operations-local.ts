@@ -410,7 +410,7 @@ export class LocalOperations implements Operations {
     const existing = this.resolveById(query);
     if (!existing)
       throw new NotFoundError(
-        `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+        `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
     const { mem, raw } = updateMemory(existing.filePath, updates);
     this.upsertFromMemory(mem, raw);
@@ -439,7 +439,7 @@ export class LocalOperations implements Operations {
     const mem = this.resolveById(query);
     if (!mem)
       throw new NotFoundError(
-        `Memory not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+        `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
     deleteMemory(mem.filePath);
     deleteMemoryFromDb(this.db, mem.id);
