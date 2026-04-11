@@ -361,6 +361,36 @@ export function createMcpServer(ops: Operations): McpServer {
     },
   );
 
+  server.registerTool(
+    'notes_patch',
+    {
+      description:
+        'Apply a str_replace patch to a memory. The old_str must appear exactly once in the content. Use empty new_str to delete text.',
+      inputSchema: {
+        id: z.string().describe('Full UUID of the memory'),
+        old_str: z
+          .string()
+          .describe('Exact substring to find (must be unique in content)'),
+        new_str: z
+          .string()
+          .describe('Replacement string (empty string to delete)'),
+      },
+    },
+    async ({ id, old_str, new_str }) => {
+      try {
+        const before = await ops.read(id);
+        if (!before) throw new Error(`Memory not found: ${id}`);
+        const updated = await ops.patch(id, old_str, new_str);
+        const parts = [`Patched: ${updated.title}`];
+        parts.push('--- content diff ---');
+        parts.push(unifiedDiff(before.content, updated.content));
+        return text(parts.join('\n\n'));
+      } catch (e) {
+        return error(e);
+      }
+    },
+  );
+
   return server;
 }
 

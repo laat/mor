@@ -508,6 +508,35 @@ program
     },
   );
 
+program
+  .command('patch <query...>')
+  .description('Apply a str_replace patch to a memory')
+  .requiredOption('--old <text>', 'Exact substring to find')
+  .requiredOption('--new <text>', 'Replacement string (empty to delete)')
+  .action(async (queryParts: string[], opts: { old: string; new: string }) => {
+    const query = joinArgs(queryParts);
+    const config = loadConfig();
+    const ops = getOps(config);
+    try {
+      const before = await ops.read(query);
+      if (!before) {
+        console.error(`Error: memory not found: ${query}`);
+        process.exit(1);
+      }
+      const updated = await ops.patch(before.id, opts.old, opts.new);
+      console.log(
+        `${chalk.green('Patched:')} ${chalk.cyan(updated.id.slice(0, 8))}  ${updated.title}`,
+      );
+      console.log(chalk.dim('\n--- content diff ---'));
+      console.log(unifiedDiff(before.content, updated.content));
+    } catch (e) {
+      console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(1);
+    } finally {
+      await ops.close();
+    }
+  });
+
 function exportMemory(mem: Memory, raw?: boolean): string {
   if (raw) return serializeMemory(mem);
   if (mem.type === 'file')

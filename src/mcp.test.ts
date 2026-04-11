@@ -388,6 +388,68 @@ describe('notes_remove', () => {
   });
 });
 
+describe('notes_patch', () => {
+  it('patches content and shows diff', async () => {
+    const mem = await ops.add({ title: 'Patch Me', content: 'hello world' });
+
+    const { text } = await callTool('notes_patch', {
+      id: mem.id,
+      old_str: 'world',
+      new_str: 'universe',
+    });
+    expect(text).toContain('Patched: Patch Me');
+    expect(text).toContain('--- content diff ---');
+  });
+
+  it('deletes text with empty new_str', async () => {
+    const mem = await ops.add({
+      title: 'Delete Part',
+      content: 'keep remove keep',
+    });
+
+    const { text } = await callTool('notes_patch', {
+      id: mem.id,
+      old_str: ' remove',
+      new_str: '',
+    });
+    expect(text).toContain('Patched: Delete Part');
+  });
+
+  it('returns error when old_str not found', async () => {
+    const mem = await ops.add({ title: 'No Match', content: 'hello' });
+
+    const { text, isError } = await callTool('notes_patch', {
+      id: mem.id,
+      old_str: 'missing',
+      new_str: 'x',
+    });
+    expect(isError).toBe(true);
+    expect(text).toContain('old_str not found');
+  });
+
+  it('returns error when old_str appears multiple times', async () => {
+    const mem = await ops.add({ title: 'Multi', content: 'aaa' });
+
+    const { text, isError } = await callTool('notes_patch', {
+      id: mem.id,
+      old_str: 'a',
+      new_str: 'b',
+    });
+    expect(isError).toBe(true);
+    expect(text).toContain('appears 3 times');
+  });
+
+  it('returns error for non-existent ID', async () => {
+    const { text, isError } = await callTool('notes_patch', {
+      id: '00000000-0000-0000-0000-000000000000',
+      old_str: 'a',
+      new_str: 'b',
+    });
+    expect(isError).toBe(true);
+    expect(text).toContain('not found');
+  });
+});
+
 describe('notes_list', () => {
   it('uses short 8-char IDs in output', async () => {
     const mem = await ops.add({ title: 'Short ID Test', content: 'x' });
