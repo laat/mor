@@ -155,6 +155,7 @@
         visibility: hidden;
       }
       .logo {
+        position: relative;
         font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
         font-size: clamp(5rem, 16vw, 13rem);
         font-weight: 900;
@@ -171,6 +172,25 @@
         background-clip: text;
         filter: drop-shadow(0 0 80px rgba(61, 220, 132, 0.35))
           drop-shadow(0 0 20px rgba(61, 220, 132, 0.2));
+      }
+      .logo-fade {
+        position: absolute;
+        top: 0;
+        background: none;
+        -webkit-background-clip: initial;
+        background-clip: initial;
+        -webkit-text-fill-color: var(--dim);
+        color: var(--dim);
+        filter: none;
+        opacity: 0.25;
+        pointer-events: none;
+        user-select: none;
+      }
+      .logo-fade-pre {
+        right: 100%;
+      }
+      .logo-fade-post {
+        left: 100%;
       }
       .tagline {
         font-size: clamp(1.05rem, 2.5vw, 1.45rem);
@@ -807,7 +827,10 @@
       <div class="particles" id="particles"></div>
 
       <div class="logo-wrap">
-        <div class="logo">mor</div>
+        <div class="logo">
+          <span class="logo-fade logo-fade-pre" aria-hidden="true">Mem</span
+          >mor<span class="logo-fade logo-fade-post" aria-hidden="true">y</span>
+        </div>
       </div>
       <p class="tagline">
         AI-accessible knowledge <em>you</em> actually <em>own</em>
