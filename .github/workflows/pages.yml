@@ -3,7 +3,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: [website/**]
+    paths:
+      - website/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
   workflow_dispatch:
 
 permissions:
@@ -34,13 +37,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: website/pnpm-lock.yaml
       - name: Verify pnpm version
         run: pnpm --version
       - run: pnpm install --frozen-lockfile
-        working-directory: website
-      - run: pnpm build
-        working-directory: website
+      - run: pnpm --filter website build
       - name: Assemble site
         run: |
           mkdir -p _site/docs
