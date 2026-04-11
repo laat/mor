@@ -114,9 +114,9 @@ afterEach(async () => {
   delete process.env.MOR_HOME;
 });
 
-describe('memory_create', () => {
+describe('notes_create', () => {
   it('creates a memory', async () => {
-    const { text } = await callTool('memory_create', {
+    const { text } = await callTool('notes_create', {
       title: 'Test Memory',
       content: 'hello world',
     });
@@ -125,7 +125,7 @@ describe('memory_create', () => {
   });
 
   it('creates with tags and type', async () => {
-    const { text } = await callTool('memory_create', {
+    const { text } = await callTool('notes_create', {
       title: 'Tagged',
       content: 'content',
       tags: ['a', 'b'],
@@ -135,7 +135,7 @@ describe('memory_create', () => {
   });
 
   it('accepts null tags', async () => {
-    const { text } = await callTool('memory_create', {
+    const { text } = await callTool('notes_create', {
       title: 'Null Tags',
       content: 'content',
       tags: null,
@@ -144,18 +144,18 @@ describe('memory_create', () => {
   });
 });
 
-describe('memory_search', () => {
+describe('notes_search', () => {
   it('finds memories by query', async () => {
     await ops.add({ title: 'JavaScript Guide', content: 'learn js' });
     await ops.add({ title: 'Python Guide', content: 'learn py' });
 
-    const { text } = await callTool('memory_search', { query: 'javascript' });
+    const { text } = await callTool('notes_search', { query: 'javascript' });
     expect(text).toContain('JavaScript Guide');
     expect(text).toContain('Top result:');
   });
 
   it('returns no results message', async () => {
-    const { text } = await callTool('memory_search', {
+    const { text } = await callTool('notes_search', {
       query: 'nonexistent-xyzzy',
     });
     expect(text).toBe('No memories found.');
@@ -165,7 +165,7 @@ describe('memory_search', () => {
     await ops.add({ title: 'Search A', content: 'common' });
     await ops.add({ title: 'Search B', content: 'common' });
 
-    const { text } = await callTool('memory_search', { query: 'common' });
+    const { text } = await callTool('notes_search', { query: 'common' });
     expect(text).toMatch(/Showing 1–2 of 2 results/);
   });
 
@@ -174,7 +174,7 @@ describe('memory_search', () => {
     await ops.add({ title: 'P2', content: 'paginated' });
     await ops.add({ title: 'P3', content: 'paginated' });
 
-    const { text } = await callTool('memory_search', {
+    const { text } = await callTool('notes_search', {
       query: 'paginated',
       limit: 2,
       offset: 1,
@@ -186,7 +186,7 @@ describe('memory_search', () => {
     await ops.add({ title: 'Tagged', content: 'test', tags: ['yes'] });
     await ops.add({ title: 'Untagged', content: 'test' });
 
-    const { text } = await callTool('memory_search', {
+    const { text } = await callTool('notes_search', {
       query: 'test',
       tag: ['yes'],
     });
@@ -198,7 +198,7 @@ describe('memory_search', () => {
     await ops.add({ title: 'Snippet', content: 'code', type: 'snippet' });
     await ops.add({ title: 'Knowledge', content: 'code' });
 
-    const { text } = await callTool('memory_search', {
+    const { text } = await callTool('notes_search', {
       query: 'code',
       type: 'snippet',
     });
@@ -207,12 +207,12 @@ describe('memory_search', () => {
   });
 });
 
-describe('memory_grep', () => {
+describe('notes_grep', () => {
   it('finds by substring', async () => {
     await ops.add({ title: 'Grep Hit', content: 'findme-exact' });
     await ops.add({ title: 'Grep Miss', content: 'nothing' });
 
-    const { text } = await callTool('memory_grep', { pattern: 'findme-exact' });
+    const { text } = await callTool('notes_grep', { pattern: 'findme-exact' });
     expect(text).toContain('Grep Hit');
     expect(text).toContain('Top result:');
     expect(text).not.toContain('Grep Miss');
@@ -221,7 +221,7 @@ describe('memory_grep', () => {
   it('case-insensitive', async () => {
     await ops.add({ title: 'CI Test', content: 'MiXeD' });
 
-    const { text } = await callTool('memory_grep', {
+    const { text } = await callTool('notes_grep', {
       pattern: 'mixed',
       ignore_case: true,
     });
@@ -231,7 +231,7 @@ describe('memory_grep', () => {
   it('regex mode', async () => {
     await ops.add({ title: 'Regex Hit', content: 'async function foo()' });
 
-    const { text } = await callTool('memory_grep', {
+    const { text } = await callTool('notes_grep', {
       pattern: 'async\\s+function',
       regex: true,
     });
@@ -246,7 +246,7 @@ describe('memory_grep', () => {
     });
     await ops.add({ title: 'Grep Knowledge', content: 'shared-grep' });
 
-    const { text } = await callTool('memory_grep', {
+    const { text } = await callTool('notes_grep', {
       pattern: 'shared-grep',
       type: 'snippet',
     });
@@ -255,18 +255,18 @@ describe('memory_grep', () => {
   });
 
   it('returns no results message', async () => {
-    const { text } = await callTool('memory_grep', {
+    const { text } = await callTool('notes_grep', {
       pattern: 'nonexistent-xyzzy',
     });
     expect(text).toBe('No memories found.');
   });
 });
 
-describe('memory_read', () => {
+describe('notes_read', () => {
   it('reads a single memory with separate metadata and content blocks', async () => {
     const mem = await ops.add({ title: 'Read Me', content: 'the content' });
 
-    const { text } = await callTool('memory_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [mem.id] });
     expect(text).toContain('title: Read Me');
     expect(text).toContain('the content');
   });
@@ -278,7 +278,7 @@ describe('memory_read', () => {
       content: 'the body',
     });
 
-    const { text } = await callTool('memory_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [mem.id] });
     expect(text).toContain('title: With Desc');
     expect(text).toContain('description: A short summary');
     expect(text).toContain('the body');
@@ -288,7 +288,7 @@ describe('memory_read', () => {
     const a = await ops.add({ title: 'Batch A', content: 'content a' });
     const b = await ops.add({ title: 'Batch B', content: 'content b' });
 
-    const { text } = await callTool('memory_read', { ids: [a.id, b.id] });
+    const { text } = await callTool('notes_read', { ids: [a.id, b.id] });
     expect(text).toContain('title: Batch A');
     expect(text).toContain('title: Batch B');
   });
@@ -297,7 +297,7 @@ describe('memory_read', () => {
     const mem = await ops.add({ title: 'Exists', content: 'x' });
     const fakeId = '00000000-0000-0000-0000-000000000000';
 
-    const { text } = await callTool('memory_read', {
+    const { text } = await callTool('notes_read', {
       ids: [mem.id, fakeId],
     });
     expect(text).toContain('title: Exists');
@@ -305,7 +305,7 @@ describe('memory_read', () => {
   });
 
   it('returns error when all not found', async () => {
-    const { text, isError } = await callTool('memory_read', {
+    const { text, isError } = await callTool('notes_read', {
       ids: ['00000000-0000-0000-0000-000000000000'],
     });
     expect(isError).toBe(true);
@@ -313,16 +313,16 @@ describe('memory_read', () => {
   });
 
   it('returns error for empty ids', async () => {
-    const { isError } = await callTool('memory_read', { ids: [] });
+    const { isError } = await callTool('notes_read', { ids: [] });
     expect(isError).toBe(true);
   });
 });
 
-describe('memory_update', () => {
+describe('notes_update', () => {
   it('updates content and shows diff', async () => {
     const mem = await ops.add({ title: 'Update Me', content: 'old' });
 
-    const { text } = await callTool('memory_update', {
+    const { text } = await callTool('notes_update', {
       id: mem.id,
       content: 'new',
     });
@@ -333,7 +333,7 @@ describe('memory_update', () => {
   it('reports no changes when fields match', async () => {
     const mem = await ops.add({ title: 'Same', content: 'same' });
 
-    const { text } = await callTool('memory_update', {
+    const { text } = await callTool('notes_update', {
       id: mem.id,
       content: 'same',
     });
@@ -344,7 +344,7 @@ describe('memory_update', () => {
   it('updates title', async () => {
     const mem = await ops.add({ title: 'Old Title', content: 'x' });
 
-    const { text } = await callTool('memory_update', {
+    const { text } = await callTool('notes_update', {
       id: mem.id,
       title: 'New Title',
     });
@@ -354,7 +354,7 @@ describe('memory_update', () => {
   it('updates tags', async () => {
     const mem = await ops.add({ title: 'Tag Test', content: 'x', tags: ['a'] });
 
-    const { text } = await callTool('memory_update', {
+    const { text } = await callTool('notes_update', {
       id: mem.id,
       tags: ['b', 'c'],
     });
@@ -362,7 +362,7 @@ describe('memory_update', () => {
   });
 
   it('returns error for non-existent ID', async () => {
-    const { text, isError } = await callTool('memory_update', {
+    const { text, isError } = await callTool('notes_update', {
       id: '00000000-0000-0000-0000-000000000000',
       content: 'x',
     });
@@ -371,16 +371,16 @@ describe('memory_update', () => {
   });
 });
 
-describe('memory_remove', () => {
+describe('notes_remove', () => {
   it('removes a memory', async () => {
     const mem = await ops.add({ title: 'Remove Me', content: 'bye' });
 
-    const { text } = await callTool('memory_remove', { id: mem.id });
+    const { text } = await callTool('notes_remove', { id: mem.id });
     expect(text).toContain('Removed: Remove Me');
   });
 
   it('returns error for non-existent ID', async () => {
-    const { text, isError } = await callTool('memory_remove', {
+    const { text, isError } = await callTool('notes_remove', {
       id: '00000000-0000-0000-0000-000000000000',
     });
     expect(isError).toBe(true);
@@ -388,20 +388,20 @@ describe('memory_remove', () => {
   });
 });
 
-describe('memory_list', () => {
+describe('notes_list', () => {
   it('uses short 8-char IDs in output', async () => {
     const mem = await ops.add({ title: 'Short ID Test', content: 'x' });
     const shortId = mem.id.slice(0, 8);
 
-    const list = await callTool('memory_list', {});
+    const list = await callTool('notes_list', {});
     expect(list.text).toContain(shortId);
     expect(list.text).not.toContain(mem.id);
 
-    const search = await callTool('memory_search', { query: 'Short ID' });
+    const search = await callTool('notes_search', { query: 'Short ID' });
     expect(search.text).toContain(shortId);
     expect(search.text).not.toContain(mem.id);
 
-    const grep = await callTool('memory_grep', { pattern: 'Short ID Test' });
+    const grep = await callTool('notes_grep', { pattern: 'Short ID Test' });
     expect(grep.text).toContain(shortId);
     expect(grep.text).not.toContain(mem.id);
   });
@@ -410,7 +410,7 @@ describe('memory_list', () => {
     await ops.add({ title: 'List A', content: 'a' });
     await ops.add({ title: 'List B', content: 'b' });
 
-    const { text } = await callTool('memory_list', {});
+    const { text } = await callTool('notes_list', {});
     expect(text).toContain('List A');
     expect(text).toContain('List B');
     expect(text).toMatch(/Showing 1–2 of 2 results/);
@@ -420,7 +420,7 @@ describe('memory_list', () => {
     await ops.add({ title: 'Yes', content: 'x', tags: ['match'] });
     await ops.add({ title: 'No', content: 'y', tags: ['other'] });
 
-    const { text } = await callTool('memory_list', { tag: ['match'] });
+    const { text } = await callTool('notes_list', { tag: ['match'] });
     expect(text).toContain('Yes');
     expect(text).not.toContain('No');
   });
@@ -429,7 +429,7 @@ describe('memory_list', () => {
     await ops.add({ title: 'Snippet', content: 'x', type: 'snippet' });
     await ops.add({ title: 'Knowledge', content: 'y' });
 
-    const { text } = await callTool('memory_list', { type: 'snippet' });
+    const { text } = await callTool('notes_list', { type: 'snippet' });
     expect(text).toContain('Snippet');
     expect(text).not.toContain('Knowledge');
   });
@@ -439,37 +439,37 @@ describe('memory_list', () => {
     await ops.add({ title: 'P2', content: 'b' });
     await ops.add({ title: 'P3', content: 'c' });
 
-    const { text } = await callTool('memory_list', { limit: 2 });
+    const { text } = await callTool('notes_list', { limit: 2 });
     expect(text).toMatch(/Showing 1–2 of 3 results/);
   });
 
   it('returns empty message', async () => {
-    const { text } = await callTool('memory_list', {});
+    const { text } = await callTool('notes_list', {});
     expect(text).toBe('No memories stored.');
   });
 });
 
 describe('cross-references', () => {
-  it('shows forward links in memory_read', async () => {
+  it('shows forward links in notes_read', async () => {
     const target = await ops.add({ title: 'Target Note', content: 'target' });
     const source = await ops.add({
       title: 'Source Note',
       content: `Links to [target](mor:${target.id})`,
     });
 
-    const { text } = await callTool('memory_read', { ids: [source.id] });
+    const { text } = await callTool('notes_read', { ids: [source.id] });
     expect(text).toContain('Links:');
     expect(text).toContain(`→ ${target.id.slice(0, 8)}  Target Note`);
   });
 
-  it('shows backlinks in memory_read', async () => {
+  it('shows backlinks in notes_read', async () => {
     const target = await ops.add({ title: 'Target Note', content: 'target' });
     await ops.add({
       title: 'Source Note',
       content: `Links to [target](mor:${target.id})`,
     });
 
-    const { text } = await callTool('memory_read', { ids: [target.id] });
+    const { text } = await callTool('notes_read', { ids: [target.id] });
     expect(text).toContain('Links:');
     expect(text).toContain('← ');
     expect(text).toContain('Source Note');
@@ -478,7 +478,7 @@ describe('cross-references', () => {
   it('omits links section when no links exist', async () => {
     const mem = await ops.add({ title: 'No Links', content: 'alone' });
 
-    const { text } = await callTool('memory_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [mem.id] });
     expect(text).not.toContain('Links:');
   });
 
@@ -490,7 +490,7 @@ describe('cross-references', () => {
       content: `See [target](mor:${shortId})`,
     });
 
-    const { text } = await callTool('memory_read', { ids: [source.id] });
+    const { text } = await callTool('notes_read', { ids: [source.id] });
     expect(text).toContain('→');
     expect(text).toContain('Target');
   });
@@ -506,7 +506,7 @@ describe('cross-references', () => {
       content: `Links to [Note B](mor:${b.id})`,
     });
 
-    const { text } = await callTool('memory_read', { ids: [a.id] });
+    const { text } = await callTool('notes_read', { ids: [a.id] });
     expect(text).toContain('↔');
     expect(text).toContain('Note B');
     // Should not have separate → and ← for the same note
@@ -519,7 +519,7 @@ describe('cross-references', () => {
       content: '[dead](mor:deadbeef)',
     });
 
-    const { text } = await callTool('memory_read', { ids: [source.id] });
+    const { text } = await callTool('notes_read', { ids: [source.id] });
     expect(text).toContain('→ deadbeef  (not found)');
   });
 });
