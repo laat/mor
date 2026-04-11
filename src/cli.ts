@@ -49,7 +49,7 @@ const program = new Command();
 
 function addFilterOptions(cmd: Command): Command {
   return cmd
-    .option('--type <type>', 'Filter by memory type (comma-separated, glob)')
+    .option('--type <type>', 'Filter by note type (comma-separated, glob)')
     .option('--tag <pattern>', 'Filter by tag (comma-separated, AND, glob)')
     .option('--repo <pattern>', 'Filter by repository (glob)')
     .option('--ext <ext>', 'Filter by file extension in title');
@@ -104,7 +104,7 @@ program
 addFilterOptions(
   program
     .command('find <query...>')
-    .description('Search memories by query')
+    .description('Search notes by query')
     .option('--limit <n>', 'Max results', '20')
     .option('-s, --threshold <n>', 'Minimum score (0-1)')
     .option('--json', 'Output as JSON (includes content)'),
@@ -141,7 +141,7 @@ addFilterOptions(
         return;
       }
       if (results.length === 0) {
-        console.log('No memories found.');
+        console.log('No notes found.');
         return;
       }
       for (const r of results) {
@@ -168,7 +168,7 @@ addFilterOptions(
 addFilterOptions(
   program
     .command('grep <pattern...>')
-    .description('Search memories by substring or regex')
+    .description('Search notes by substring or regex')
     .option('--limit <n>', 'Max results', '20')
     .option('-i, --ignore-case', 'Case-insensitive matching')
     .option('-E, --regex', 'Treat pattern as regex')
@@ -179,7 +179,7 @@ addFilterOptions(
     .option('-C, --context <n>', 'Lines before and after match')
     .option(
       '-l, --files-with-matches',
-      'Show only memory titles, no matching lines',
+      'Show only note titles, no matching lines',
     ),
 ).action(
   async (
@@ -218,7 +218,7 @@ addFilterOptions(
         regex: useRegex,
       });
       if (page.data.length === 0) {
-        console.log('No memories found.');
+        console.log('No notes found.');
         return;
       }
       const flags = opts.ignoreCase ? 'gi' : 'g';
@@ -279,11 +279,11 @@ addFilterOptions(
 
 program
   .command('add [file]')
-  .description('Add a new memory from file or stdin')
-  .option('-t, --title <title>', 'Memory title')
+  .description('Add a new note from file or stdin')
+  .option('-t, --title <title>', 'Note title')
   .option('-d, --description <text>', 'Short description')
   .option('--tags <tags>', 'Comma-separated tags')
-  .option('--type <type>', 'Memory type')
+  .option('--type <type>', 'Note type')
   .action(
     async (
       file: string | undefined,
@@ -378,7 +378,7 @@ program
 
 program
   .command('rm <id...>')
-  .description('Remove one or more memories by UUID or UUID prefix')
+  .description('Remove one or more notes by UUID or UUID prefix')
   .action(async (ids: string[]) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -399,11 +399,11 @@ program
 
 program
   .command('update <query...>')
-  .description("Update a memory's metadata or content")
+  .description("Update a note's metadata or content")
   .option('-t, --title <title>', 'New title')
   .option('-d, --description <text>', 'Short description')
   .option('--tags <tags>', 'Comma-separated tags')
-  .option('--type <type>', 'Memory type')
+  .option('--type <type>', 'Note type')
   .option('--content-from <source>', 'Read content from file or URL')
   .action(
     async (
@@ -459,7 +459,7 @@ program
         }
         const before = await ops.read(query);
         if (!before) {
-          console.error(`Error: memory not found: ${query}`);
+          console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
         const mem = await ops.update(before.id, updates);
@@ -546,7 +546,7 @@ function exportMemory(mem: Memory, raw?: boolean): string {
 
 program
   .command('cat <query...>')
-  .description('Print memory content')
+  .description('Print note content')
   .option('--raw', 'Include frontmatter')
   .option('--links', 'Show links')
   .action(
@@ -557,7 +557,7 @@ program
       try {
         const mem = await ops.read(query);
         if (!mem) {
-          console.error(`Error: memory not found: ${query}`);
+          console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
         let output = exportMemory(mem, opts.raw);
@@ -601,8 +601,8 @@ program
 
 program
   .command('links [query...]')
-  .description('Show links for a memory, or list broken links')
-  .option('--broken', 'List all memories with broken links')
+  .description('Show links for a note, or list broken links')
+  .option('--broken', 'List all notes with broken links')
   .action(async (queryParts: string[], opts: { broken?: boolean }) => {
     const query = queryParts.length > 0 ? joinArgs(queryParts) : undefined;
     const config = loadConfig();
@@ -628,12 +628,12 @@ program
         return;
       }
       if (!query) {
-        console.error('Error: provide a memory ID, or use --broken');
+        console.error('Error: provide a note ID, or use --broken');
         process.exit(1);
       }
       const mem = await ops.read(query);
       if (!mem) {
-        console.error(`Error: memory not found: ${query}`);
+        console.error(`Error: note not found: ${query}`);
         process.exit(1);
       }
       const { forward, back } = await ops.getLinks(mem.id);
@@ -667,7 +667,7 @@ program
 
 program
   .command('cp <query...>')
-  .description('Copy memory content to a file')
+  .description('Copy note content to a file')
   .option('--raw', 'Include frontmatter')
   .requiredOption('-o, --output <dest>', 'Destination file path')
   .action(
@@ -679,7 +679,7 @@ program
       try {
         const mem = await ops.read(query);
         if (!mem) {
-          console.error(`Error: memory not found: ${query}`);
+          console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
         const output = exportMemory(mem, opts.raw);
@@ -696,7 +696,7 @@ program
 
 program
   .command('edit <query...>')
-  .description('Open memory in $EDITOR')
+  .description('Open note in $EDITOR')
   .option('--raw', 'Edit full file including frontmatter')
   .action(async (queryParts: string[], opts: { raw?: boolean }) => {
     const query = joinArgs(queryParts);
@@ -706,7 +706,7 @@ program
     try {
       const mem = await ops.read(query);
       if (!mem) {
-        console.error(`Error: memory not found: ${query}`);
+        console.error(`Error: note not found: ${query}`);
         process.exit(1);
       }
 
@@ -780,13 +780,13 @@ program
 
 program
   .command('reindex')
-  .description('Rebuild the search index from memory files')
+  .description('Rebuild the search index from note files')
   .action(async () => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
       const result = await ops.reindex();
-      console.log(`Reindexed ${result.count} memories.`);
+      console.log(`Reindexed ${result.count} notes.`);
       if (result.embedding) {
         const e = result.embedding;
         const url = e.baseUrl ?? e.provider;
@@ -825,7 +825,7 @@ program
           );
         }
       }
-      console.log(`Imported ${count} memories.`);
+      console.log(`Imported ${count} notes.`);
     } finally {
       await ops.close();
     }
@@ -841,7 +841,7 @@ program
 addFilterOptions(
   program
     .command('ls')
-    .description('List all memories')
+    .description('List all notes')
     .option('--limit <n>', 'Max results')
     .option('-a, --all', 'Show all (no limit)')
     .option('-l, --long', 'Show file path or URL')
@@ -870,7 +870,7 @@ addFilterOptions(
           : 100;
       const page = await ops.list(parseFilterOpts(opts), limit);
       if (page.data.length === 0) {
-        console.log('No memories stored.');
+        console.log('No notes stored.');
         return;
       }
       if (needAll) {

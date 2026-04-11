@@ -144,7 +144,7 @@ describe('find', () => {
 
   it('returns no results message', () => {
     const out = mor('find', 'nonexistent-xyzzy');
-    expect(out).toBe('No memories found.');
+    expect(out).toBe('No notes found.');
   });
 
   it('--json outputs array with content', async () => {
@@ -284,7 +284,7 @@ describe('grep', () => {
 
   it('returns no results message', () => {
     const out = mor('grep', 'nonexistent-xyzzy');
-    expect(out).toBe('No memories found.');
+    expect(out).toBe('No notes found.');
   });
 
   it('rejects invalid regex', () => {
@@ -310,7 +310,7 @@ describe('cat', () => {
 
   it('errors on missing memory', () => {
     const err = morFail('cat', 'nonexistent-xyzzy');
-    expect(err).toContain('memory not found');
+    expect(err).toContain('note not found');
   });
 });
 
@@ -375,7 +375,7 @@ describe('ls', () => {
       timeout: 10000,
     }).trim();
     fs.rmSync(emptyDir, { recursive: true });
-    expect(out).toBe('No memories stored.');
+    expect(out).toBe('No notes stored.');
   });
 });
 
@@ -452,7 +452,7 @@ describe('rm', () => {
     expect(out).toContain('Delete Me');
 
     const err = morFail('cat', id);
-    expect(err).toContain('memory not found');
+    expect(err).toContain('note not found');
   });
 
   it('errors on missing id', () => {
@@ -475,7 +475,7 @@ describe('reindex', () => {
   it('rebuilds the index', async () => {
     await ops.add({ title: 'Index Me', content: 'indexed' });
     const out = mor('reindex');
-    expect(out).toMatch(/Reindexed \d+ memor/);
+    expect(out).toMatch(/Reindexed \d+ note/);
   });
 });
 
@@ -488,7 +488,7 @@ describe('import', () => {
     fs.writeFileSync(path.join(importDir, 'skip.txt'), 'Not markdown');
 
     const out = mor('import', importDir);
-    expect(out).toBe('Imported 2 memories.');
+    expect(out).toBe('Imported 2 notes.');
 
     const ls = mor('ls');
     expect(ls).toContain('note1');
