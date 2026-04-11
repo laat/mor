@@ -24,7 +24,7 @@ Create a release for mor. The user provides the version number (e.g. `/release v
 
 5. **Show the changelog to the user** and ask for approval before proceeding.
 
-6. **Bump version**: Update `version` in both `package.json` and `.claude-plugin/plugin.json` to the new semver.
+6. **Bump version**: Update `version` in `package.json`, `.claude-plugin/plugin.json`, and the `.TH` header line of `man/mor.1` to the new semver. The `.TH` line in `man/mor.1` also carries a release date — update it to today's date in `YYYY-MM-DD` format. Format: `.TH MOR 1 "<date>" "mor <semver>" "User Commands"`.
 
 7. **Commit and push**: Commit with message `<semver>` (e.g. `0.12.0`), then push.
 
