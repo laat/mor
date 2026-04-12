@@ -116,15 +116,18 @@ export function openDb(config: Config): DB {
   db.function(
     'regexp',
     (() => {
-      let cached: { raw: string; re: RegExp } | null = null;
+      const cache = new Map<string, RegExp>();
       return (pattern: string, value: string): number => {
-        if (!cached || cached.raw !== pattern) {
+        let re = cache.get(pattern);
+        if (!re) {
           const flagMatch = pattern.match(/^\(\?([a-z]+)\)/);
           const flags = flagMatch ? flagMatch[1] : '';
           const src = flagMatch ? pattern.slice(flagMatch[0].length) : pattern;
-          cached = { raw: pattern, re: new RegExp(src, flags) };
+          re = new RegExp(src, flags);
+          if (cache.size >= 64) cache.clear();
+          cache.set(pattern, re);
         }
-        return cached.re.test(value) ? 1 : 0;
+        return re.test(value) ? 1 : 0;
       };
     })(),
   );

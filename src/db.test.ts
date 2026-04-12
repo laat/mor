@@ -390,6 +390,36 @@ describe('grepMemories', () => {
     );
   });
 
+  it('handles alternating regex patterns without cache thrashing', () => {
+    const m1 = mem({
+      id: crypto.randomUUID(),
+      content: 'async function hello()',
+      filePath: path.join(testDir, 'alt-1.md'),
+    });
+    const m2 = mem({
+      id: crypto.randomUUID(),
+      content: 'class MyWidget extends Base',
+      filePath: path.join(testDir, 'alt-2.md'),
+    });
+    upsertMemoryChecked(db, m1);
+    upsertMemoryChecked(db, m2);
+
+    // Use two different regex patterns in separate grep calls
+    const asyncResults = grepMemories(db, 'async\\s+function', 20, false, true);
+    const classResults = grepMemories(db, 'class\\s+\\w+', 20, false, true);
+
+    expect(asyncResults).toHaveLength(1);
+    expect(asyncResults[0].id).toBe(m1.id);
+    expect(classResults).toHaveLength(1);
+    expect(classResults[0].id).toBe(m2.id);
+
+    // Run again to confirm cached patterns still work
+    const asyncAgain = grepMemories(db, 'async\\s+function', 20, false, true);
+    const classAgain = grepMemories(db, 'class\\s+\\w+', 20, false, true);
+    expect(asyncAgain).toHaveLength(1);
+    expect(classAgain).toHaveLength(1);
+  });
+
   it('rejects invalid regex', () => {
     expect(() => grepMemories(db, '[invalid', 20, false, true)).toThrow(
       'Invalid regex',
