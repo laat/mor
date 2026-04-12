@@ -185,16 +185,12 @@ export function searchFts(
   query: string,
   limit = 20,
 ): Array<{ id: string; score: number }> {
-  const ftsQuery = escapeFtsQuery(query);
-  const rows = all<{ id: string; rank: number }>(
-    db,
-    sql`SELECT m.id, bm25(memories_fts, 10.0, 5.0, 1.0) AS rank
-        FROM memories_fts f
-        JOIN memories m ON m.rowid = f.rowid
-        WHERE memories_fts MATCH ${ftsQuery}
-        ORDER BY rank
-        LIMIT ${limit}`,
-  );
+  const tokens = ftsTokenize(query);
+  // Try AND first for precise results, fall back to OR for broader matching
+  let rows = ftsMatch(db, ftsJoin(tokens, 'AND'), limit);
+  if (rows.length === 0 && tokens.length > 1) {
+    rows = ftsMatch(db, ftsJoin(tokens, 'OR'), limit);
+  }
 
   if (rows.length === 0) return [];
   const best = Math.abs(rows[0].rank) || 1;
@@ -204,12 +200,32 @@ export function searchFts(
   }));
 }
 
-function escapeFtsQuery(query: string): string {
-  const tokens = query
+function ftsMatch(
+  db: DB,
+  ftsQuery: string,
+  limit: number,
+): Array<{ id: string; rank: number }> {
+  if (!ftsQuery) return [];
+  return all<{ id: string; rank: number }>(
+    db,
+    sql`SELECT m.id, bm25(memories_fts, 10.0, 5.0, 1.0) AS rank
+        FROM memories_fts f
+        JOIN memories m ON m.rowid = f.rowid
+        WHERE memories_fts MATCH ${ftsQuery}
+        ORDER BY rank
+        LIMIT ${limit}`,
+  );
+}
+
+function ftsTokenize(query: string): string[] {
+  return query
     .split(/\s+/)
     .filter(Boolean)
     .map((token) => `"${token.replace(/"/g, '""')}"`);
-  return tokens.length > 1 ? tokens.join(' OR ') : (tokens[0] ?? '');
+}
+
+function ftsJoin(tokens: string[], op: 'AND' | 'OR'): string {
+  return tokens.length > 1 ? tokens.join(` ${op} `) : (tokens[0] ?? '');
 }
 
 function escapeLike(s: string): string {

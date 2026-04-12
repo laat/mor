@@ -216,11 +216,50 @@ describe('searchFts', () => {
     expect(results).toHaveLength(0);
   });
 
-  it('handles OR-ranked multi-word queries', () => {
+  it('handles multi-word queries', () => {
     const m = mem({ title: 'retry backoff', content: 'http retry logic' });
     upsertMemoryChecked(db, m);
     const results = searchFts(db, 'retry backoff');
     expect(results.length).toBeGreaterThan(0);
+  });
+
+  it('prefers AND matching over OR', () => {
+    const both = mem({
+      title: 'alpha beta combined',
+      content: 'has both terms',
+      filePath: path.join(testDir, 'memories', 'both.md'),
+    });
+    const onlyAlpha = mem({
+      title: 'alpha only',
+      content: 'just one term',
+      filePath: path.join(testDir, 'memories', 'alpha.md'),
+    });
+    upsertMemoryChecked(db, both);
+    upsertMemoryChecked(db, onlyAlpha);
+
+    const results = searchFts(db, 'alpha beta');
+    // AND matches first — "alpha only" excluded because both terms are required
+    expect(results.length).toBe(1);
+    expect(results[0].id).toBe(both.id);
+  });
+
+  it('falls back to OR when AND has no results', () => {
+    const a = mem({
+      title: 'only gamma',
+      content: 'gamma content',
+      filePath: path.join(testDir, 'memories', 'gamma.md'),
+    });
+    const b = mem({
+      title: 'only delta',
+      content: 'delta content',
+      filePath: path.join(testDir, 'memories', 'delta.md'),
+    });
+    upsertMemoryChecked(db, a);
+    upsertMemoryChecked(db, b);
+
+    // No note has both "gamma" and "delta", so AND fails → OR fallback
+    const results = searchFts(db, 'gamma delta');
+    expect(results.length).toBe(2);
   });
 });
 
