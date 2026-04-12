@@ -14,6 +14,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'mor',
+      favicon: '/favicon.svg',
       description: 'A shared note store for humans and AI',
       social: [
         {
