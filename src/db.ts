@@ -186,10 +186,22 @@ export function searchFts(
   limit = 20,
 ): Array<{ id: string; score: number }> {
   const tokens = ftsTokenize(query);
-  // Try AND first for precise results, fall back to OR for broader matching
-  let rows = ftsMatch(db, ftsJoin(tokens, 'AND'), limit);
+  // Try AND first for precise results, fall back to OR for broader matching.
+  // Wrap in try/catch because FTS5 can throw on syntax errors (reserved words,
+  // special chars that slip past quoting).  If AND throws, try OR; if OR also
+  // throws, return empty results.
+  let rows: Array<{ id: string; rank: number }> = [];
+  try {
+    rows = ftsMatch(db, ftsJoin(tokens, 'AND'), limit);
+  } catch {
+    // AND query failed — fall through to OR below
+  }
   if (rows.length === 0 && tokens.length > 1) {
-    rows = ftsMatch(db, ftsJoin(tokens, 'OR'), limit);
+    try {
+      rows = ftsMatch(db, ftsJoin(tokens, 'OR'), limit);
+    } catch {
+      return [];
+    }
   }
 
   if (rows.length === 0) return [];

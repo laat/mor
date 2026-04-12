@@ -261,6 +261,24 @@ describe('searchFts', () => {
     const results = searchFts(db, 'gamma delta');
     expect(results.length).toBe(2);
   });
+
+  it('does not throw on FTS5 special characters', () => {
+    const m = mem({
+      title: 'special chars note',
+      content: 'some searchable content',
+      filePath: path.join(testDir, 'memories', 'special.md'),
+    });
+    upsertMemoryChecked(db, m);
+
+    // These contain FTS5 reserved operators/syntax that could cause parse
+    // errors.  searchFts should catch the error and return empty rather than
+    // throwing.
+    expect(() => searchFts(db, 'NOT')).not.toThrow();
+    expect(() => searchFts(db, 'a OR')).not.toThrow();
+    expect(() => searchFts(db, '* wildcard')).not.toThrow();
+    expect(() => searchFts(db, 'foo -bar')).not.toThrow();
+    expect(() => searchFts(db, 'NEAR(a b)')).not.toThrow();
+  });
 });
 
 describe('getMemoryById', () => {
