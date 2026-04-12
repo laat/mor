@@ -314,6 +314,38 @@ describe('search', () => {
     const page = await ops.search('code', 20, { type: 'snippet' });
     expect(page.data.every((r) => r.memory.type === 'snippet')).toBe(true);
   });
+
+  it('resolves by full UUID', async () => {
+    const mem = await ops.add({ title: 'By ID', content: 'find me by id' });
+    const page = await ops.search(mem.id);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].memory.id).toBe(mem.id);
+    expect(page.data[0].score).toBe(1);
+  });
+
+  it('resolves by UUID prefix', async () => {
+    const mem = await ops.add({
+      title: 'By Prefix',
+      content: 'find me by prefix',
+    });
+    const prefix = mem.id.slice(0, 8);
+    const page = await ops.search(prefix);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].memory.id).toBe(mem.id);
+  });
+
+  it('applies filter when resolving by ID', async () => {
+    const mem = await ops.add({
+      title: 'Filtered ID',
+      content: 'filter test',
+      type: 'snippet',
+    });
+    const noMatch = await ops.search(mem.id, 20, { type: 'knowledge' });
+    expect(noMatch.data).toHaveLength(0);
+
+    const match = await ops.search(mem.id, 20, { type: 'snippet' });
+    expect(match.data).toHaveLength(1);
+  });
 });
 
 describe('grep', () => {

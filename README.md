@@ -168,7 +168,10 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 | `GET`    | `/notes/:query/links`                                     | Get forward and backlinks                                            |
 | `POST`   | `/notes`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
 | `PUT`    | `/notes/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
+| `POST`   | `/notes/:query/patch`                                     | Patch content (`{old_str, new_str}`)                                 |
 | `DELETE` | `/notes/:query`                                           | Remove                                                               |
+| `POST`   | `/reindex`                                                | Rebuild the search index                                             |
+| `POST`   | `/sync`                                                   | Git pull, commit, push                                               |
 | `POST`   | `/mcp`                                                    | MCP protocol (streamable HTTP)                                       |
 
 ## Embeddings

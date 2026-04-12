@@ -280,6 +280,20 @@ export class LocalOperations implements Operations {
   ): Promise<SearchPage> {
     this.syncIndexIfNeeded();
 
+    // Resolve by ID or ID prefix before falling back to FTS
+    const byId = this.resolveById(query);
+    if (byId) {
+      const matches = applyFilter(
+        [{ memory: byId, score: 1, matchType: 'uuid' as const }],
+        (r) => r.memory,
+        filter,
+      );
+      if (matches.length > 0 && offset === 0) {
+        return { data: matches, total: 1, offset: 0, limit, scoring: 'fts' };
+      }
+      return { data: [], total: 0, offset, limit, scoring: 'fts' };
+    }
+
     // Fetch enough to cover offset + limit after filtering
     const fetchLimit = offset + limit + FILTER_BUFFER;
     const ftsResults = searchFts(this.db, query, fetchLimit);
