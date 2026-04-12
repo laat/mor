@@ -28,18 +28,21 @@ let db: DB;
 
 const mem = (
   overrides?: Partial<Parameters<typeof upsertMemoryChecked>[1]>,
-) => ({
-  id: crypto.randomUUID(),
-  title: 'Test Memory',
-  tags: ['test'],
-  type: 'knowledge',
-  created: '2026-01-01T00:00:00.000Z',
-  updated: '2026-01-01T00:00:00.000Z',
-  content: 'test content',
-  filePath: path.join(testDir, 'memories', 'test.md'),
-  contentHash: 'abc123',
-  ...overrides,
-});
+) => {
+  const id = overrides?.id ?? crypto.randomUUID();
+  return {
+    id,
+    title: 'Test Memory',
+    tags: ['test'],
+    type: 'knowledge',
+    created: '2026-01-01T00:00:00.000Z',
+    updated: '2026-01-01T00:00:00.000Z',
+    content: 'test content',
+    filePath: path.join(testDir, 'memories', `${id}.md`),
+    contentHash: 'abc123',
+    ...overrides,
+  };
+};
 
 beforeEach(() => {
   testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-db-test-'));
@@ -178,16 +181,12 @@ describe('searchFts', () => {
 
   it('ranks title higher than content (BM25 weights)', () => {
     const a = mem({
-      id: crypto.randomUUID(),
       title: 'Unrelated',
       content: 'typescript patterns',
-      filePath: path.join(testDir, 'a.md'),
     });
     const b = mem({
-      id: crypto.randomUUID(),
       title: 'TypeScript Guide',
       content: 'some guide',
-      filePath: path.join(testDir, 'b.md'),
     });
     upsertMemoryChecked(db, a);
     upsertMemoryChecked(db, b);
@@ -200,10 +199,8 @@ describe('searchFts', () => {
       upsertMemoryChecked(
         db,
         mem({
-          id: crypto.randomUUID(),
           title: `Limit Test ${i}`,
           content: 'shared keyword',
-          filePath: path.join(testDir, `limit-${i}.md`),
         }),
       );
     }
@@ -227,12 +224,10 @@ describe('searchFts', () => {
     const both = mem({
       title: 'alpha beta combined',
       content: 'has both terms',
-      filePath: path.join(testDir, 'memories', 'both.md'),
     });
     const onlyAlpha = mem({
       title: 'alpha only',
       content: 'just one term',
-      filePath: path.join(testDir, 'memories', 'alpha.md'),
     });
     upsertMemoryChecked(db, both);
     upsertMemoryChecked(db, onlyAlpha);
@@ -247,12 +242,10 @@ describe('searchFts', () => {
     const a = mem({
       title: 'only gamma',
       content: 'gamma content',
-      filePath: path.join(testDir, 'memories', 'gamma.md'),
     });
     const b = mem({
       title: 'only delta',
       content: 'delta content',
-      filePath: path.join(testDir, 'memories', 'delta.md'),
     });
     upsertMemoryChecked(db, a);
     upsertMemoryChecked(db, b);
@@ -408,9 +401,7 @@ describe('grepMemories', () => {
       upsertMemoryChecked(
         db,
         mem({
-          id: crypto.randomUUID(),
           content: 'shared-grep-token',
-          filePath: path.join(testDir, `grep-${i}.md`),
         }),
       );
     }
