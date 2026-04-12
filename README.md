@@ -173,7 +173,7 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 
 ## Embeddings
 
-Optionally augment FTS search with vector similarity. Configure in `~/.config/mor/config.json`:
+Optionally augment FTS search with vector similarity. Configure in `config.json`:
 
 ```json
 {
@@ -191,17 +191,19 @@ Azure OpenAI uses `AZURE_OPENAI_API_KEY` (or `apiKey` in config) and requires a 
 
 ## Storage
 
-Notes are markdown files with YAML frontmatter, stored in `~/.config/mor/notes/` with a SQLite index at `~/.config/mor/index.db`. Override with `MOR_HOME`.
+Notes are markdown files with YAML frontmatter, split across [XDG directories](https://specifications.freedesktop.org/basedir-spec/latest/). Set `MOR_HOME` for a single flat directory.
 
 ```
-~/.config/mor/
+~/.config/mor/                # config
   config.json
-  credentials.json   # OAuth tokens (created by `mor login`)
-  index.db           # search index
-  oauth.db           # OAuth clients and tokens (server-side)
+~/.local/share/mor/           # data
   notes/
     python-naming-a1b2.md
     meeting-notes-c3d4.md
+~/.local/state/mor/           # state
+  index.db                    # search index
+  credentials.json            # OAuth tokens (mor login)
+  oauth.db                    # OAuth server tokens
 ```
 
 Files are human-readable and git-friendly. Use `mor sync` to pull, commit, and push if the notes folder is a git repo. Enable `autosync` to sync automatically after every add, update, or remove:

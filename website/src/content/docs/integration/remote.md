@@ -47,7 +47,7 @@ mor find "python naming"
 mor ls --tags
 ```
 
-`mor login` opens a browser where you enter the server passphrase. On success, it saves the OAuth credentials to `~/.config/mor/credentials.json` and writes the server URL to `config.json`. Tokens auto-refresh on expiry.
+`mor login` opens a browser where you enter the server passphrase. On success, it saves the OAuth credentials to `~/.local/state/mor/credentials.json` and writes the server URL to `config.json`. Tokens auto-refresh on expiry.
 
 Alternatively, configure a direct token:
 

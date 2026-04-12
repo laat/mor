@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { loadConfig, isRemote } from './config.js';
+import {
+  getConfigDir,
+  getDataDir,
+  getStateDir,
+  loadConfig,
+  isRemote,
+} from './config.js';
 
 let testDir: string;
 let savedMorToken: string | undefined;
@@ -186,5 +192,70 @@ describe('isRemote', () => {
     );
     const config = loadConfig();
     expect(isRemote(config)).toBe(false);
+  });
+});
+
+describe('XDG directory helpers', () => {
+  it('MOR_HOME makes all dirs the same (flat layout)', () => {
+    expect(getConfigDir()).toBe(testDir);
+    expect(getDataDir()).toBe(testDir);
+    expect(getStateDir()).toBe(testDir);
+  });
+
+  it('uses XDG env vars when MOR_HOME is unset', () => {
+    delete process.env.MOR_HOME;
+    const xdgConfig = path.join(testDir, 'xdg-config');
+    const xdgData = path.join(testDir, 'xdg-data');
+    const xdgState = path.join(testDir, 'xdg-state');
+    process.env.XDG_CONFIG_HOME = xdgConfig;
+    process.env.XDG_DATA_HOME = xdgData;
+    process.env.XDG_STATE_HOME = xdgState;
+
+    try {
+      expect(getConfigDir()).toBe(path.join(xdgConfig, 'mor'));
+      expect(getDataDir()).toBe(path.join(xdgData, 'mor'));
+      expect(getStateDir()).toBe(path.join(xdgState, 'mor'));
+    } finally {
+      delete process.env.XDG_CONFIG_HOME;
+      delete process.env.XDG_DATA_HOME;
+      delete process.env.XDG_STATE_HOME;
+    }
+  });
+
+  it('falls back to ~/.config, ~/.local/share, ~/.local/state when no XDG vars', () => {
+    delete process.env.MOR_HOME;
+    const home = process.env.HOME ?? '';
+
+    try {
+      expect(getConfigDir()).toBe(path.join(home, '.config', 'mor'));
+      expect(getDataDir()).toBe(path.join(home, '.local', 'share', 'mor'));
+      expect(getStateDir()).toBe(path.join(home, '.local', 'state', 'mor'));
+    } finally {
+      process.env.MOR_HOME = testDir;
+    }
+  });
+
+  it('new install uses XDG data/state dirs for defaults', () => {
+    delete process.env.MOR_HOME;
+    const xdgConfig = path.join(testDir, 'xdg-config');
+    const xdgData = path.join(testDir, 'xdg-data');
+    const xdgState = path.join(testDir, 'xdg-state');
+    process.env.XDG_CONFIG_HOME = xdgConfig;
+    process.env.XDG_DATA_HOME = xdgData;
+    process.env.XDG_STATE_HOME = xdgState;
+
+    try {
+      const config = loadConfig();
+      expect(config.notesDir).toBe(path.join(xdgData, 'mor', 'notes'));
+      expect(config.dbPath).toBe(path.join(xdgState, 'mor', 'index.db'));
+      expect(fs.existsSync(path.join(xdgConfig, 'mor', 'config.json'))).toBe(
+        true,
+      );
+    } finally {
+      delete process.env.XDG_CONFIG_HOME;
+      delete process.env.XDG_DATA_HOME;
+      delete process.env.XDG_STATE_HOME;
+      process.env.MOR_HOME = testDir;
+    }
   });
 });

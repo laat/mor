@@ -3,14 +3,14 @@ title: Configuration
 description: All config.json options
 ---
 
-mor is configured via `~/.config/mor/config.json`, auto-created on first run. Override the config directory with the `MOR_HOME` environment variable.
+mor is configured via `~/.config/mor/config.json`, auto-created on first run. Override all directories with the `MOR_HOME` environment variable (flat layout).
 
 ## Full example
 
 ```json
 {
-  "notesDir": "~/.config/mor/notes",
-  "dbPath": "~/.config/mor/index.db",
+  "notesDir": "~/.local/share/mor/notes",
+  "dbPath": "~/.local/state/mor/index.db",
   "autosync": true,
   "threshold": 0.3,
   "embedding": {
@@ -35,12 +35,12 @@ mor is configured via `~/.config/mor/config.json`, auto-created on first run. Ov
 
 ## Core
 
-| Key         | Type    | Default                  | Description                                                                    |
-| ----------- | ------- | ------------------------ | ------------------------------------------------------------------------------ |
-| `notesDir`  | string  | `~/.config/mor/notes`    | Directory where note markdown files are stored                                 |
-| `dbPath`    | string  | `~/.config/mor/index.db` | Path to the SQLite search index                                                |
-| `autosync`  | boolean | `false`                  | Auto git pull/commit/push after every add, update, or remove                   |
-| `threshold` | number  | `0.3`                    | Minimum relevance score (0–1) for `find` results. Override per-query with `-s` |
+| Key         | Type    | Default                       | Description                                                                    |
+| ----------- | ------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| `notesDir`  | string  | `~/.local/share/mor/notes`    | Directory where note markdown files are stored                                 |
+| `dbPath`    | string  | `~/.local/state/mor/index.db` | Path to the SQLite search index                                                |
+| `autosync`  | boolean | `false`                       | Auto git pull/commit/push after every add, update, or remove                   |
+| `threshold` | number  | `0.3`                         | Minimum relevance score (0–1) for `find` results. Override per-query with `-s` |
 
 ## Embedding
 
@@ -80,7 +80,10 @@ Defaults for `mor serve`. CLI flags override these.
 
 | Variable               | Description                                                                               |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
-| `MOR_HOME`             | Override the config directory (default `~/.config/mor`)                                   |
+| `MOR_HOME`             | Override all directories with a single flat directory                                     |
+| `XDG_CONFIG_HOME`      | Config directory (default `~/.config`)                                                    |
+| `XDG_DATA_HOME`        | Data directory for notes (default `~/.local/share`)                                       |
+| `XDG_STATE_HOME`       | State directory for index and credentials (default `~/.local/state`)                      |
 | `MOR_TOKEN`            | Bearer token for server/client auth (overrides config file, overridden by `--token` flag) |
 | `OPENAI_API_KEY`       | OpenAI API key (used when `embedding.apiKey` is not set)                                  |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI API key                                                                      |

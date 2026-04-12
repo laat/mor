@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import chalk from 'chalk';
 import matter from 'gray-matter';
-import { getConfigDir, isRemote, loadConfig } from './config.js';
+import { getStateDir, isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
 import { serializeMemory } from './memory.js';
 import { login, getStoredToken } from './oauth-login.js';
@@ -37,7 +37,7 @@ function parseType(value: string | undefined): MemoryType | undefined {
 }
 
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
-  if (isRemote(config)) return new RemoteOperations(config, getConfigDir());
+  if (isRemote(config)) return new RemoteOperations(config, getStateDir());
   return new LocalOperations(config);
 }
 
@@ -84,7 +84,7 @@ program
             headers: (() => {
               const token =
                 config.server!.token ??
-                getStoredToken(getConfigDir(), config.server!.url);
+                getStoredToken(getStateDir(), config.server!.url);
               const h: Record<string, string> = {};
               if (token) h['Authorization'] = `Bearer ${token}`;
               return h;
@@ -978,7 +978,7 @@ program
       process.exit(1);
     }
     try {
-      await login(serverUrl, getConfigDir());
+      await login(serverUrl, getStateDir());
     } catch (e) {
       console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
       process.exit(1);

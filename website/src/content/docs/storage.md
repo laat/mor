@@ -31,19 +31,25 @@ export const retryWithBackoff = <T>(count: number) => {
 
 ## Directory structure
 
+mor follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/):
+
 ```
-~/.config/mor/
-  config.json          # Configuration
-  credentials.json     # OAuth tokens (created by `mor login`)
-  index.db             # SQLite FTS + embeddings index
-  oauth.db             # OAuth clients and tokens (server-side)
+~/.config/mor/              # XDG_CONFIG_HOME — configuration
+  config.json
+
+~/.local/share/mor/         # XDG_DATA_HOME — user data
   notes/
     retry-with-backoff-4056.md
     python-naming-a1b2.md
     meeting-notes-c3d4.md
+
+~/.local/state/mor/         # XDG_STATE_HOME — runtime state
+  index.db                  # SQLite FTS + embeddings index
+  credentials.json          # OAuth tokens (created by `mor login`)
+  oauth.db                  # OAuth clients and tokens (server-side)
 ```
 
-Override the base directory with the `MOR_HOME` environment variable.
+Set `MOR_HOME` to put everything in a single flat directory (useful for testing or portable installs).
 
 ## Frontmatter fields
 
@@ -96,7 +102,7 @@ The `links` table is a derived index — rebuilt from content and frontmatter on
 The notes folder can be a git repository. Use `mor sync` to pull remote changes and push local ones:
 
 ```sh
-cd ~/.config/mor/notes
+cd ~/.local/share/mor/notes
 git init
 git remote add origin git@github.com:you/notes.git
 

@@ -2,11 +2,11 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { serve } from '@hono/node-server';
 import crypto from 'node:crypto';
-import path from 'node:path';
 import type http from 'node:http';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { createMcpServer } from './mcp.js';
+import { getStateDir } from './config.js';
 import { createOAuthRoutes } from './oauth.js';
 import { LocalOperations, NotFoundError } from './operations-local.js';
 import type { Config } from './operations.js';
@@ -68,7 +68,7 @@ export function startServer(
   const app = new Hono();
 
   const oauth = opts.token
-    ? createOAuthRoutes(opts.token, path.dirname(config.dbPath))
+    ? createOAuthRoutes(opts.token, getStateDir())
     : null;
 
   app.use(logger((msg) => log(msg.replace(/[?&]token=[^\s&]*/g, ''))));

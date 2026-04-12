@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { getConfigDir, isRemote, loadConfig } from './config.js';
+import { getStateDir, isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import {
@@ -489,7 +489,7 @@ export function createMcpServer(ops: Operations): McpServer {
 }
 
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
-  if (isRemote(config)) return new RemoteOperations(config, getConfigDir());
+  if (isRemote(config)) return new RemoteOperations(config, getStateDir());
   return new LocalOperations(config);
 }
 
