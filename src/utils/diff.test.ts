@@ -32,6 +32,23 @@ describe('unifiedDiff', () => {
     expect(diff).toContain('  line4');
   });
 
+  it('returns empty for identical strings with trailing newline', () => {
+    expect(unifiedDiff('a\n', 'a\n')).toBe('');
+  });
+
+  it('shows added line in newline-terminated files', () => {
+    const diff = unifiedDiff('a\n', 'a\nb\n');
+    expect(diff).toContain('+ b');
+    // No spurious empty context line from the trailing split element
+    expect(diff).not.toMatch(/^ {2}$/m);
+  });
+
+  it('shows removed line in newline-terminated files', () => {
+    const diff = unifiedDiff('a\nb\n', 'a\n');
+    expect(diff).toContain('- b');
+    expect(diff).not.toMatch(/^ {2}$/m);
+  });
+
   it('separates distant hunks with ...', () => {
     const lines = Array.from({ length: 20 }, (_, i) => `line${i}`);
     const a = lines.join('\n');

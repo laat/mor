@@ -1,6 +1,14 @@
+/** Remove the phantom empty element produced by splitting a trailing-newline string. */
+function stripTrailingEmpty(lines: string[]): string[] {
+  if (lines.length > 0 && lines[lines.length - 1] === '') {
+    return lines.slice(0, -1);
+  }
+  return lines;
+}
+
 export function unifiedDiff(a: string, b: string, ctx = 3): string {
-  const aLines = a.split('\n');
-  const bLines = b.split('\n');
+  const aLines = stripTrailingEmpty(a.split('\n'));
+  const bLines = stripTrailingEmpty(b.split('\n'));
 
   const n = aLines.length;
   const m = bLines.length;
