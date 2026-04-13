@@ -212,36 +212,36 @@ describe('grep', () => {
   it('-A shows lines after match', async () => {
     await ops.add({
       title: 'After Ctx',
-      content: 'aaa\nbbb\ntarget\nccc\nddd',
+      content: 'LINEONE\nLINETWO\ntarget\nLINETHREE\nLINEFOUR',
     });
     const out = mor('grep', '-A', '1', 'target');
     expect(out).toContain('target');
-    expect(out).toContain('ccc');
-    expect(out).not.toContain('bbb');
+    expect(out).toContain('LINETHREE');
+    expect(out).not.toContain('LINETWO');
   });
 
   it('-B shows lines before match', async () => {
     await ops.add({
       title: 'Before Ctx',
-      content: 'aaa\nbbb\ntarget\nccc\nddd',
+      content: 'LINEONE\nLINETWO\ntarget\nLINETHREE\nLINEFOUR',
     });
     const out = mor('grep', '-B', '1', 'target');
     expect(out).toContain('target');
-    expect(out).toContain('bbb');
-    expect(out).not.toContain('ccc');
+    expect(out).toContain('LINETWO');
+    expect(out).not.toContain('LINETHREE');
   });
 
   it('-C shows lines before and after match', async () => {
     await ops.add({
       title: 'Full Ctx',
-      content: 'aaa\nbbb\ntarget\nccc\nddd',
+      content: 'LINEONE\nLINETWO\ntarget\nLINETHREE\nLINEFOUR',
     });
     const out = mor('grep', '-C', '1', 'target');
-    expect(out).toContain('bbb');
+    expect(out).toContain('LINETWO');
     expect(out).toContain('target');
-    expect(out).toContain('ccc');
-    expect(out).not.toContain('aaa');
-    expect(out).not.toContain('ddd');
+    expect(out).toContain('LINETHREE');
+    expect(out).not.toContain('LINEONE');
+    expect(out).not.toContain('LINEFOUR');
   });
 
   it('-C merges overlapping context', async () => {
