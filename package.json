@@ -9,8 +9,7 @@
     "type": "git",
     "url": "https://github.com/laat/mor.git"
   },
-  "homepage": "https://github.com/laat/mor",
-  "bugs": "https://github.com/laat/mor/issues",
+  "homepage": "https://mor.laat.dev",
   "keywords": [
     "memory",
     "ai",
