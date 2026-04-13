@@ -178,6 +178,7 @@ export class LocalOperations implements Operations {
     upsertNoteChecked(this.db, {
       id: note.id,
       title: note.title,
+      description: note.description,
       tags: note.tags,
       type: note.type,
       repository: note.repository,

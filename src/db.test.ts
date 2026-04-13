@@ -236,6 +236,18 @@ describe('searchFts', () => {
     expect(results[0].id).toBe(both.id);
   });
 
+  it('finds by description', () => {
+    const m = note({
+      title: 'Generic Title',
+      description: 'quantum entanglement overview',
+      content: 'body text',
+    });
+    upsertNoteChecked(db, m);
+    const results = searchFts(db, 'entanglement');
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].id).toBe(m.id);
+  });
+
   it('falls back to OR when AND has no results', () => {
     const a = note({
       title: 'only gamma',

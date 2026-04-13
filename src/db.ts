@@ -20,6 +20,7 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS notes (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
     tags TEXT NOT NULL DEFAULT '',
     type TEXT NOT NULL DEFAULT 'knowledge',
     repository TEXT,
@@ -33,7 +34,7 @@ const SCHEMA = `
   );
 
   CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
-    title, tags, content, content='', content_rowid='rowid',
+    title, tags, description, content, content='', content_rowid='rowid',
     tokenize='porter unicode61'
   );
 
@@ -70,13 +71,17 @@ function ftsDelete(db: DB, id: string): void {
     rowid: number;
     title: string;
     tags: string;
+    description: string;
     content: string;
-  }>(db, sql`SELECT rowid, title, tags, content FROM notes WHERE id = ${id}`);
+  }>(
+    db,
+    sql`SELECT rowid, title, tags, description, content FROM notes WHERE id = ${id}`,
+  );
   if (existing) {
     run(
       db,
-      sql`INSERT INTO notes_fts(notes_fts, rowid, title, tags, content)
-          VALUES('delete', ${existing.rowid}, ${existing.title}, ${existing.tags}, ${existing.content})`,
+      sql`INSERT INTO notes_fts(notes_fts, rowid, title, tags, description, content)
+          VALUES('delete', ${existing.rowid}, ${existing.title}, ${existing.tags}, ${existing.description}, ${existing.content})`,
     );
   }
 }
@@ -94,6 +99,36 @@ function migrate(db: DB): void {
   }
   if (!hasColumn(db, 'notes', 'last_accessed')) {
     db.exec(`ALTER TABLE notes ADD COLUMN last_accessed TEXT`);
+  }
+  if (!hasColumn(db, 'notes', 'description')) {
+    db.exec(
+      `ALTER TABLE notes ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
+    );
+    // Rebuild FTS table to include the new description column
+    db.exec(`DROP TABLE IF EXISTS notes_fts`);
+    db.exec(
+      `CREATE VIRTUAL TABLE notes_fts USING fts5(
+        title, tags, description, content, content='', content_rowid='rowid',
+        tokenize='porter unicode61'
+      )`,
+    );
+    // Repopulate FTS from existing notes
+    const rows = db
+      .prepare(`SELECT rowid, title, tags, description, content FROM notes`)
+      .all() as Array<{
+      rowid: number;
+      title: string;
+      tags: string;
+      description: string;
+      content: string;
+    }>;
+    const insert = db.prepare(
+      `INSERT INTO notes_fts(rowid, title, tags, description, content)
+       VALUES(?, ?, ?, ?, ?)`,
+    );
+    for (const r of rows) {
+      insert.run(r.rowid, r.title, r.tags, r.description, r.content);
+    }
   }
 }
 
@@ -136,6 +171,7 @@ export function upsertNoteChecked(
   note: {
     id: string;
     title: string;
+    description?: string;
     tags: string[];
     type: string;
     repository?: string;
@@ -150,12 +186,14 @@ export function upsertNoteChecked(
     ftsDelete(db, note.id);
 
     const tagsStr = note.tags.join(',');
+    const desc = note.description ?? '';
     run(
       db,
-      sql`INSERT INTO notes (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
-          VALUES (${note.id}, ${note.title}, ${tagsStr}, ${note.type}, ${note.repository ?? null}, ${note.created}, ${note.updated}, ${note.content}, ${note.filePath}, ${note.contentHash})
+      sql`INSERT INTO notes (id, title, description, tags, type, repository, created, updated, content, file_path, content_hash)
+          VALUES (${note.id}, ${note.title}, ${desc}, ${tagsStr}, ${note.type}, ${note.repository ?? null}, ${note.created}, ${note.updated}, ${note.content}, ${note.filePath}, ${note.contentHash})
           ON CONFLICT(id) DO UPDATE SET
-            title=excluded.title, tags=excluded.tags, type=excluded.type,
+            title=excluded.title, description=excluded.description,
+            tags=excluded.tags, type=excluded.type,
             repository=excluded.repository, updated=excluded.updated,
             content=excluded.content, file_path=excluded.file_path,
             content_hash=excluded.content_hash`,
@@ -167,8 +205,8 @@ export function upsertNoteChecked(
     )!;
     run(
       db,
-      sql`INSERT INTO notes_fts(rowid, title, tags, content)
-          VALUES(${row.rowid}, ${note.title}, ${tagsStr}, ${note.content})`,
+      sql`INSERT INTO notes_fts(rowid, title, tags, description, content)
+          VALUES(${row.rowid}, ${note.title}, ${tagsStr}, ${desc}, ${note.content})`,
     );
   })();
 }
@@ -220,7 +258,7 @@ function ftsMatch(
   if (!ftsQuery) return [];
   return all<{ id: string; rank: number }>(
     db,
-    sql`SELECT m.id, bm25(notes_fts, 10.0, 5.0, 1.0) AS rank
+    sql`SELECT m.id, bm25(notes_fts, 10.0, 5.0, 3.0, 1.0) AS rank
         FROM notes_fts f
         JOIN notes m ON m.rowid = f.rowid
         WHERE notes_fts MATCH ${ftsQuery}
@@ -337,6 +375,7 @@ export function grepNotes(
       sql`SELECT id, file_path FROM notes
           WHERE content REGEXP ${re}
              OR title REGEXP ${re}
+             OR description REGEXP ${re}
           LIMIT ${limit} OFFSET ${offset}`,
     );
   }
@@ -347,6 +386,7 @@ export function grepNotes(
       sql`SELECT id, file_path FROM notes
           WHERE (LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
              OR (LOWER(title) LIKE ${lowerLike} ESCAPE '\\')
+             OR (LOWER(description) LIKE ${lowerLike} ESCAPE '\\')
           LIMIT ${limit} OFFSET ${offset}`,
     );
   }
@@ -356,6 +396,7 @@ export function grepNotes(
     sql`SELECT id, file_path FROM notes
         WHERE (content LIKE ${like} ESCAPE '\\')
            OR (title LIKE ${like} ESCAPE '\\')
+           OR (description LIKE ${like} ESCAPE '\\')
         LIMIT ${limit} OFFSET ${offset}`,
   );
 }
