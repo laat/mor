@@ -1,6 +1,7 @@
 ---
 name: notes-consolidate
 description: Apply batch edits to notes using natural language — rename, retag, add cross-references, merge, or clean up a set of notes
+disable-model-invocation: true
 ---
 
 Apply a natural language instruction across a set of notes, handling cross-reference updates automatically.

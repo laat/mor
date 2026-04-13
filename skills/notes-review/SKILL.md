@@ -1,6 +1,7 @@
 ---
 name: notes-review
 description: Review the note store for quality issues — duplicates, stale content, broken links, tag inconsistencies, and cleanup opportunities
+disable-model-invocation: true
 ---
 
 Audit the note store and produce a structured report of proposed changes. Do NOT apply changes — present proposals for user approval, then use `/notes-consolidate` or individual `notes_update`/`notes_remove` calls to execute approved changes.
