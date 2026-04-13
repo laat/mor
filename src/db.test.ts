@@ -437,6 +437,22 @@ describe('grepMemories', () => {
     }
     expect(grepMemories(db, 'shared-grep-token', 3)).toHaveLength(3);
   });
+
+  it('supports offset', () => {
+    for (let i = 0; i < 5; i++) {
+      upsertMemoryChecked(
+        db,
+        mem({
+          content: 'offset-grep-token',
+          filePath: path.join(testDir, `grep-off-${i}.md`),
+        }),
+      );
+    }
+    const all5 = grepMemories(db, 'offset-grep-token', 20, false, false, 0);
+    expect(all5).toHaveLength(5);
+    const skipped = grepMemories(db, 'offset-grep-token', 20, false, false, 3);
+    expect(skipped).toHaveLength(2);
+  });
 });
 
 describe('embeddings', () => {

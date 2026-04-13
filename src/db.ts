@@ -323,6 +323,7 @@ export function grepMemories(
   limit = 20,
   ignoreCase = false,
   regex = false,
+  offset = 0,
 ): Array<{ id: string; file_path: string }> {
   if (regex) {
     try {
@@ -339,7 +340,7 @@ export function grepMemories(
       sql`SELECT id, file_path FROM memories
           WHERE content REGEXP ${re}
              OR title REGEXP ${re}
-          LIMIT ${limit}`,
+          LIMIT ${limit} OFFSET ${offset}`,
     );
   }
   if (ignoreCase) {
@@ -349,7 +350,7 @@ export function grepMemories(
       sql`SELECT id, file_path FROM memories
           WHERE (LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
              OR (LOWER(title) LIKE ${lowerLike} ESCAPE '\\')
-          LIMIT ${limit}`,
+          LIMIT ${limit} OFFSET ${offset}`,
     );
   }
   const like = `%${escapeLike(pattern)}%`;
@@ -358,7 +359,7 @@ export function grepMemories(
     sql`SELECT id, file_path FROM memories
         WHERE (content LIKE ${like} ESCAPE '\\')
            OR (title LIKE ${like} ESCAPE '\\')
-        LIMIT ${limit}`,
+        LIMIT ${limit} OFFSET ${offset}`,
   );
 }
 
