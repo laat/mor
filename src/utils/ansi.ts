@@ -3,9 +3,9 @@ import { Marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
 
 // eslint-disable-next-line no-control-regex
-export const ANSI_RE = /\x1b\[[0-9;]*m/g;
+export const ANSI_RE = /\x1b\[[0-9;]*[A-Za-z]/g;
 // eslint-disable-next-line no-control-regex
-export const ANSI_START_RE = /^\x1b\[[0-9;]*m/;
+export const ANSI_START_RE = /^\x1b\[[0-9;]*[A-Za-z]/;
 
 /**
  * Truncate a string with ANSI escape codes to fit within a column width.
