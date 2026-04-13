@@ -71,10 +71,7 @@ function ftsDelete(db: DB, id: string): void {
     title: string;
     tags: string;
     content: string;
-  }>(
-    db,
-    sql`SELECT rowid, title, tags, content FROM notes WHERE id = ${id}`,
-  );
+  }>(db, sql`SELECT rowid, title, tags, content FROM notes WHERE id = ${id}`);
   if (existing) {
     run(
       db,

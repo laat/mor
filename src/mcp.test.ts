@@ -366,7 +366,11 @@ describe('notes_update', () => {
   });
 
   it('updates tags', async () => {
-    const note = await ops.add({ title: 'Tag Test', content: 'x', tags: ['a'] });
+    const note = await ops.add({
+      title: 'Tag Test',
+      content: 'x',
+      tags: ['a'],
+    });
 
     const { text } = await callTool('notes_update', {
       id: note.id,

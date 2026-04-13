@@ -913,7 +913,9 @@ addFilterOptions(
             ? `  ${chalk.dim(`— ${note.description}`)}`
             : '';
           console.log(
-            truncate(`${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${desc}`),
+            truncate(
+              `${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${desc}`,
+            ),
           );
         }
       }
