@@ -1,6 +1,6 @@
 {
   "name": "mor",
-  "version": "0.15.5",
+  "version": "0.16.0",
   "description": "AI-accessible knowledge you actually own — plain markdown on your disk",
   "type": "module",
   "license": "MIT",
