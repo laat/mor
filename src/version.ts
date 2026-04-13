@@ -1,1 +1,6 @@
-export const version: string = process.env.MOR_VERSION ?? '0.0.0-dev';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json') as { version: string };
+
+export const version: string = pkg.version;

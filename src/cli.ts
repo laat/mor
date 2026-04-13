@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
