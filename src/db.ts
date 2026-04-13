@@ -46,7 +46,7 @@ const SCHEMA = `
   );
 
   CREATE TABLE IF NOT EXISTS links (
-    source_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    source_id TEXT NOT NULL,
     target_id TEXT NOT NULL,
     PRIMARY KEY (source_id, target_id)
   );
@@ -100,6 +100,26 @@ function migrate(db: DB): void {
   if (!hasColumn(db, 'notes', 'last_accessed')) {
     db.exec(`ALTER TABLE notes ADD COLUMN last_accessed TEXT`);
   }
+  // Drop FK constraint on links table — it's a derived index, FK just blocks
+  // inserts for forward references during reindex.
+  const linksDdl = get<{ sql: string }>(
+    db,
+    sql`SELECT sql FROM sqlite_master WHERE type='table' AND name='links'`,
+  );
+  if (linksDdl?.sql?.includes('REFERENCES')) {
+    db.exec(`
+      CREATE TABLE links_new (
+        source_id TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        PRIMARY KEY (source_id, target_id)
+      );
+      INSERT INTO links_new SELECT source_id, target_id FROM links;
+      DROP TABLE links;
+      ALTER TABLE links_new RENAME TO links;
+      CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
+    `);
+  }
+
   if (!hasColumn(db, 'notes', 'description')) {
     db.exec(
       `ALTER TABLE notes ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
