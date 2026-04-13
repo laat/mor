@@ -30,7 +30,7 @@ export interface EmbeddingConfig {
   apiVersion?: string;
 }
 
-export const MEMORY_TYPES = [
+export const NOTE_TYPES = [
   'user',
   'feedback',
   'project',
@@ -39,25 +39,25 @@ export const MEMORY_TYPES = [
   'snippet',
   'file',
 ] as const;
-export type MemoryType = (typeof MEMORY_TYPES)[number];
+export type NoteType = (typeof NOTE_TYPES)[number];
 
 export interface FrontMatter {
   id: string;
   title: string;
   description?: string;
   tags: string[];
-  type: MemoryType;
+  type: NoteType;
   repository?: string;
   created: string;
   updated: string;
 }
 
-export interface Memory {
+export interface Note {
   id: string;
   title: string;
   description?: string;
   tags: string[];
-  type: MemoryType;
+  type: NoteType;
   repository?: string;
   created: string;
   updated: string;
@@ -66,12 +66,12 @@ export interface Memory {
 }
 
 export interface SearchResult {
-  memory: Memory;
+  note: Note;
   score: number;
   matchType: 'uuid' | 'filename' | 'fts' | 'vector';
 }
 
-export interface MemoryFilter {
+export interface NoteFilter {
   type?: string;
   tag?: string[];
   repo?: string;
@@ -81,7 +81,7 @@ export interface MemoryFilter {
 export interface GrepOptions {
   limit?: number;
   ignoreCase?: boolean;
-  filter?: MemoryFilter;
+  filter?: NoteFilter;
   offset?: number;
   regex?: boolean;
 }
@@ -103,18 +103,18 @@ export interface Operations {
   search(
     query: string,
     limit?: number,
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     offset?: number,
   ): Promise<SearchPage>;
-  read(query: string): Promise<Memory | undefined>;
+  read(query: string): Promise<Note | undefined>;
   add(opts: {
     title: string;
     description?: string;
     content: string;
     tags?: string[];
-    type?: MemoryType;
+    type?: NoteType;
     repository?: string;
-  }): Promise<Memory>;
+  }): Promise<Note>;
   update(
     query: string,
     updates: {
@@ -122,17 +122,17 @@ export interface Operations {
       description?: string;
       content?: string;
       tags?: string[];
-      type?: MemoryType;
+      type?: NoteType;
     },
-  ): Promise<Memory>;
+  ): Promise<Note>;
   remove(query: string): Promise<{ title: string; id: string }>;
-  grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>>;
+  grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Note>>;
   list(
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     limit?: number,
     offset?: number,
-  ): Promise<Paginated<Memory>>;
-  getLinks(memId: string): Promise<{
+  ): Promise<Paginated<Note>>;
+  getLinks(noteId: string): Promise<{
     forward: Array<{ id: string; title: string }>;
     back: Array<{ id: string; title: string }>;
   }>;
@@ -145,7 +145,7 @@ export interface Operations {
       baseUrl?: string;
     };
   }>;
-  patch(query: string, oldStr: string, newStr: string): Promise<Memory>;
+  patch(query: string, oldStr: string, newStr: string): Promise<Note>;
   sync(commitMessage?: string): Promise<{ message: string }>;
   close(): void | Promise<void>;
 }

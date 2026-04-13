@@ -56,7 +56,7 @@ describe('RemoteOperations client', () => {
     });
     const page = await ops.search('typescript');
     expect(page.total).toBeGreaterThan(0);
-    expect(page.data[0].memory.title).toBe('TypeScript Guide');
+    expect(page.data[0].note.title).toBe('TypeScript Guide');
     expect(page.data[0].score).toBeDefined();
     expect(page.offset).toBe(0);
   });
@@ -70,7 +70,7 @@ describe('RemoteOperations client', () => {
   });
 
   it('round-trip: add → search → read → update → remove', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Round Trip',
       content: 'initial',
       tags: ['test'],
@@ -79,16 +79,16 @@ describe('RemoteOperations client', () => {
     const searchPage = await ops.search('round trip');
     expect(searchPage.data.length).toBeGreaterThan(0);
 
-    const read = await ops.read(mem.id);
+    const read = await ops.read(note.id);
     expect(read?.content).toBe('initial');
 
-    const updated = await ops.update(mem.id, { content: 'updated' });
+    const updated = await ops.update(note.id, { content: 'updated' });
     expect(updated.content).toBe('updated');
 
-    const removed = await ops.remove(mem.id);
+    const removed = await ops.remove(note.id);
     expect(removed.title).toBe('Round Trip');
 
-    const gone = await ops.read(mem.id);
+    const gone = await ops.read(note.id);
     expect(gone).toBeUndefined();
   });
 
@@ -125,9 +125,9 @@ describe('RemoteOperations client', () => {
     expect(links.back).toHaveLength(0);
   });
 
-  it('getLinks returns empty arrays for memory with no links', async () => {
-    const mem = await ops.add({ title: 'No Links', content: 'alone' });
-    const links = await ops.getLinks(mem.id);
+  it('getLinks returns empty arrays for note with no links', async () => {
+    const note = await ops.add({ title: 'No Links', content: 'alone' });
+    const links = await ops.getLinks(note.id);
     expect(links.forward).toHaveLength(0);
     expect(links.back).toHaveLength(0);
   });

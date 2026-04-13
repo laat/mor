@@ -1,5 +1,5 @@
 /**
- * Extract link IDs from a memory document.
+ * Extract link IDs from a note document.
  *
  * Two sources:
  * 1. Markdown links with `mor:` URLs: `[text](mor:<id>)`

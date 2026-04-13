@@ -115,12 +115,12 @@ afterEach(async () => {
 });
 
 describe('notes_create', () => {
-  it('creates a memory', async () => {
+  it('creates a note', async () => {
     const { text } = await callTool('notes_create', {
-      title: 'Test Memory',
+      title: 'Test Note',
       content: 'hello world',
     });
-    expect(text).toContain('Created: Test Memory');
+    expect(text).toContain('Created: Test Note');
     expect(text).toContain('(');
   });
 
@@ -145,7 +145,7 @@ describe('notes_create', () => {
 });
 
 describe('notes_search', () => {
-  it('finds memories by query', async () => {
+  it('finds notes by query', async () => {
     await ops.add({ title: 'JavaScript Guide', content: 'learn js' });
     await ops.add({ title: 'Python Guide', content: 'learn py' });
 
@@ -263,28 +263,28 @@ describe('notes_grep', () => {
 });
 
 describe('notes_read', () => {
-  it('reads a single memory with separate metadata and content blocks', async () => {
-    const mem = await ops.add({ title: 'Read Me', content: 'the content' });
+  it('reads a single note with separate metadata and content blocks', async () => {
+    const note = await ops.add({ title: 'Read Me', content: 'the content' });
 
-    const { text } = await callTool('notes_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [note.id] });
     expect(text).toContain('title: Read Me');
     expect(text).toContain('the content');
   });
 
   it('includes description in metadata block', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'With Desc',
       description: 'A short summary',
       content: 'the body',
     });
 
-    const { text } = await callTool('notes_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [note.id] });
     expect(text).toContain('title: With Desc');
     expect(text).toContain('description: A short summary');
     expect(text).toContain('the body');
   });
 
-  it('batch reads multiple memories', async () => {
+  it('batch reads multiple notes', async () => {
     const a = await ops.add({ title: 'Batch A', content: 'content a' });
     const b = await ops.add({ title: 'Batch B', content: 'content b' });
 
@@ -294,11 +294,11 @@ describe('notes_read', () => {
   });
 
   it('reports not found IDs', async () => {
-    const mem = await ops.add({ title: 'Exists', content: 'x' });
+    const note = await ops.add({ title: 'Exists', content: 'x' });
     const fakeId = '00000000-0000-0000-0000-000000000000';
 
     const { text } = await callTool('notes_read', {
-      ids: [mem.id, fakeId],
+      ids: [note.id, fakeId],
     });
     expect(text).toContain('title: Exists');
     expect(text).toContain(`Not found: ${fakeId}`);
@@ -318,9 +318,9 @@ describe('notes_read', () => {
   });
 
   it('accepts a single id alias', async () => {
-    const mem = await ops.add({ title: 'Single Id', content: 'body' });
+    const note = await ops.add({ title: 'Single Id', content: 'body' });
 
-    const { text } = await callTool('notes_read', { id: mem.id });
+    const { text } = await callTool('notes_read', { id: note.id });
     expect(text).toContain('title: Single Id');
     expect(text).toContain('body');
   });
@@ -334,10 +334,10 @@ describe('notes_read', () => {
 
 describe('notes_update', () => {
   it('updates content and shows diff', async () => {
-    const mem = await ops.add({ title: 'Update Me', content: 'old' });
+    const note = await ops.add({ title: 'Update Me', content: 'old' });
 
     const { text } = await callTool('notes_update', {
-      id: mem.id,
+      id: note.id,
       content: 'new',
     });
     expect(text).toContain('Updated: Update Me');
@@ -345,10 +345,10 @@ describe('notes_update', () => {
   });
 
   it('reports no changes when fields match', async () => {
-    const mem = await ops.add({ title: 'Same', content: 'same' });
+    const note = await ops.add({ title: 'Same', content: 'same' });
 
     const { text } = await callTool('notes_update', {
-      id: mem.id,
+      id: note.id,
       content: 'same',
     });
     expect(text).toContain('No changes: Same');
@@ -356,20 +356,20 @@ describe('notes_update', () => {
   });
 
   it('updates title', async () => {
-    const mem = await ops.add({ title: 'Old Title', content: 'x' });
+    const note = await ops.add({ title: 'Old Title', content: 'x' });
 
     const { text } = await callTool('notes_update', {
-      id: mem.id,
+      id: note.id,
       title: 'New Title',
     });
     expect(text).toContain('New Title');
   });
 
   it('updates tags', async () => {
-    const mem = await ops.add({ title: 'Tag Test', content: 'x', tags: ['a'] });
+    const note = await ops.add({ title: 'Tag Test', content: 'x', tags: ['a'] });
 
     const { text } = await callTool('notes_update', {
-      id: mem.id,
+      id: note.id,
       tags: ['b', 'c'],
     });
     expect(text).toContain('[a] → [b, c]');
@@ -422,10 +422,10 @@ describe('notes_update', () => {
 });
 
 describe('notes_remove', () => {
-  it('removes a memory', async () => {
-    const mem = await ops.add({ title: 'Remove Me', content: 'bye' });
+  it('removes a note', async () => {
+    const note = await ops.add({ title: 'Remove Me', content: 'bye' });
 
-    const { text } = await callTool('notes_remove', { id: mem.id });
+    const { text } = await callTool('notes_remove', { id: note.id });
     expect(text).toContain('Removed: Remove Me');
   });
 
@@ -437,7 +437,7 @@ describe('notes_remove', () => {
     expect(text).toContain('not found');
   });
 
-  it('removes multiple memories via ids', async () => {
+  it('removes multiple notes via ids', async () => {
     const a = await ops.add({ title: 'Bulk Rm A', content: 'x' });
     const b = await ops.add({ title: 'Bulk Rm B', content: 'y' });
 
@@ -469,10 +469,10 @@ describe('notes_remove', () => {
 
 describe('notes_patch', () => {
   it('patches content and shows diff', async () => {
-    const mem = await ops.add({ title: 'Patch Me', content: 'hello world' });
+    const note = await ops.add({ title: 'Patch Me', content: 'hello world' });
 
     const { text } = await callTool('notes_patch', {
-      id: mem.id,
+      id: note.id,
       old_str: 'world',
       new_str: 'universe',
     });
@@ -481,13 +481,13 @@ describe('notes_patch', () => {
   });
 
   it('deletes text with empty new_str', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Delete Part',
       content: 'keep remove keep',
     });
 
     const { text } = await callTool('notes_patch', {
-      id: mem.id,
+      id: note.id,
       old_str: ' remove',
       new_str: '',
     });
@@ -495,10 +495,10 @@ describe('notes_patch', () => {
   });
 
   it('returns error when old_str not found', async () => {
-    const mem = await ops.add({ title: 'No Match', content: 'hello' });
+    const note = await ops.add({ title: 'No Match', content: 'hello' });
 
     const { text, isError } = await callTool('notes_patch', {
-      id: mem.id,
+      id: note.id,
       old_str: 'missing',
       new_str: 'x',
     });
@@ -507,10 +507,10 @@ describe('notes_patch', () => {
   });
 
   it('returns error when old_str appears multiple times', async () => {
-    const mem = await ops.add({ title: 'Multi', content: 'aaa' });
+    const note = await ops.add({ title: 'Multi', content: 'aaa' });
 
     const { text, isError } = await callTool('notes_patch', {
-      id: mem.id,
+      id: note.id,
       old_str: 'a',
       new_str: 'b',
     });
@@ -571,23 +571,23 @@ describe('notes_patch', () => {
 
 describe('notes_list', () => {
   it('uses short 8-char IDs in output', async () => {
-    const mem = await ops.add({ title: 'Short ID Test', content: 'x' });
-    const shortId = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'Short ID Test', content: 'x' });
+    const shortId = note.id.slice(0, 8);
 
     const list = await callTool('notes_list', {});
     expect(list.text).toContain(shortId);
-    expect(list.text).not.toContain(mem.id);
+    expect(list.text).not.toContain(note.id);
 
     const search = await callTool('notes_search', { query: 'Short ID' });
     expect(search.text).toContain(shortId);
-    expect(search.text).not.toContain(mem.id);
+    expect(search.text).not.toContain(note.id);
 
     const grep = await callTool('notes_grep', { pattern: 'Short ID Test' });
     expect(grep.text).toContain(shortId);
-    expect(grep.text).not.toContain(mem.id);
+    expect(grep.text).not.toContain(note.id);
   });
 
-  it('lists memories', async () => {
+  it('lists notes', async () => {
     await ops.add({ title: 'List A', content: 'a' });
     await ops.add({ title: 'List B', content: 'b' });
 
@@ -657,9 +657,9 @@ describe('cross-references', () => {
   });
 
   it('omits links section when no links exist', async () => {
-    const mem = await ops.add({ title: 'No Links', content: 'alone' });
+    const note = await ops.add({ title: 'No Links', content: 'alone' });
 
-    const { text } = await callTool('notes_read', { ids: [mem.id] });
+    const { text } = await callTool('notes_read', { ids: [note.id] });
     expect(text).not.toContain('Links:');
   });
 

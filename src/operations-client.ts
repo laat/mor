@@ -2,8 +2,8 @@ import { getStoredToken, refreshAccessToken } from './oauth-login.js';
 import type {
   Config,
   GrepOptions,
-  Memory,
-  MemoryFilter,
+  Note,
+  NoteFilter,
   Operations,
   Paginated,
   SearchPage,
@@ -20,7 +20,7 @@ class HttpError extends Error {
 
 function appendFilterParams(
   params: URLSearchParams,
-  filter?: MemoryFilter,
+  filter?: NoteFilter,
 ): void {
   if (!filter) return;
   if (filter.type) params.set('type', filter.type);
@@ -60,7 +60,7 @@ export class RemoteOperations implements Operations {
   async search(
     query: string,
     limit = 20,
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     offset = 0,
   ): Promise<SearchPage> {
     const params = new URLSearchParams({
@@ -83,7 +83,7 @@ export class RemoteOperations implements Operations {
     return json;
   }
 
-  async read(query: string): Promise<Memory | undefined> {
+  async read(query: string): Promise<Note | undefined> {
     let res = await fetch(
       `${this.baseUrl}/notes/${encodeURIComponent(query)}`,
       { headers: this.headers },
@@ -107,7 +107,7 @@ export class RemoteOperations implements Operations {
     tags?: string[];
     type?: string;
     repository?: string;
-  }): Promise<Memory> {
+  }): Promise<Note> {
     let res = await fetch(`${this.baseUrl}/notes`, {
       method: 'POST',
       headers: this.headers,
@@ -135,7 +135,7 @@ export class RemoteOperations implements Operations {
       tags?: string[];
       type?: string;
     },
-  ): Promise<Memory> {
+  ): Promise<Note> {
     let res = await fetch(
       `${this.baseUrl}/notes/${encodeURIComponent(query)}`,
       { method: 'PUT', headers: this.headers, body: JSON.stringify(updates) },
@@ -153,7 +153,7 @@ export class RemoteOperations implements Operations {
     return json.data;
   }
 
-  async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
+  async patch(query: string, oldStr: string, newStr: string): Promise<Note> {
     const body = { old_str: oldStr, new_str: newStr };
     let res = await fetch(
       `${this.baseUrl}/notes/${encodeURIComponent(query)}/patch`,
@@ -188,7 +188,7 @@ export class RemoteOperations implements Operations {
     return json.data;
   }
 
-  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
+  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Note>> {
     const {
       limit = 20,
       ignoreCase = false,
@@ -219,10 +219,10 @@ export class RemoteOperations implements Operations {
   }
 
   async list(
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     limit = 100,
     offset = 0,
-  ): Promise<Paginated<Memory>> {
+  ): Promise<Paginated<Note>> {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
@@ -242,17 +242,17 @@ export class RemoteOperations implements Operations {
     return json;
   }
 
-  async getLinks(memId: string): Promise<{
+  async getLinks(noteId: string): Promise<{
     forward: Array<{ id: string; title: string }>;
     back: Array<{ id: string; title: string }>;
   }> {
     let res = await fetch(
-      `${this.baseUrl}/notes/${encodeURIComponent(memId)}/links`,
+      `${this.baseUrl}/notes/${encodeURIComponent(noteId)}/links`,
       { headers: this.headers },
     );
     if (res.status === 401 && (await this.tryRefresh())) {
       res = await fetch(
-        `${this.baseUrl}/notes/${encodeURIComponent(memId)}/links`,
+        `${this.baseUrl}/notes/${encodeURIComponent(noteId)}/links`,
         { headers: this.headers },
       );
     }

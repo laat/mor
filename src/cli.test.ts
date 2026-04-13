@@ -124,11 +124,11 @@ describe('add', () => {
       '---\nauthor: Jane\nstatus: draft\n---\n\n# My Doc\n\nHello world\n',
     );
     mor('add', mdFile);
-    const mems = (await ops.list()).data;
-    expect(mems).toHaveLength(1);
-    const mem = await ops.read(mems[0].id);
-    expect(mem!.content).toContain('author: Jane');
-    expect(mem!.content).toContain('# My Doc');
+    const notes = (await ops.list()).data;
+    expect(notes).toHaveLength(1);
+    const note = await ops.read(notes[0].id);
+    expect(note!.content).toContain('author: Jane');
+    expect(note!.content).toContain('# My Doc');
   });
 });
 
@@ -294,7 +294,7 @@ describe('grep', () => {
 });
 
 describe('cat', () => {
-  it('prints memory content', async () => {
+  it('prints note content', async () => {
     await ops.add({ title: 'Cat Test', content: 'cat content here' });
     const out = mor('cat', 'Cat Test');
     expect(out).toBe('cat content here');
@@ -308,7 +308,7 @@ describe('cat', () => {
     expect(out).toContain('raw content');
   });
 
-  it('errors on missing memory', () => {
+  it('errors on missing note', () => {
     const err = morFail('cat', 'nonexistent-xyzzy');
     expect(err).toContain('note not found');
   });
@@ -325,7 +325,7 @@ describe('ls', () => {
     });
   });
 
-  it('lists all memories', () => {
+  it('lists all notes', () => {
     const out = mor('ls');
     expect(out).toContain('Mem A');
     expect(out).toContain('Mem B');
@@ -381,8 +381,8 @@ describe('ls', () => {
 
 describe('update', () => {
   it('updates title', async () => {
-    const mem = await ops.add({ title: 'Old Title', content: 'content' });
-    const id = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'Old Title', content: 'content' });
+    const id = note.id.slice(0, 8);
     const out = mor('update', id, '-t', 'New Title');
     expect(out).toContain('Updated:');
     expect(out).toContain('New Title');
@@ -392,21 +392,21 @@ describe('update', () => {
   });
 
   it('updates tags', async () => {
-    const mem = await ops.add({ title: 'Tag Update', content: 'content' });
-    const id = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'Tag Update', content: 'content' });
+    const id = note.id.slice(0, 8);
     mor('update', id, '--tags', 'x,y,z');
     const ls = mor('ls', '--tag', 'x');
     expect(ls).toContain('Tag Update');
   });
 
-  it('errors on missing memory', () => {
+  it('errors on missing note', () => {
     const err = morFail('update', '00000000', '-t', 'Nope');
     expect(err).toContain('not found');
   });
 
   it('shows metadata diff on title change', async () => {
-    const mem = await ops.add({ title: 'Before Title', content: 'content' });
-    const id = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'Before Title', content: 'content' });
+    const id = note.id.slice(0, 8);
     const out = mor('update', '-t', 'After Title', id);
     expect(out).toContain('Updated:');
     expect(out).toContain('title:');
@@ -415,8 +415,8 @@ describe('update', () => {
   });
 
   it('shows content diff on content change', async () => {
-    const mem = await ops.add({ title: 'Diff Test', content: 'old content' });
-    const id = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'Diff Test', content: 'old content' });
+    const id = note.id.slice(0, 8);
     const tmpFile = path.join(testDir, 'new-content.txt');
     fs.writeFileSync(tmpFile, 'new content');
     const out = mor('update', '--content-from', tmpFile, id);
@@ -425,28 +425,28 @@ describe('update', () => {
   });
 
   it('reports no changes when values match', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Same',
       content: 'same',
       tags: ['a'],
     });
-    const id = mem.id.slice(0, 8);
+    const id = note.id.slice(0, 8);
     const out = mor('update', '--tags', 'a', id);
     expect(out).toContain('No changes:');
   });
 
   it('errors with no updates', async () => {
-    const mem = await ops.add({ title: 'No Update', content: 'content' });
-    const id = mem.id.slice(0, 8);
+    const note = await ops.add({ title: 'No Update', content: 'content' });
+    const id = note.id.slice(0, 8);
     const err = morFail('update', id);
     expect(err).toContain('no updates provided');
   });
 });
 
 describe('rm', () => {
-  it('removes a memory', async () => {
-    const mem = await ops.add({ title: 'Delete Me', content: 'gone soon' });
-    const id = mem.id.slice(0, 8);
+  it('removes a note', async () => {
+    const note = await ops.add({ title: 'Delete Me', content: 'gone soon' });
+    const id = note.id.slice(0, 8);
     const out = mor('rm', id);
     expect(out).toContain('Removed:');
     expect(out).toContain('Delete Me');

@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Config, FrontMatter, Memory, MemoryType } from './operations.js';
+import type { Config, FrontMatter, Note, NoteType } from './operations.js';
 import { normalizeGitUrl } from './utils/git.js';
 
 let _cachedRepo: string | null | undefined;
@@ -31,7 +31,7 @@ export function generateFilename(title: string, id: string): string {
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'memory';
+      .replace(/^-|-$/g, '') || 'note';
   const hash = id.slice(0, 4);
   return `${slug}-${hash}.md`;
 }
@@ -50,17 +50,17 @@ function buildFrontmatter(fm: FrontMatter): FrontMatter {
   return out;
 }
 
-export function createMemory(
+export function createNote(
   config: Config,
   opts: {
     title: string;
     description?: string;
     content: string;
     tags?: string[];
-    type?: MemoryType;
+    type?: NoteType;
     repository?: string;
   },
-): { mem: Memory; raw: string } {
+): { note: Note; raw: string } {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const repo = opts.repository ?? detectRepository();
@@ -81,34 +81,34 @@ export function createMemory(
   fs.writeFileSync(filePath, raw);
 
   return {
-    mem: { ...frontmatter, content: opts.content, filePath },
+    note: { ...frontmatter, content: opts.content, filePath },
     raw,
   };
 }
 
-function readAndParse(filePath: string): { mem: Memory; raw: string } {
+function readAndParse(filePath: string): { note: Note; raw: string } {
   const raw = fs.readFileSync(filePath, 'utf-8');
-  return { mem: parseMemory(raw, filePath), raw };
+  return { note: parseNote(raw, filePath), raw };
 }
 
-export function readMemory(filePath: string): Memory {
-  return readAndParse(filePath).mem;
+export function readNote(filePath: string): Note {
+  return readAndParse(filePath).note;
 }
 
-export function tryReadMemory(
+export function tryReadNote(
   filePath: string,
-): { mem: Memory; raw: string } | undefined {
+): { note: Note; raw: string } | undefined {
   try {
     return readAndParse(filePath);
   } catch (e) {
     process.stderr.write(
-      `Warning: skipping unreadable memory ${filePath}: ${e instanceof Error ? e.message : e}\n`,
+      `Warning: skipping unreadable note ${filePath}: ${e instanceof Error ? e.message : e}\n`,
     );
     return undefined;
   }
 }
 
-function parseMemory(raw: string, filePath: string): Memory {
+function parseNote(raw: string, filePath: string): Note {
   const { data, content } = matter(raw);
   const fm = data as FrontMatter;
   return {
@@ -125,22 +125,22 @@ function parseMemory(raw: string, filePath: string): Memory {
   };
 }
 
-export function serializeMemory(mem: Memory): string {
-  const frontmatter = buildFrontmatter(mem);
-  return matter.stringify({ content: mem.content }, frontmatter);
+export function serializeNote(note: Note): string {
+  const frontmatter = buildFrontmatter(note);
+  return matter.stringify({ content: note.content }, frontmatter);
 }
 
-export function updateMemory(
+export function updateNote(
   filePath: string,
   updates: {
     title?: string;
     description?: string;
     content?: string;
     tags?: string[];
-    type?: MemoryType;
+    type?: NoteType;
   },
-): { mem: Memory; raw: string } {
-  const existing = readMemory(filePath);
+): { note: Note; raw: string } {
+  const existing = readNote(filePath);
   const now = new Date().toISOString();
   const description =
     updates.description !== undefined
@@ -171,16 +171,16 @@ export function updateMemory(
   if (newPath !== filePath) fs.unlinkSync(filePath);
 
   return {
-    mem: { ...frontmatter, content, filePath: newPath },
+    note: { ...frontmatter, content, filePath: newPath },
     raw,
   };
 }
 
-export function deleteMemory(filePath: string): void {
+export function deleteNote(filePath: string): void {
   fs.unlinkSync(filePath);
 }
 
-export function listMemoryFiles(config: Config): string[] {
+export function listNoteFiles(config: Config): string[] {
   try {
     return fs
       .readdirSync(config.notesDir)

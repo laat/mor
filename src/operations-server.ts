@@ -204,19 +204,19 @@ export function startServer(
   });
 
   app.get('/notes/:query', async (c) => {
-    const mem = await ops.read(c.req.param('query'));
-    if (!mem) {
+    const note = await ops.read(c.req.param('query'));
+    if (!note) {
       return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
     }
-    return c.json({ data: mem });
+    return c.json({ data: note });
   });
 
   app.get('/notes/:query/links', async (c) => {
-    const mem = await ops.read(c.req.param('query'));
-    if (!mem) {
+    const note = await ops.read(c.req.param('query'));
+    if (!note) {
       return c.json({ error: `Note not found: ${c.req.param('query')}` }, 404);
     }
-    return c.json({ data: await ops.getLinks(mem.id) });
+    return c.json({ data: await ops.getLinks(note.id) });
   });
 
   app.post('/notes/:query/patch', async (c) => {
@@ -296,19 +296,19 @@ export function startServer(
       }
       session.lastUsed = Date.now();
 
-      // Filter out already-surfaced memories
+      // Filter out already-surfaced notes
       const newResults = results.data.filter(
-        (r) => !session!.seen.has(r.memory.id),
+        (r) => !session!.seen.has(r.note.id),
       );
       if (newResults.length === 0) return c.json({});
 
       // Record surfaced IDs
-      for (const r of newResults) session.seen.add(r.memory.id);
+      for (const r of newResults) session.seen.add(r.note.id);
 
       // Format hints
       const lines = newResults.map((r) => {
-        const desc = r.memory.description ? ` — ${r.memory.description}` : '';
-        return `  - ${r.memory.title} [${r.memory.id.slice(0, 8)}]${desc}`;
+        const desc = r.note.description ? ` — ${r.note.description}` : '';
+        return `  - ${r.note.title} [${r.note.id.slice(0, 8)}]${desc}`;
       });
       const context = `[mor] Potentially relevant notes (use mor MCP tools to read if needed):\n${lines.join('\n')}`;
 

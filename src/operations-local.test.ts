@@ -24,46 +24,46 @@ afterEach(() => {
 });
 
 describe('add', () => {
-  it('creates a memory and indexes it', async () => {
-    const mem = await ops.add({ title: 'Test', content: 'hello' });
-    expect(mem.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(mem.title).toBe('Test');
-    expect(mem.content).toBe('hello');
-    expect(fs.existsSync(mem.filePath)).toBe(true);
+  it('creates a note and indexes it', async () => {
+    const note = await ops.add({ title: 'Test', content: 'hello' });
+    expect(note.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(note.title).toBe('Test');
+    expect(note.content).toBe('hello');
+    expect(fs.existsSync(note.filePath)).toBe(true);
   });
 
   it('sets default type to knowledge', async () => {
-    const mem = await ops.add({ title: 'Default Type', content: 'x' });
-    expect(mem.type).toBe('knowledge');
+    const note = await ops.add({ title: 'Default Type', content: 'x' });
+    expect(note.type).toBe('knowledge');
   });
 
   it('sets tags and type', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Tagged',
       content: 'x',
       tags: ['a', 'b'],
       type: 'snippet',
     });
-    expect(mem.tags).toEqual(['a', 'b']);
-    expect(mem.type).toBe('snippet');
+    expect(note.tags).toEqual(['a', 'b']);
+    expect(note.type).toBe('snippet');
   });
 
   it('sets description', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Described',
       content: 'x',
       description: 'A desc',
     });
-    expect(mem.description).toBe('A desc');
+    expect(note.description).toBe('A desc');
   });
 
   it('sets repository', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Repo',
       content: 'x',
       repository: 'github.com/org/repo',
     });
-    expect(mem.repository).toBe('github.com/org/repo');
+    expect(note.repository).toBe('github.com/org/repo');
   });
 
   it('is immediately searchable', async () => {
@@ -75,21 +75,21 @@ describe('add', () => {
 
 describe('read', () => {
   it('resolves by full UUID', async () => {
-    const mem = await ops.add({ title: 'UUID Read', content: 'x' });
-    const found = await ops.read(mem.id);
-    expect(found?.id).toBe(mem.id);
+    const note = await ops.add({ title: 'UUID Read', content: 'x' });
+    const found = await ops.read(note.id);
+    expect(found?.id).toBe(note.id);
   });
 
   it('resolves by UUID prefix (8 chars)', async () => {
-    const mem = await ops.add({ title: 'Prefix Read', content: 'x' });
-    const found = await ops.read(mem.id.slice(0, 8));
-    expect(found?.id).toBe(mem.id);
+    const note = await ops.add({ title: 'Prefix Read', content: 'x' });
+    const found = await ops.read(note.id.slice(0, 8));
+    expect(found?.id).toBe(note.id);
   });
 
   it('resolves by filename', async () => {
-    const mem = await ops.add({ title: 'Filename Read', content: 'x' });
-    const found = await ops.read(path.basename(mem.filePath));
-    expect(found?.id).toBe(mem.id);
+    const note = await ops.add({ title: 'Filename Read', content: 'x' });
+    const found = await ops.read(path.basename(note.filePath));
+    expect(found?.id).toBe(note.id);
   });
 
   it('resolves by FTS search', async () => {
@@ -109,50 +109,50 @@ describe('read', () => {
 
 describe('update', () => {
   it('updates content', async () => {
-    const mem = await ops.add({ title: 'Update Me', content: 'old' });
-    const updated = await ops.update(mem.id, { content: 'new' });
+    const note = await ops.add({ title: 'Update Me', content: 'old' });
+    const updated = await ops.update(note.id, { content: 'new' });
     expect(updated.content).toBe('new');
-    expect(updated.id).toBe(mem.id);
+    expect(updated.id).toBe(note.id);
   });
 
   it('updates title', async () => {
-    const mem = await ops.add({ title: 'Old Title', content: 'x' });
-    const updated = await ops.update(mem.id, { title: 'New Title' });
+    const note = await ops.add({ title: 'Old Title', content: 'x' });
+    const updated = await ops.update(note.id, { title: 'New Title' });
     expect(updated.title).toBe('New Title');
   });
 
   it('updates tags', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Tag Update',
       content: 'x',
       tags: ['a'],
     });
-    const updated = await ops.update(mem.id, { tags: ['b', 'c'] });
+    const updated = await ops.update(note.id, { tags: ['b', 'c'] });
     expect(updated.tags).toEqual(['b', 'c']);
   });
 
   it('updates description', async () => {
-    const mem = await ops.add({ title: 'Desc Update', content: 'x' });
-    const updated = await ops.update(mem.id, { description: 'new desc' });
+    const note = await ops.add({ title: 'Desc Update', content: 'x' });
+    const updated = await ops.update(note.id, { description: 'new desc' });
     expect(updated.description).toBe('new desc');
   });
 
   it('updates type', async () => {
-    const mem = await ops.add({ title: 'Type Update', content: 'x' });
-    const updated = await ops.update(mem.id, { type: 'snippet' });
+    const note = await ops.add({ title: 'Type Update', content: 'x' });
+    const updated = await ops.update(note.id, { type: 'snippet' });
     expect(updated.type).toBe('snippet');
   });
 
   it('updates timestamp', async () => {
-    const mem = await ops.add({ title: 'Time Update', content: 'x' });
-    const updated = await ops.update(mem.id, { content: 'y' });
-    expect(updated.updated >= mem.updated).toBe(true);
+    const note = await ops.add({ title: 'Time Update', content: 'x' });
+    const updated = await ops.update(note.id, { content: 'y' });
+    expect(updated.updated >= note.updated).toBe(true);
   });
 
   it('accepts UUID prefix', async () => {
-    const mem = await ops.add({ title: 'Prefix Update', content: 'x' });
-    const updated = await ops.update(mem.id.slice(0, 8), { content: 'y' });
-    expect(updated.id).toBe(mem.id);
+    const note = await ops.add({ title: 'Prefix Update', content: 'x' });
+    const updated = await ops.update(note.id.slice(0, 8), { content: 'y' });
+    expect(updated.id).toBe(note.id);
   });
 
   it('rejects non-UUID query', async () => {
@@ -170,25 +170,25 @@ describe('update', () => {
 });
 
 describe('remove', () => {
-  it('deletes memory and file', async () => {
-    const mem = await ops.add({ title: 'Delete Me', content: 'bye' });
-    const result = await ops.remove(mem.id);
+  it('deletes note and file', async () => {
+    const note = await ops.add({ title: 'Delete Me', content: 'bye' });
+    const result = await ops.remove(note.id);
     expect(result.title).toBe('Delete Me');
-    expect(result.id).toBe(mem.id);
-    expect(fs.existsSync(mem.filePath)).toBe(false);
+    expect(result.id).toBe(note.id);
+    expect(fs.existsSync(note.filePath)).toBe(false);
   });
 
   it('removes from search index', async () => {
-    const mem = await ops.add({ title: 'Remove Index', content: 'gone' });
-    await ops.remove(mem.id);
-    const found = await ops.read(mem.id);
+    const note = await ops.add({ title: 'Remove Index', content: 'gone' });
+    await ops.remove(note.id);
+    const found = await ops.read(note.id);
     expect(found).toBeUndefined();
   });
 
   it('accepts UUID prefix', async () => {
-    const mem = await ops.add({ title: 'Prefix Remove', content: 'x' });
-    const result = await ops.remove(mem.id.slice(0, 8));
-    expect(result.id).toBe(mem.id);
+    const note = await ops.add({ title: 'Prefix Remove', content: 'x' });
+    const result = await ops.remove(note.id.slice(0, 8));
+    expect(result.id).toBe(note.id);
   });
 
   it('rejects non-UUID query', async () => {
@@ -205,42 +205,42 @@ describe('remove', () => {
 
 describe('patch', () => {
   it('replaces a substring', async () => {
-    const mem = await ops.add({ title: 'Patch Me', content: 'hello world' });
-    const updated = await ops.patch(mem.id, 'world', 'universe');
+    const note = await ops.add({ title: 'Patch Me', content: 'hello world' });
+    const updated = await ops.patch(note.id, 'world', 'universe');
     expect(updated.content).toBe('hello universe');
-    expect(updated.id).toBe(mem.id);
+    expect(updated.id).toBe(note.id);
   });
 
   it('deletes text with empty new_str', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Delete Part',
       content: 'keep remove keep',
     });
-    const updated = await ops.patch(mem.id, ' remove', '');
+    const updated = await ops.patch(note.id, ' remove', '');
     expect(updated.content).toBe('keep keep');
   });
 
   it('throws when old_str not found', async () => {
-    const mem = await ops.add({ title: 'No Match', content: 'hello' });
-    await expect(ops.patch(mem.id, 'missing', 'x')).rejects.toThrow(
+    const note = await ops.add({ title: 'No Match', content: 'hello' });
+    await expect(ops.patch(note.id, 'missing', 'x')).rejects.toThrow(
       'old_str not found',
     );
   });
 
   it('throws when old_str appears multiple times', async () => {
-    const mem = await ops.add({ title: 'Multi', content: 'aaa' });
-    await expect(ops.patch(mem.id, 'a', 'b')).rejects.toThrow(
+    const note = await ops.add({ title: 'Multi', content: 'aaa' });
+    await expect(ops.patch(note.id, 'a', 'b')).rejects.toThrow(
       'appears 3 times',
     );
   });
 
   it('works with UUID prefix query', async () => {
-    const mem = await ops.add({ title: 'Prefix Patch', content: 'old text' });
-    const updated = await ops.patch(mem.id.slice(0, 8), 'old', 'new');
+    const note = await ops.add({ title: 'Prefix Patch', content: 'old text' });
+    const updated = await ops.patch(note.id.slice(0, 8), 'old', 'new');
     expect(updated.content).toBe('new text');
   });
 
-  it('throws on non-existent memory', async () => {
+  it('throws on non-existent note', async () => {
     await expect(
       ops.patch('00000000-0000-0000-0000-000000000000', 'a', 'b'),
     ).rejects.toThrow('not found');
@@ -262,7 +262,7 @@ describe('search', () => {
 
     const page = await ops.search('JavaScript');
     expect(page.data.length).toBeGreaterThanOrEqual(1);
-    expect(page.data[0].memory.title).toBe('JavaScript Guide');
+    expect(page.data[0].note.title).toBe('JavaScript Guide');
   });
 
   it('returns paginated result', async () => {
@@ -290,7 +290,7 @@ describe('search', () => {
     await ops.add({ title: 'TypeScript Guide', content: 'some guide' });
 
     const page = await ops.search('typescript');
-    expect(page.data[0].memory.title).toBe('TypeScript Guide');
+    expect(page.data[0].note.title).toBe('TypeScript Guide');
   });
 
   it('returns empty for no matches', async () => {
@@ -304,7 +304,7 @@ describe('search', () => {
     await ops.add({ title: 'Tagged B', content: 'test', tags: ['beta'] });
 
     const page = await ops.search('test', 20, { tag: ['alpha'] });
-    expect(page.data.every((r) => r.memory.tags.includes('alpha'))).toBe(true);
+    expect(page.data.every((r) => r.note.tags.includes('alpha'))).toBe(true);
   });
 
   it('filters by type', async () => {
@@ -312,38 +312,38 @@ describe('search', () => {
     await ops.add({ title: 'Knowledge', content: 'code' });
 
     const page = await ops.search('code', 20, { type: 'snippet' });
-    expect(page.data.every((r) => r.memory.type === 'snippet')).toBe(true);
+    expect(page.data.every((r) => r.note.type === 'snippet')).toBe(true);
   });
 
   it('resolves by full UUID', async () => {
-    const mem = await ops.add({ title: 'By ID', content: 'find me by id' });
-    const page = await ops.search(mem.id);
+    const note = await ops.add({ title: 'By ID', content: 'find me by id' });
+    const page = await ops.search(note.id);
     expect(page.data).toHaveLength(1);
-    expect(page.data[0].memory.id).toBe(mem.id);
+    expect(page.data[0].note.id).toBe(note.id);
     expect(page.data[0].score).toBe(1);
   });
 
   it('resolves by UUID prefix', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'By Prefix',
       content: 'find me by prefix',
     });
-    const prefix = mem.id.slice(0, 8);
+    const prefix = note.id.slice(0, 8);
     const page = await ops.search(prefix);
     expect(page.data).toHaveLength(1);
-    expect(page.data[0].memory.id).toBe(mem.id);
+    expect(page.data[0].note.id).toBe(note.id);
   });
 
   it('applies filter when resolving by ID', async () => {
-    const mem = await ops.add({
+    const note = await ops.add({
       title: 'Filtered ID',
       content: 'filter test',
       type: 'snippet',
     });
-    const noMatch = await ops.search(mem.id, 20, { type: 'knowledge' });
+    const noMatch = await ops.search(note.id, 20, { type: 'knowledge' });
     expect(noMatch.data).toHaveLength(0);
 
-    const match = await ops.search(mem.id, 20, { type: 'snippet' });
+    const match = await ops.search(note.id, 20, { type: 'snippet' });
     expect(match.data).toHaveLength(1);
   });
 });
@@ -449,7 +449,7 @@ describe('grep', () => {
 });
 
 describe('list', () => {
-  it('lists all memories', async () => {
+  it('lists all notes', async () => {
     await ops.add({ title: 'List A', content: 'a' });
     await ops.add({ title: 'List B', content: 'b' });
 
@@ -524,7 +524,7 @@ describe('list', () => {
     expect(page.data[0].title).toBe('Both');
   });
 
-  it('returns empty when no memories', async () => {
+  it('returns empty when no notes', async () => {
     const page = await ops.list();
     expect(page.data).toHaveLength(0);
     expect(page.total).toBe(0);
@@ -551,19 +551,19 @@ describe('reindex', () => {
 
     // Directly modify the file outside of ops
     const page = await ops.list();
-    const mem = page.data[0];
-    const raw = fs.readFileSync(mem.filePath, 'utf-8');
-    fs.writeFileSync(mem.filePath, raw.replace('original', 'modified'));
+    const note = page.data[0];
+    const raw = fs.readFileSync(note.filePath, 'utf-8');
+    fs.writeFileSync(note.filePath, raw.replace('original', 'modified'));
 
     await ops.reindex();
-    const updated = await ops.read(mem.id);
+    const updated = await ops.read(note.id);
     expect(updated?.content).toBe('modified');
   });
 });
 
 describe('syncIndex', () => {
   it('detects externally added files', async () => {
-    // Add a file directly to the memory dir
+    // Add a file directly to the notes dir
     const content = [
       '---',
       'id: 00000000-0000-0000-0000-000000000001',
@@ -583,11 +583,11 @@ describe('syncIndex', () => {
   });
 
   it('detects externally deleted files', async () => {
-    const mem = await ops.add({ title: 'Will Vanish', content: 'x' });
-    fs.unlinkSync(mem.filePath);
+    const note = await ops.add({ title: 'Will Vanish', content: 'x' });
+    fs.unlinkSync(note.filePath);
 
     // Force sync and verify it's gone
     const page = await ops.list();
-    expect(page.data.find((m) => m.id === mem.id)).toBeUndefined();
+    expect(page.data.find((m) => m.id === note.id)).toBeUndefined();
   });
 });

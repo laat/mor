@@ -7,13 +7,13 @@ import chalk from 'chalk';
 import matter from 'gray-matter';
 import { getStateDir, isRemote, loadConfig } from './config.js';
 import { startMcpServer } from './mcp.js';
-import { serializeMemory } from './memory.js';
+import { serializeNote } from './note.js';
 import { login, getStoredToken } from './oauth-login.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
-import type { MemoryFilter, Operations } from './operations.js';
+import type { NoteFilter, Operations } from './operations.js';
 import { startServer } from './operations-server.js';
-import { MEMORY_TYPES, type Memory, type MemoryType } from './operations.js';
+import { NOTE_TYPES, type Note, type NoteType } from './operations.js';
 import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
 import { parseRawGitHubUrl } from './utils/github.js';
 import { colorizeMarkdown, truncate } from './utils/ansi.js';
@@ -27,11 +27,11 @@ function openInEditor(file: string): void {
   spawnSync(`${editor} ${quoted}`, { stdio: 'inherit', shell: true });
 }
 
-function parseType(value: string | undefined): MemoryType | undefined {
+function parseType(value: string | undefined): NoteType | undefined {
   if (!value) return undefined;
-  if (MEMORY_TYPES.includes(value as MemoryType)) return value as MemoryType;
+  if (NOTE_TYPES.includes(value as NoteType)) return value as NoteType;
   console.error(
-    `Error: invalid type '${value}'. Must be one of: ${MEMORY_TYPES.join(', ')}`,
+    `Error: invalid type '${value}'. Must be one of: ${NOTE_TYPES.join(', ')}`,
   );
   process.exit(1);
 }
@@ -55,7 +55,7 @@ function addFilterOptions(cmd: Command): Command {
     .option('--ext <ext>', 'Filter by file extension in title');
 }
 
-function parseFilterOpts(opts: Record<string, any>): MemoryFilter {
+function parseFilterOpts(opts: Record<string, any>): NoteFilter {
   return {
     type: opts.type,
     tag: opts.tag
@@ -111,7 +111,7 @@ addFilterOptions(
 ).action(
   async (
     queryParts: string[],
-    opts: { limit: string; threshold?: string; json?: boolean } & MemoryFilter,
+    opts: { limit: string; threshold?: string; json?: boolean } & NoteFilter,
   ) => {
     const query = joinArgs(queryParts);
     const config = loadConfig();
@@ -130,12 +130,12 @@ addFilterOptions(
       const results = page.data.filter((r) => r.score >= threshold);
       if (opts.json) {
         const json = results.map((r) => ({
-          id: r.memory.id,
-          title: r.memory.title,
-          description: r.memory.description ?? null,
-          tags: r.memory.tags,
+          id: r.note.id,
+          title: r.note.title,
+          description: r.note.description ?? null,
+          tags: r.note.tags,
           score: r.score,
-          content: r.memory.content,
+          content: r.note.content,
         }));
         console.log(JSON.stringify(json));
         return;
@@ -146,13 +146,13 @@ addFilterOptions(
       }
       for (const r of results) {
         const tags =
-          r.memory.tags.length > 0
-            ? ` ${chalk.yellow(`[${r.memory.tags.join(', ')}]`)}`
+          r.note.tags.length > 0
+            ? ` ${chalk.yellow(`[${r.note.tags.join(', ')}]`)}`
             : '';
         const score = chalk.dim(`  (${r.score.toFixed(2)})`);
         console.log(
           truncate(
-            `${chalk.cyan(r.memory.id.slice(0, 8))}  ${r.memory.title}${tags}${score}`,
+            `${chalk.cyan(r.note.id.slice(0, 8))}  ${r.note.title}${tags}${score}`,
           ),
         );
       }
@@ -194,7 +194,7 @@ addFilterOptions(
       beforeContext?: string;
       context?: string;
       filesWithMatches?: boolean;
-    } & MemoryFilter,
+    } & NoteFilter,
   ) => {
     const pattern = joinArgs(patternParts);
     const config = loadConfig();
@@ -226,18 +226,18 @@ addFilterOptions(
         ? new RegExp(grepPattern, flags)
         : new RegExp(grepPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
 
-      for (const mem of page.data) {
+      for (const note of page.data) {
         const tags =
-          mem.tags.length > 0
-            ? ` ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
+          note.tags.length > 0
+            ? ` ${chalk.yellow(`[${note.tags.join(', ')}]`)}`
             : '';
-        console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${tags}`);
+        console.log(`${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${tags}`);
         if (opts.filesWithMatches) continue;
         const before =
           parseInt(opts.beforeContext ?? opts.context ?? '0', 10) || 0;
         const after =
           parseInt(opts.afterContext ?? opts.context ?? '0', 10) || 0;
-        const lines = mem.content.split('\n');
+        const lines = note.content.split('\n');
         const numWidth = opts.lineNumber ? String(lines.length).length : 0;
         const highlighted = lines.map((line) => {
           let isMatch = false;
@@ -358,7 +358,7 @@ program
           const lang = EXT_TO_LANG[ext];
           if (lang && !tags.includes(lang)) tags.push(lang);
         }
-        const mem = await ops.add({
+        const note = await ops.add({
           title: title!,
           description: opts.description,
           content,
@@ -367,9 +367,9 @@ program
           repository,
         });
         console.log(
-          `${chalk.green('Created:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+          `${chalk.green('Created:')} ${chalk.cyan(note.id.slice(0, 8))}  ${note.title}`,
         );
-        console.log(`         ${chalk.dim(path.basename(mem.filePath))}`);
+        console.log(`         ${chalk.dim(path.basename(note.filePath))}`);
       } finally {
         await ops.close();
       }
@@ -425,7 +425,7 @@ program
           description?: string;
           content?: string;
           tags?: string[];
-          type?: MemoryType;
+          type?: NoteType;
         } = {};
         if (opts.title) updates.title = opts.title;
         if (opts.description) updates.description = opts.description;
@@ -462,7 +462,7 @@ program
           console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
-        const mem = await ops.update(before.id, updates);
+        const note = await ops.update(before.id, updates);
         const meta: string[] = [];
         if (updates.title && updates.title !== before.title)
           meta.push(
@@ -491,7 +491,7 @@ program
           );
         } else {
           console.log(
-            `${chalk.green('Updated:')} ${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`,
+            `${chalk.green('Updated:')} ${chalk.cyan(note.id.slice(0, 8))}  ${note.title}`,
           );
           if (meta.length > 0) console.log(meta.join('\n'));
           if (contentChanged) {
@@ -537,11 +537,11 @@ program
     }
   });
 
-function exportMemory(mem: Memory, raw?: boolean): string {
-  if (raw) return serializeMemory(mem);
-  if (mem.type === 'file')
-    return stripCodeFence(mem.content)?.code ?? mem.content;
-  return mem.content;
+function exportNote(note: Note, raw?: boolean): string {
+  if (raw) return serializeNote(note);
+  if (note.type === 'file')
+    return stripCodeFence(note.content)?.code ?? note.content;
+  return note.content;
 }
 
 program
@@ -555,18 +555,18 @@ program
       const config = loadConfig();
       const ops = getOps(config);
       try {
-        const mem = await ops.read(query);
-        if (!mem) {
+        const note = await ops.read(query);
+        if (!note) {
           console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
-        let output = exportMemory(mem, opts.raw);
+        let output = exportNote(note, opts.raw);
         if (!opts.raw && process.stdout.isTTY)
           output = colorizeMarkdown(output);
         process.stdout.write(output);
         if (!opts.raw) process.stdout.write('\n');
         if (!opts.raw && opts.links) {
-          const { forward, back } = await ops.getLinks(mem.id);
+          const { forward, back } = await ops.getLinks(note.id);
           if (forward.length > 0 || back.length > 0) {
             const forwardIds = new Set(forward.map((l) => l.id));
             const backIds = new Set(back.map((l) => l.id));
@@ -611,12 +611,12 @@ program
       if (opts.broken) {
         const page = await ops.list(undefined, 10000);
         let found = false;
-        for (const mem of page.data) {
-          const { forward } = await ops.getLinks(mem.id);
+        for (const note of page.data) {
+          const { forward } = await ops.getLinks(note.id);
           const broken = forward.filter((l) => !l.title);
           if (broken.length > 0) {
             found = true;
-            console.log(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}`);
+            console.log(`${chalk.cyan(note.id.slice(0, 8))}  ${note.title}`);
             for (const link of broken) {
               console.log(
                 `  ${chalk.red('→')} ${chalk.dim(link.id.slice(0, 8))}  ${chalk.dim('(not found)')}`,
@@ -631,12 +631,12 @@ program
         console.error('Error: provide a note ID, or use --broken');
         process.exit(1);
       }
-      const mem = await ops.read(query);
-      if (!mem) {
+      const note = await ops.read(query);
+      if (!note) {
         console.error(`Error: note not found: ${query}`);
         process.exit(1);
       }
-      const { forward, back } = await ops.getLinks(mem.id);
+      const { forward, back } = await ops.getLinks(note.id);
       if (forward.length === 0 && back.length === 0) {
         console.log('No links.');
         return;
@@ -677,14 +677,14 @@ program
       const config = loadConfig();
       const ops = getOps(config);
       try {
-        const mem = await ops.read(query);
-        if (!mem) {
+        const note = await ops.read(query);
+        if (!note) {
           console.error(`Error: note not found: ${query}`);
           process.exit(1);
         }
-        const output = exportMemory(mem, opts.raw);
+        const output = exportNote(note, opts.raw);
         fs.writeFileSync(dest, output.endsWith('\n') ? output : output + '\n');
-        console.log(`Copied "${mem.title}" to ${dest}`);
+        console.log(`Copied "${note.title}" to ${dest}`);
       } catch (e) {
         console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
         process.exit(1);
@@ -704,8 +704,8 @@ program
     const ops = getOps(config);
     let tmpDir: string | undefined;
     try {
-      const mem = await ops.read(query);
-      if (!mem) {
+      const note = await ops.read(query);
+      if (!note) {
         console.error(`Error: note not found: ${query}`);
         process.exit(1);
       }
@@ -713,35 +713,35 @@ program
       if (opts.raw) {
         // Edit full file with frontmatter
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
-        const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
-        const original = serializeMemory(mem);
+        const tmpFile = path.join(tmpDir, path.basename(note.filePath));
+        const original = serializeNote(note);
         fs.writeFileSync(tmpFile, original);
         openInEditor(tmpFile);
         const edited = fs.readFileSync(tmpFile, 'utf-8');
         if (edited !== original) {
           const { data, content: newContent } = matter(edited);
-          await ops.update(mem.id, {
+          await ops.update(note.id, {
             title: data.title,
             description: data.description,
             tags: data.tags,
             type: parseType(data.type),
             content: newContent.trim(),
           });
-          console.log(`Updated: ${mem.title}`);
+          console.log(`Updated: ${note.title}`);
         } else {
           console.log('No changes.');
         }
-      } else if (mem.type === 'file') {
+      } else if (note.type === 'file') {
         // For file type: edit the code without fence/frontmatter
-        const fenced = stripCodeFence(mem.content);
-        const code = fenced ? fenced.code : mem.content;
+        const fenced = stripCodeFence(note.content);
+        const code = fenced ? fenced.code : note.content;
         const lang = fenced?.lang ?? '';
         const ext = LANG_TO_EXT[lang] ?? (lang ? `.${lang}` : '.txt');
 
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
         const tmpFile = path.join(
           tmpDir,
-          path.basename(mem.title, path.extname(mem.title)) + ext,
+          path.basename(note.title, path.extname(note.title)) + ext,
         );
         fs.writeFileSync(tmpFile, code);
         openInEditor(tmpFile);
@@ -750,27 +750,27 @@ program
           const newContent = fenced
             ? '```' + lang + '\n' + edited.replace(/\n$/, '') + '\n```'
             : edited;
-          await ops.update(mem.id, { content: newContent });
-          console.log(`Updated: ${mem.title}`);
+          await ops.update(note.id, { content: newContent });
+          console.log(`Updated: ${note.title}`);
         } else {
           console.log('No changes.');
         }
       } else if (isRemote(config)) {
         // Remote non-file: edit content in temp file
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-'));
-        const tmpFile = path.join(tmpDir, path.basename(mem.filePath));
-        fs.writeFileSync(tmpFile, mem.content);
+        const tmpFile = path.join(tmpDir, path.basename(note.filePath));
+        fs.writeFileSync(tmpFile, note.content);
         openInEditor(tmpFile);
         const newContent = fs.readFileSync(tmpFile, 'utf-8');
-        if (newContent !== mem.content) {
-          await ops.update(mem.id, { content: newContent });
-          console.log(`Updated: ${mem.title}`);
+        if (newContent !== note.content) {
+          await ops.update(note.id, { content: newContent });
+          console.log(`Updated: ${note.title}`);
         } else {
           console.log('No changes.');
         }
       } else {
         // Local non-file: open markdown file directly
-        openInEditor(mem.filePath);
+        openInEditor(note.filePath);
       }
     } finally {
       if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -855,12 +855,12 @@ addFilterOptions(
       long?: boolean;
       tags?: boolean;
       types?: boolean;
-    } & MemoryFilter,
+    } & NoteFilter,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
     try {
-      // For --tags/--types we need all memories, otherwise use limit
+      // For --tags/--types we need all notes, otherwise use limit
       const needAll = opts.tags || opts.types || opts.all;
       const limitRaw = opts.limit ? parseInt(opts.limit, 10) : undefined;
       const limit = needAll
@@ -875,11 +875,11 @@ addFilterOptions(
       }
       if (needAll) {
         const counts = new Map<string, number>();
-        for (const mem of page.data) {
+        for (const note of page.data) {
           if (opts.types) {
-            counts.set(mem.type, (counts.get(mem.type) ?? 0) + 1);
+            counts.set(note.type, (counts.get(note.type) ?? 0) + 1);
           } else {
-            for (const tag of mem.tags) {
+            for (const tag of note.tags) {
               counts.set(tag, (counts.get(tag) ?? 0) + 1);
             }
           }
@@ -890,30 +890,30 @@ addFilterOptions(
         }
         return;
       }
-      for (const mem of page.data) {
+      for (const note of page.data) {
         if (opts.long) {
-          const date = chalk.dim(mem.updated.slice(0, 10));
+          const date = chalk.dim(note.updated.slice(0, 10));
           const tags =
-            mem.tags.length > 0
-              ? `  ${chalk.yellow(`[${mem.tags.join(', ')}]`)}`
+            note.tags.length > 0
+              ? `  ${chalk.yellow(`[${note.tags.join(', ')}]`)}`
               : '';
           const loc = isRemote(config)
-            ? `${config.server!.url.replace(/\/+$/, '')}/notes/${encodeURIComponent(mem.id)}`
-            : mem.filePath;
+            ? `${config.server!.url.replace(/\/+$/, '')}/notes/${encodeURIComponent(note.id)}`
+            : note.filePath;
           console.log(
             truncate(
-              `${chalk.cyan(mem.id.slice(0, 8))}  ${chalk.magenta(mem.type.padEnd(10))}  ${date}  ${mem.title}${tags}`,
+              `${chalk.cyan(note.id.slice(0, 8))}  ${chalk.magenta(note.type.padEnd(10))}  ${date}  ${note.title}${tags}`,
             ),
           );
-          if (mem.description)
-            console.log(truncate(`         ${chalk.dim(mem.description)}`));
+          if (note.description)
+            console.log(truncate(`         ${chalk.dim(note.description)}`));
           console.log(truncate(`         ${chalk.dim(loc)}`));
         } else {
-          const desc = mem.description
-            ? `  ${chalk.dim(`— ${mem.description}`)}`
+          const desc = note.description
+            ? `  ${chalk.dim(`— ${note.description}`)}`
             : '';
           console.log(
-            truncate(`${chalk.cyan(mem.id.slice(0, 8))}  ${mem.title}${desc}`),
+            truncate(`${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${desc}`),
           );
         }
       }

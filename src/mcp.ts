@@ -5,8 +5,8 @@ import { getStateDir, isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import {
-  MEMORY_TYPES,
-  type Memory,
+  NOTE_TYPES,
+  type Note,
   type Operations,
   type Paginated,
 } from './operations.js';
@@ -58,10 +58,10 @@ const idOrIdsSchema = {
     ),
 };
 
-function formatMemory(mem: Memory): string {
-  const tags = mem.tags.length > 0 ? `  [${mem.tags.join(', ')}]` : '';
-  const desc = mem.description ? `\n  ${mem.description}` : '';
-  return `- ${shortId(mem.id)}  ${mem.title}${tags}${desc}`;
+function formatNote(note: Note): string {
+  const tags = note.tags.length > 0 ? `  [${note.tags.join(', ')}]` : '';
+  const desc = note.description ? `\n  ${note.description}` : '';
+  return `- ${shortId(note.id)}  ${note.title}${tags}${desc}`;
 }
 
 function paginatedHeader<T>(page: Paginated<T>): string {
@@ -72,9 +72,9 @@ function paginatedHeader<T>(page: Paginated<T>): string {
 
 async function formatLinks(
   ops: Operations,
-  memId: string,
+  noteId: string,
 ): Promise<string | undefined> {
-  const { forward, back } = await ops.getLinks(memId);
+  const { forward, back } = await ops.getLinks(noteId);
   if (forward.length === 0 && back.length === 0) return undefined;
   const forwardIds = new Set(forward.map((l) => l.id));
   const backIds = new Set(back.map((l) => l.id));
@@ -95,15 +95,15 @@ async function formatLinks(
   return lines.join('\n');
 }
 
-function formatMetadata(mem: Memory): string {
+function formatMetadata(note: Note): string {
   const lines: string[] = [];
-  lines.push(`id: ${shortId(mem.id)}`);
-  lines.push(`title: ${mem.title}`);
-  if (mem.tags.length > 0) lines.push(`tags: ${mem.tags.join(', ')}`);
-  if (mem.type) lines.push(`type: ${mem.type}`);
-  if (mem.description) lines.push(`description: ${mem.description}`);
-  if (mem.created) lines.push(`created: ${mem.created}`);
-  if (mem.updated) lines.push(`updated: ${mem.updated}`);
+  lines.push(`id: ${shortId(note.id)}`);
+  lines.push(`title: ${note.title}`);
+  if (note.tags.length > 0) lines.push(`tags: ${note.tags.join(', ')}`);
+  if (note.type) lines.push(`type: ${note.type}`);
+  if (note.description) lines.push(`description: ${note.description}`);
+  if (note.created) lines.push(`created: ${note.created}`);
+  if (note.updated) lines.push(`updated: ${note.updated}`);
   return lines.join('\n');
 }
 
@@ -146,10 +146,10 @@ export function createMcpServer(ops: Operations): McpServer {
       if (page.data.length === 0) return text('No notes found.');
       const lines = page.data.map((r) => {
         const score = `  (${r.score.toFixed(2)})`;
-        return formatMemory(r.memory) + score;
+        return formatNote(r.note) + score;
       });
       const top = page.data[0];
-      const topContent = `\n\n---\n\nTop result: ${shortId(top.memory.id)}  ${top.memory.title}\n\n${top.memory.content}`;
+      const topContent = `\n\n---\n\nTop result: ${shortId(top.note.id)}  ${top.note.title}\n\n${top.note.content}`;
       return text(paginatedHeader(page) + lines.join('\n') + topContent);
     },
   );
@@ -192,7 +192,7 @@ export function createMcpServer(ops: Operations): McpServer {
         regex,
       });
       if (page.data.length === 0) return text('No notes found.');
-      const lines = page.data.map(formatMemory);
+      const lines = page.data.map(formatNote);
       const top = page.data[0];
       const topContent = `\n\n---\n\nTop result: ${shortId(top.id)}  ${top.title}\n\n${top.content}`;
       return text(paginatedHeader(page) + lines.join('\n') + topContent);
@@ -215,15 +215,15 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       const blocks: Array<{ type: 'text'; text: string }> = [];
       const notFound: string[] = [];
-      for (const memId of resolved) {
-        const mem = await ops.read(memId);
-        if (!mem) {
-          notFound.push(memId);
+      for (const noteId of resolved) {
+        const note = await ops.read(noteId);
+        if (!note) {
+          notFound.push(noteId);
           continue;
         }
-        blocks.push({ type: 'text', text: formatMetadata(mem) });
-        blocks.push({ type: 'text', text: mem.content });
-        const links = await formatLinks(ops, mem.id);
+        blocks.push({ type: 'text', text: formatMetadata(note) });
+        blocks.push({ type: 'text', text: note.content });
+        const links = await formatLinks(ops, note.id);
         if (links) blocks.push({ type: 'text', text: links });
       }
       if (blocks.length === 0) {
@@ -256,21 +256,21 @@ export function createMcpServer(ops: Operations): McpServer {
           .nullish()
           .describe('Tags — pass an array, e.g. ["tag1", "tag2"]'),
         type: z
-          .enum(MEMORY_TYPES)
+          .enum(NOTE_TYPES)
           .nullish()
           .describe('Note type (default: knowledge)'),
       },
     },
     async ({ title, description, content, tags, type }) => {
       try {
-        const mem = await ops.add({
+        const note = await ops.add({
           title,
           description,
           content,
           tags: tags ?? undefined,
           type: type ?? undefined,
         });
-        return text(`Created: ${mem.title} (${mem.id})`);
+        return text(`Created: ${note.title} (${note.id})`);
       } catch (e) {
         return error(e);
       }
@@ -293,13 +293,13 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       const removed: string[] = [];
       const failures: { id: string; message: string }[] = [];
-      for (const memId of resolved) {
+      for (const noteId of resolved) {
         try {
-          const result = await ops.remove(memId);
+          const result = await ops.remove(noteId);
           removed.push(`${result.title} (${shortId(result.id)})`);
         } catch (e) {
           failures.push({
-            id: memId,
+            id: noteId,
             message: e instanceof Error ? e.message : String(e),
           });
         }
@@ -341,7 +341,7 @@ export function createMcpServer(ops: Operations): McpServer {
     async ({ limit, offset, tag, type }) => {
       const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
       if (page.data.length === 0) return text('No notes stored.');
-      const lines = page.data.map(formatMemory);
+      const lines = page.data.map(formatNote);
       return text(paginatedHeader(page) + lines.join('\n'));
     },
   );
@@ -360,7 +360,7 @@ export function createMcpServer(ops: Operations): McpServer {
           .array(z.string())
           .optional()
           .describe('New tags — pass an array, e.g. ["tag1", "tag2"]'),
-        type: z.enum(MEMORY_TYPES).optional().describe('New type'),
+        type: z.enum(NOTE_TYPES).optional().describe('New type'),
       },
     },
     async ({ id, ids, title, description, content, tags, type }) => {
@@ -372,11 +372,11 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       const blocks: string[] = [];
       const failures: { id: string; message: string }[] = [];
-      for (const memId of resolved) {
+      for (const noteId of resolved) {
         try {
-          const before = await ops.read(memId);
-          if (!before) throw new Error(`Note not found: ${memId}`);
-          const updated = await ops.update(memId, {
+          const before = await ops.read(noteId);
+          if (!before) throw new Error(`Note not found: ${noteId}`);
+          const updated = await ops.update(noteId, {
             title,
             description,
             content,
@@ -412,7 +412,7 @@ export function createMcpServer(ops: Operations): McpServer {
           blocks.push(parts.join('\n\n'));
         } catch (e) {
           failures.push({
-            id: memId,
+            id: noteId,
             message: e instanceof Error ? e.message : String(e),
           });
         }
@@ -455,18 +455,18 @@ export function createMcpServer(ops: Operations): McpServer {
       }
       const blocks: string[] = [];
       const failures: { id: string; message: string }[] = [];
-      for (const memId of resolved) {
+      for (const noteId of resolved) {
         try {
-          const before = await ops.read(memId);
-          if (!before) throw new Error(`Note not found: ${memId}`);
-          const updated = await ops.patch(memId, old_str, new_str);
+          const before = await ops.read(noteId);
+          if (!before) throw new Error(`Note not found: ${noteId}`);
+          const updated = await ops.patch(noteId, old_str, new_str);
           const parts = [`Patched: ${updated.title} (${shortId(updated.id)})`];
           parts.push('--- content diff ---');
           parts.push(unifiedDiff(before.content, updated.content));
           blocks.push(parts.join('\n\n'));
         } catch (e) {
           failures.push({
-            id: memId,
+            id: noteId,
             message: e instanceof Error ? e.message : String(e),
           });
         }

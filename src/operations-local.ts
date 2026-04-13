@@ -3,25 +3,25 @@ import PQueue from 'p-queue';
 import { spawnSync } from 'node:child_process';
 import {
   clearDb,
-  deleteMemoryFromDb,
+  deleteNoteFromDb,
   getAllContentHashes,
-  getAllMemoryIds,
+  getAllNoteIds,
   getBacklinks,
   getEmbeddingCount,
   getEmbeddingModel,
   getForwardLinks,
-  getMemoriesByIds,
+  getNotesByIds,
   recordAccess,
-  getMemoryByFilename,
-  getMemoryById,
-  getMemoryByPrefix,
-  grepMemories,
+  getNoteByFilename,
+  getNoteById,
+  getNoteByPrefix,
+  grepNotes,
   openDb,
   searchFts,
   searchVec,
   upsertEmbedding,
   upsertLinks,
-  upsertMemoryChecked,
+  upsertNoteChecked,
   type DB,
 } from './db.js';
 import {
@@ -29,21 +29,21 @@ import {
   type EmbeddingProvider,
 } from './embeddings/provider.js';
 import {
-  createMemory,
-  deleteMemory,
-  listMemoryFiles,
-  readMemory,
-  tryReadMemory,
-  updateMemory,
-} from './memory.js';
+  createNote,
+  deleteNote,
+  listNoteFiles,
+  readNote,
+  tryReadNote,
+  updateNote,
+} from './note.js';
 import { extractLinkIds, parseFrontmatterLinks } from './utils/links.js';
 import matter from 'gray-matter';
 import type {
   Config,
   GrepOptions,
-  Memory,
-  MemoryFilter,
-  MemoryType,
+  Note,
+  NoteFilter,
+  NoteType,
   Operations,
   Paginated,
   ScoringMode,
@@ -71,37 +71,37 @@ function hashContent(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-function matchMemory(mem: Memory, filter: MemoryFilter): boolean {
+function matchNote(note: Note, filter: NoteFilter): boolean {
   if (filter.type) {
     const types = filter.type.split(',').map((t) => t.trim());
-    if (!types.some((t) => matchGlob(mem.type, t))) return false;
+    if (!types.some((t) => matchGlob(note.type, t))) return false;
   }
   if (filter.tag?.length) {
-    if (!filter.tag.every((t) => mem.tags.some((tag) => matchGlob(tag, t))))
+    if (!filter.tag.every((t) => note.tags.some((tag) => matchGlob(tag, t))))
       return false;
   }
   if (filter.repo) {
-    if (!mem.repository || !matchGlob(mem.repository, filter.repo))
+    if (!note.repository || !matchGlob(note.repository, filter.repo))
       return false;
   }
   if (filter.ext) {
     const ext = filter.ext.startsWith('.') ? filter.ext : `.${filter.ext}`;
-    if (!mem.title.toLowerCase().endsWith(ext.toLowerCase())) return false;
+    if (!note.title.toLowerCase().endsWith(ext.toLowerCase())) return false;
   }
   return true;
 }
 
 function applyFilter<T>(
   items: T[],
-  getMem: (item: T) => Memory,
-  filter?: MemoryFilter,
+  getNote: (item: T) => Note,
+  filter?: NoteFilter,
 ): T[] {
   if (
     !filter ||
     (!filter.type && !filter.tag?.length && !filter.repo && !filter.ext)
   )
     return items;
-  return items.filter((item) => matchMemory(getMem(item), filter));
+  return items.filter((item) => matchNote(getNote(item), filter));
 }
 
 export class LocalOperations implements Operations {
@@ -131,27 +131,27 @@ export class LocalOperations implements Operations {
   }
 
   private syncIndex(): void {
-    const files = listMemoryFiles(this.config);
-    const dbIds = getAllMemoryIds(this.db);
+    const files = listNoteFiles(this.config);
+    const dbIds = getAllNoteIds(this.db);
     const hashes = getAllContentHashes(this.db);
     const seenIds = new Set<string>();
-    const changed: Memory[] = [];
+    const changed: Note[] = [];
 
     for (const filePath of files) {
-      const result = tryReadMemory(filePath);
+      const result = tryReadNote(filePath);
       if (!result) continue;
-      const { mem, raw } = result;
+      const { note, raw } = result;
 
-      seenIds.add(mem.id);
-      if (hashes.get(mem.id) !== hashContent(raw)) {
-        this.upsertFromMemory(mem, raw);
-        changed.push(mem);
+      seenIds.add(note.id);
+      if (hashes.get(note.id) !== hashContent(raw)) {
+        this.upsertFromNote(note, raw);
+        changed.push(note);
       }
     }
 
     for (const id of dbIds) {
       if (!seenIds.has(id)) {
-        deleteMemoryFromDb(this.db, id);
+        deleteNoteFromDb(this.db, id);
       }
     }
 
@@ -167,30 +167,30 @@ export class LocalOperations implements Operations {
     this.syncIndex();
   }
 
-  private computeEmbeddingsInBackground(memories: Memory[]): void {
+  private computeEmbeddingsInBackground(notes: Note[]): void {
     if (this.provider.name === 'none') return;
-    for (const mem of memories) {
-      this.embeddingQueue.add(() => this.computeEmbedding(mem));
+    for (const note of notes) {
+      this.embeddingQueue.add(() => this.computeEmbedding(note));
     }
   }
 
-  private upsertFromMemory(mem: Memory, raw: string): void {
-    upsertMemoryChecked(this.db, {
-      id: mem.id,
-      title: mem.title,
-      tags: mem.tags,
-      type: mem.type,
-      repository: mem.repository,
-      created: mem.created,
-      updated: mem.updated,
-      content: mem.content,
-      filePath: mem.filePath,
+  private upsertFromNote(note: Note, raw: string): void {
+    upsertNoteChecked(this.db, {
+      id: note.id,
+      title: note.title,
+      tags: note.tags,
+      type: note.type,
+      repository: note.repository,
+      created: note.created,
+      updated: note.updated,
+      content: note.content,
+      filePath: note.filePath,
       contentHash: hashContent(raw),
     });
-    this.updateLinks(mem.id, mem.content, raw);
+    this.updateLinks(note.id, note.content, raw);
   }
 
-  private updateLinks(memId: string, content: string, raw: string): void {
+  private updateLinks(noteId: string, content: string, raw: string): void {
     const { data } = matter(raw);
     const fmLinks = parseFrontmatterLinks(data as Record<string, unknown>);
     const rawIds = extractLinkIds(content, fmLinks);
@@ -198,73 +198,73 @@ export class LocalOperations implements Operations {
     // Resolve short IDs to full UUIDs where possible
     const resolved: string[] = [];
     for (const id of rawIds) {
-      if (id === memId) continue; // skip self-references
+      if (id === noteId) continue; // skip self-references
       if (UUID_RE.test(id)) {
         resolved.push(id);
       } else if (UUID_PREFIX_RE.test(id)) {
-        const row = getMemoryByPrefix(this.db, id);
+        const row = getNoteByPrefix(this.db, id);
         resolved.push(row ? row.id : id);
       } else {
         resolved.push(id);
       }
     }
 
-    upsertLinks(this.db, memId, resolved);
+    upsertLinks(this.db, noteId, resolved);
   }
 
-  private async computeEmbedding(mem: Memory): Promise<void> {
+  private async computeEmbedding(note: Note): Promise<void> {
     if (this.provider.name === 'none') return;
 
     try {
-      const text = `${mem.title}\n${mem.tags.join(', ')}\n${mem.content}`;
+      const text = `${note.title}\n${note.tags.join(', ')}\n${note.content}`;
       const embedding = await this.provider.embed(text);
 
       const buffer = Buffer.from(new Float32Array(embedding).buffer);
       upsertEmbedding(
         this.db,
-        mem.id,
+        note.id,
         buffer,
         this.provider.model,
         embedding.length,
       );
     } catch (e) {
       process.stderr.write(
-        `Warning: embedding failed for ${mem.id}: ${e instanceof Error ? e.message : e}\n`,
+        `Warning: embedding failed for ${note.id}: ${e instanceof Error ? e.message : e}\n`,
       );
     }
   }
 
-  private resolveById(id: string): Memory | undefined {
+  private resolveById(id: string): Note | undefined {
     this.syncIndexIfNeeded();
 
     if (UUID_RE.test(id)) {
-      const row = getMemoryById(this.db, id);
-      if (row) return readMemory(row.file_path);
+      const row = getNoteById(this.db, id);
+      if (row) return readNote(row.file_path);
     }
 
     if (UUID_PREFIX_RE.test(id)) {
-      const row = getMemoryByPrefix(this.db, id);
-      if (row) return readMemory(row.file_path);
+      const row = getNoteByPrefix(this.db, id);
+      if (row) return readNote(row.file_path);
     }
 
     return undefined;
   }
 
-  private async resolveQuery(query: string): Promise<Memory | undefined> {
+  private async resolveQuery(query: string): Promise<Note | undefined> {
     const byId = this.resolveById(query);
     if (byId) return byId;
 
-    const byFilename = getMemoryByFilename(this.db, query);
-    if (byFilename) return readMemory(byFilename.file_path);
+    const byFilename = getNoteByFilename(this.db, query);
+    if (byFilename) return readNote(byFilename.file_path);
 
     if (!query.endsWith('.md')) {
-      const byFilenameMd = getMemoryByFilename(this.db, query + '.md');
-      if (byFilenameMd) return readMemory(byFilenameMd.file_path);
+      const byFilenameMd = getNoteByFilename(this.db, query + '.md');
+      if (byFilenameMd) return readNote(byFilenameMd.file_path);
     }
 
     try {
       const page = await this.search(query, 1);
-      if (page.data.length > 0) return page.data[0].memory;
+      if (page.data.length > 0) return page.data[0].note;
     } catch {
       // search error
     }
@@ -275,7 +275,7 @@ export class LocalOperations implements Operations {
   async search(
     query: string,
     limit = 20,
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     offset = 0,
   ): Promise<SearchPage> {
     this.syncIndexIfNeeded();
@@ -284,8 +284,8 @@ export class LocalOperations implements Operations {
     const byId = this.resolveById(query);
     if (byId) {
       const matches = applyFilter(
-        [{ memory: byId, score: 1, matchType: 'uuid' as const }],
-        (r) => r.memory,
+        [{ note: byId, score: 1, matchType: 'uuid' as const }],
+        (r) => r.note,
         filter,
       );
       if (matches.length > 0 && offset === 0) {
@@ -324,7 +324,7 @@ export class LocalOperations implements Operations {
       const ftsRanks = new Map(ftsResults.map((r, i) => [r.id, i + 1]));
 
       const allIds = [...new Set([...ftsRanks.keys(), ...vectorMap.keys()])];
-      const memRows = getMemoriesByIds(this.db, allIds);
+      const noteRows = getNotesByIds(this.db, allIds);
       const merged: Array<{ id: string; score: number }> = [];
       for (const id of allIds) {
         const ftsScore = ftsRanks.has(id)
@@ -332,7 +332,7 @@ export class LocalOperations implements Operations {
           : 0;
         const vecScore = vectorMap.get(id) ?? 0;
         let score = FTS_WEIGHT * ftsScore + VEC_WEIGHT * vecScore;
-        const accesses = memRows.get(id)?.access_count ?? 0;
+        const accesses = noteRows.get(id)?.access_count ?? 0;
         score *= 1 + Math.min(accesses, ACCESS_BOOST_CAP) * ACCESS_BOOST_WEIGHT;
         merged.push({ id, score });
       }
@@ -340,25 +340,25 @@ export class LocalOperations implements Operations {
 
       const results: SearchResult[] = [];
       for (const r of merged) {
-        const row = memRows.get(r.id);
+        const row = noteRows.get(r.id);
         if (!row) continue;
         results.push({
-          memory: readMemory(row.file_path),
+          note: readNote(row.file_path),
           score: r.score,
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
       }
-      filtered = applyFilter(results, (r) => r.memory, filter);
+      filtered = applyFilter(results, (r) => r.note, filter);
     } else {
       scoring = 'fts';
       const ids = ftsResults.map((r) => r.id);
-      const memRows = getMemoriesByIds(this.db, ids);
+      const noteRows = getNotesByIds(this.db, ids);
       const results: SearchResult[] = [];
       for (const r of ftsResults) {
-        const row = memRows.get(r.id);
+        const row = noteRows.get(r.id);
         if (!row) continue;
         results.push({
-          memory: readMemory(row.file_path),
+          note: readNote(row.file_path),
           score:
             r.score *
             (1 +
@@ -368,7 +368,7 @@ export class LocalOperations implements Operations {
         });
       }
       results.sort((a, b) => b.score - a.score);
-      filtered = applyFilter(results, (r) => r.memory, filter);
+      filtered = applyFilter(results, (r) => r.note, filter);
     }
 
     return {
@@ -380,19 +380,19 @@ export class LocalOperations implements Operations {
     };
   }
 
-  async read(query: string): Promise<Memory | undefined> {
-    const mem = await this.resolveQuery(query);
-    if (mem) recordAccess(this.db, mem.id);
-    return mem;
+  async read(query: string): Promise<Note | undefined> {
+    const note = await this.resolveQuery(query);
+    if (note) recordAccess(this.db, note.id);
+    return note;
   }
 
-  async getLinks(memId: string): Promise<{
+  async getLinks(noteId: string): Promise<{
     forward: Array<{ id: string; title: string }>;
     back: Array<{ id: string; title: string }>;
   }> {
     return {
-      forward: getForwardLinks(this.db, memId),
-      back: getBacklinks(this.db, memId),
+      forward: getForwardLinks(this.db, noteId),
+      back: getBacklinks(this.db, noteId),
     };
   }
 
@@ -401,14 +401,14 @@ export class LocalOperations implements Operations {
     description?: string;
     content: string;
     tags?: string[];
-    type?: MemoryType;
+    type?: NoteType;
     repository?: string;
-  }): Promise<Memory> {
-    const { mem, raw } = createMemory(this.config, opts);
-    this.upsertFromMemory(mem, raw);
-    await this.computeEmbedding(mem);
-    this.autoSync(`add: ${mem.title}`);
-    return mem;
+  }): Promise<Note> {
+    const { note, raw } = createNote(this.config, opts);
+    this.upsertFromNote(note, raw);
+    await this.computeEmbedding(note);
+    this.autoSync(`add: ${note.title}`);
+    return note;
   }
 
   async update(
@@ -418,22 +418,22 @@ export class LocalOperations implements Operations {
       description?: string;
       content?: string;
       tags?: string[];
-      type?: MemoryType;
+      type?: NoteType;
     },
-  ): Promise<Memory> {
+  ): Promise<Note> {
     const existing = this.resolveById(query);
     if (!existing)
       throw new NotFoundError(
         `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
-    const { mem, raw } = updateMemory(existing.filePath, updates);
-    this.upsertFromMemory(mem, raw);
-    await this.computeEmbedding(mem);
-    this.autoSync(`update: ${mem.title}`);
-    return mem;
+    const { note, raw } = updateNote(existing.filePath, updates);
+    this.upsertFromNote(note, raw);
+    await this.computeEmbedding(note);
+    this.autoSync(`update: ${note.title}`);
+    return note;
   }
 
-  async patch(query: string, oldStr: string, newStr: string): Promise<Memory> {
+  async patch(query: string, oldStr: string, newStr: string): Promise<Note> {
     const existing = await this.resolveQuery(query);
     if (!existing) throw new NotFoundError(`Note not found: ${query}`);
     const count = existing.content.split(oldStr).length - 1;
@@ -450,18 +450,18 @@ export class LocalOperations implements Operations {
   }
 
   async remove(query: string): Promise<{ title: string; id: string }> {
-    const mem = this.resolveById(query);
-    if (!mem)
+    const note = this.resolveById(query);
+    if (!note)
       throw new NotFoundError(
         `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
-    deleteMemory(mem.filePath);
-    deleteMemoryFromDb(this.db, mem.id);
-    this.autoSync(`remove: ${mem.title}`);
-    return { title: mem.title, id: mem.id };
+    deleteNote(note.filePath);
+    deleteNoteFromDb(this.db, note.id);
+    this.autoSync(`remove: ${note.title}`);
+    return { title: note.title, id: note.id };
   }
 
-  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Memory>> {
+  async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Note>> {
     const {
       limit = 20,
       ignoreCase = false,
@@ -470,7 +470,7 @@ export class LocalOperations implements Operations {
       regex = false,
     } = opts ?? {};
     this.syncIndexIfNeeded();
-    const rows = grepMemories(
+    const rows = grepNotes(
       this.db,
       pattern,
       offset + limit + FILTER_BUFFER,
@@ -479,8 +479,8 @@ export class LocalOperations implements Operations {
     );
     const filtered = applyFilter(
       rows
-        .map((row) => tryReadMemory(row.file_path)?.mem)
-        .filter((m): m is Memory => m !== undefined),
+        .map((row) => tryReadNote(row.file_path)?.note)
+        .filter((m): m is Note => m !== undefined),
       (m) => m,
       filter,
     );
@@ -493,16 +493,16 @@ export class LocalOperations implements Operations {
   }
 
   async list(
-    filter?: MemoryFilter,
+    filter?: NoteFilter,
     limit = 100,
     offset = 0,
-  ): Promise<Paginated<Memory>> {
+  ): Promise<Paginated<Note>> {
     this.syncIndexIfNeeded();
-    const files = listMemoryFiles(this.config);
+    const files = listNoteFiles(this.config);
     const filtered = applyFilter(
       files
-        .map((f) => tryReadMemory(f)?.mem)
-        .filter((m): m is Memory => m !== undefined),
+        .map((f) => tryReadNote(f)?.note)
+        .filter((m): m is Note => m !== undefined),
       (m) => m,
       filter,
     );
@@ -517,25 +517,25 @@ export class LocalOperations implements Operations {
 
   async reindex() {
     clearDb(this.db, this.config);
-    const files = listMemoryFiles(this.config);
+    const files = listNoteFiles(this.config);
 
     let count = 0;
     for (const filePath of files) {
-      const result = tryReadMemory(filePath);
+      const result = tryReadNote(filePath);
       if (!result) continue;
-      const { mem, raw } = result;
+      const { note, raw } = result;
 
-      this.upsertFromMemory(mem, raw);
-      await this.computeEmbedding(mem);
+      this.upsertFromNote(note, raw);
+      await this.computeEmbedding(note);
       count++;
     }
-    // Second pass: re-resolve links now that all memories are indexed
+    // Second pass: re-resolve links now that all notes are indexed
     // (first pass may store short IDs for notes not yet indexed)
     for (const filePath of files) {
-      const result = tryReadMemory(filePath);
+      const result = tryReadNote(filePath);
       if (!result) continue;
-      const { mem, raw } = result;
-      this.updateLinks(mem.id, mem.content, raw);
+      const { note, raw } = result;
+      this.updateLinks(note.id, note.content, raw);
     }
     const emb = this.config.embedding;
     return {

@@ -17,7 +17,7 @@ function run(db: DB, query: Sql) {
 }
 
 const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS memories (
+  CREATE TABLE IF NOT EXISTS notes (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     tags TEXT NOT NULL DEFAULT '',
@@ -32,20 +32,20 @@ const SCHEMA = `
     last_accessed TEXT
   );
 
-  CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(
+  CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
     title, tags, content, content='', content_rowid='rowid',
     tokenize='porter unicode61'
   );
 
   CREATE TABLE IF NOT EXISTS embeddings (
-    id TEXT PRIMARY KEY REFERENCES memories(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY REFERENCES notes(id) ON DELETE CASCADE,
     embedding BLOB NOT NULL,
     model TEXT NOT NULL,
     dimensions INTEGER NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS links (
-    source_id TEXT NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+    source_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
     target_id TEXT NOT NULL,
     PRIMARY KEY (source_id, target_id)
   );
@@ -73,12 +73,12 @@ function ftsDelete(db: DB, id: string): void {
     content: string;
   }>(
     db,
-    sql`SELECT rowid, title, tags, content FROM memories WHERE id = ${id}`,
+    sql`SELECT rowid, title, tags, content FROM notes WHERE id = ${id}`,
   );
   if (existing) {
     run(
       db,
-      sql`INSERT INTO memories_fts(memories_fts, rowid, title, tags, content)
+      sql`INSERT INTO notes_fts(notes_fts, rowid, title, tags, content)
           VALUES('delete', ${existing.rowid}, ${existing.title}, ${existing.tags}, ${existing.content})`,
     );
   }
@@ -90,13 +90,13 @@ function hasColumn(db: DB, table: string, column: string): boolean {
 }
 
 function migrate(db: DB): void {
-  if (!hasColumn(db, 'memories', 'access_count')) {
+  if (!hasColumn(db, 'notes', 'access_count')) {
     db.exec(
-      `ALTER TABLE memories ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE notes ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`,
     );
   }
-  if (!hasColumn(db, 'memories', 'last_accessed')) {
-    db.exec(`ALTER TABLE memories ADD COLUMN last_accessed TEXT`);
+  if (!hasColumn(db, 'notes', 'last_accessed')) {
+    db.exec(`ALTER TABLE notes ADD COLUMN last_accessed TEXT`);
   }
 }
 
@@ -134,9 +134,9 @@ export function openDb(config: Config): DB {
   return db;
 }
 
-export function upsertMemoryChecked(
+export function upsertNoteChecked(
   db: DB,
-  mem: {
+  note: {
     id: string;
     title: string;
     tags: string[];
@@ -150,13 +150,13 @@ export function upsertMemoryChecked(
   },
 ): void {
   db.transaction(() => {
-    ftsDelete(db, mem.id);
+    ftsDelete(db, note.id);
 
-    const tagsStr = mem.tags.join(',');
+    const tagsStr = note.tags.join(',');
     run(
       db,
-      sql`INSERT INTO memories (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
-          VALUES (${mem.id}, ${mem.title}, ${tagsStr}, ${mem.type}, ${mem.repository ?? null}, ${mem.created}, ${mem.updated}, ${mem.content}, ${mem.filePath}, ${mem.contentHash})
+      sql`INSERT INTO notes (id, title, tags, type, repository, created, updated, content, file_path, content_hash)
+          VALUES (${note.id}, ${note.title}, ${tagsStr}, ${note.type}, ${note.repository ?? null}, ${note.created}, ${note.updated}, ${note.content}, ${note.filePath}, ${note.contentHash})
           ON CONFLICT(id) DO UPDATE SET
             title=excluded.title, tags=excluded.tags, type=excluded.type,
             repository=excluded.repository, updated=excluded.updated,
@@ -166,20 +166,20 @@ export function upsertMemoryChecked(
 
     const row = get<{ rowid: number }>(
       db,
-      sql`SELECT rowid FROM memories WHERE id = ${mem.id}`,
+      sql`SELECT rowid FROM notes WHERE id = ${note.id}`,
     )!;
     run(
       db,
-      sql`INSERT INTO memories_fts(rowid, title, tags, content)
-          VALUES(${row.rowid}, ${mem.title}, ${tagsStr}, ${mem.content})`,
+      sql`INSERT INTO notes_fts(rowid, title, tags, content)
+          VALUES(${row.rowid}, ${note.title}, ${tagsStr}, ${note.content})`,
     );
   })();
 }
 
-export function deleteMemoryFromDb(db: DB, id: string): void {
+export function deleteNoteFromDb(db: DB, id: string): void {
   db.transaction(() => {
     ftsDelete(db, id);
-    run(db, sql`DELETE FROM memories WHERE id = ${id}`);
+    run(db, sql`DELETE FROM notes WHERE id = ${id}`);
   })();
 }
 
@@ -223,10 +223,10 @@ function ftsMatch(
   if (!ftsQuery) return [];
   return all<{ id: string; rank: number }>(
     db,
-    sql`SELECT m.id, bm25(memories_fts, 10.0, 5.0, 1.0) AS rank
-        FROM memories_fts f
-        JOIN memories m ON m.rowid = f.rowid
-        WHERE memories_fts MATCH ${ftsQuery}
+    sql`SELECT m.id, bm25(notes_fts, 10.0, 5.0, 1.0) AS rank
+        FROM notes_fts f
+        JOIN notes m ON m.rowid = f.rowid
+        WHERE notes_fts MATCH ${ftsQuery}
         ORDER BY rank
         LIMIT ${limit}`,
   );
@@ -247,77 +247,77 @@ function escapeLike(s: string): string {
   return s.replace(/[%_\\]/g, '\\$&');
 }
 
-export function getMemoryById(
+export function getNoteById(
   db: DB,
   id: string,
 ): { file_path: string } | undefined {
-  return get(db, sql`SELECT file_path FROM memories WHERE id = ${id}`);
+  return get(db, sql`SELECT file_path FROM notes WHERE id = ${id}`);
 }
 
-export function getMemoryByPrefix(
+export function getNoteByPrefix(
   db: DB,
   prefix: string,
 ): { file_path: string; id: string } | undefined {
   const escaped = escapeLike(prefix);
   const rows = all<{ id: string; file_path: string }>(
     db,
-    sql`SELECT id, file_path FROM memories WHERE id LIKE ${escaped + '%'} ESCAPE '\\'`,
+    sql`SELECT id, file_path FROM notes WHERE id LIKE ${escaped + '%'} ESCAPE '\\'`,
   );
   return rows.length === 1 ? rows[0] : undefined;
 }
 
-export function getMemoryByFilename(
+export function getNoteByFilename(
   db: DB,
   filename: string,
 ): { file_path: string } | undefined {
   const escaped = escapeLike(filename);
   return get(
     db,
-    sql`SELECT file_path FROM memories WHERE file_path LIKE ${'%/' + escaped} ESCAPE '\\'`,
+    sql`SELECT file_path FROM notes WHERE file_path LIKE ${'%/' + escaped} ESCAPE '\\'`,
   );
 }
 
 export function recordAccess(db: DB, id: string): void {
   run(
     db,
-    sql`UPDATE memories SET access_count = access_count + 1, last_accessed = ${new Date().toISOString()} WHERE id = ${id}`,
+    sql`UPDATE notes SET access_count = access_count + 1, last_accessed = ${new Date().toISOString()} WHERE id = ${id}`,
   );
 }
 
 export function getAccessCount(db: DB, id: string): number {
   const row = get<{ access_count: number }>(
     db,
-    sql`SELECT access_count FROM memories WHERE id = ${id}`,
+    sql`SELECT access_count FROM notes WHERE id = ${id}`,
   );
   return row?.access_count ?? 0;
 }
 
-export function getMemoriesByIds(
+export function getNotesByIds(
   db: DB,
   ids: string[],
 ): Map<string, { file_path: string; access_count: number }> {
   if (ids.length === 0) return new Map();
   const rows = all<{ id: string; file_path: string; access_count: number }>(
     db,
-    sql`SELECT id, file_path, access_count FROM memories WHERE id IN (${join(ids)})`,
+    sql`SELECT id, file_path, access_count FROM notes WHERE id IN (${join(ids)})`,
   );
   return new Map(rows.map((r) => [r.id, r]));
 }
 
-export function getAllMemoryIds(db: DB): Set<string> {
-  const rows = all<{ id: string }>(db, sql`SELECT id FROM memories`);
+export function getAllNoteIds(db: DB): Set<string> {
+  const rows = all<{ id: string }>(db, sql`SELECT id FROM notes`);
   return new Set(rows.map((r) => r.id));
 }
 
 export function getAllContentHashes(db: DB): Map<string, string> {
   const rows = all<{ id: string; content_hash: string }>(
     db,
-    sql`SELECT id, content_hash FROM memories`,
+    sql`SELECT id, content_hash FROM notes`,
   );
   return new Map(rows.map((r) => [r.id, r.content_hash]));
 }
 
-export function grepMemories(
+export function grepNotes(
   db: DB,
   pattern: string,
   limit = 20,
@@ -337,7 +337,7 @@ export function grepMemories(
     const re = ignoreCase ? `(?i)${pattern}` : pattern;
     return all(
       db,
-      sql`SELECT id, file_path FROM memories
+      sql`SELECT id, file_path FROM notes
           WHERE content REGEXP ${re}
              OR title REGEXP ${re}
           LIMIT ${limit} OFFSET ${offset}`,
@@ -347,7 +347,7 @@ export function grepMemories(
     const lowerLike = `%${escapeLike(pattern.toLowerCase())}%`;
     return all(
       db,
-      sql`SELECT id, file_path FROM memories
+      sql`SELECT id, file_path FROM notes
           WHERE (LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
              OR (LOWER(title) LIKE ${lowerLike} ESCAPE '\\')
           LIMIT ${limit} OFFSET ${offset}`,
@@ -356,7 +356,7 @@ export function grepMemories(
   const like = `%${escapeLike(pattern)}%`;
   return all(
     db,
-    sql`SELECT id, file_path FROM memories
+    sql`SELECT id, file_path FROM notes
         WHERE (content LIKE ${like} ESCAPE '\\')
            OR (title LIKE ${like} ESCAPE '\\')
         LIMIT ${limit} OFFSET ${offset}`,
@@ -430,8 +430,8 @@ export function clearDb(db: DB, config: Config): void {
   if (config.embedding && config.embedding.provider !== 'none') {
     db.exec(vecTableDDL(config.embedding.dimensions));
   }
-  run(db, sql`DELETE FROM memories`);
-  run(db, sql`INSERT INTO memories_fts(memories_fts) VALUES('delete-all')`);
+  run(db, sql`DELETE FROM notes`);
+  run(db, sql`INSERT INTO notes_fts(notes_fts) VALUES('delete-all')`);
 }
 
 // ---- Links ----
@@ -462,7 +462,7 @@ export function getForwardLinks(
     db,
     sql`SELECT l.target_id AS id, COALESCE(m.title, '') AS title
         FROM links l
-        LEFT JOIN memories m ON m.id = l.target_id
+        LEFT JOIN notes m ON m.id = l.target_id
         WHERE l.source_id = ${sourceId}`,
   );
 }
@@ -475,7 +475,7 @@ export function getBacklinks(
     db,
     sql`SELECT l.source_id AS id, m.title
         FROM links l
-        JOIN memories m ON m.id = l.source_id
+        JOIN notes m ON m.id = l.source_id
         WHERE l.target_id = ${targetId}`,
   );
 }
