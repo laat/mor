@@ -27,4 +27,10 @@ describe('cosineSimilarity', () => {
     const b = cosineSimilarity([2, 4, 6], [8, 10, 12]);
     expect(a).toBeCloseTo(b);
   });
+
+  it('throws on mismatched vector lengths', () => {
+    expect(() => cosineSimilarity([1, 2, 3], [1, 2])).toThrow(
+      'Vector length mismatch: 3 vs 2',
+    );
+  });
 });
