@@ -30,4 +30,14 @@ describe('matchGlob', () => {
     expect(matchGlob('filexts', 'file.ts')).toBe(false);
     expect(matchGlob('github.com/laat/mor', 'github.com/laat/*')).toBe(true);
   });
+
+  it('returns correct results with cached patterns', () => {
+    const pattern = 'cache-test*';
+    expect(matchGlob('cache-test-one', pattern)).toBe(true);
+    expect(matchGlob('cache-test-two', pattern)).toBe(true);
+    expect(matchGlob('no-match', pattern)).toBe(false);
+    // Same pattern used again — exercises the cache hit path
+    expect(matchGlob('cache-test-three', pattern)).toBe(true);
+    expect(matchGlob('other', pattern)).toBe(false);
+  });
 });

@@ -4,6 +4,14 @@ export function globToRegex(pattern: string): RegExp {
   return new RegExp(`^${withWildcards}$`, 'i');
 }
 
+const regexCache = new Map<string, RegExp>();
+
 export function matchGlob(value: string, pattern: string): boolean {
-  return globToRegex(pattern).test(value);
+  let re = regexCache.get(pattern);
+  if (!re) {
+    re = globToRegex(pattern);
+    if (regexCache.size >= 64) regexCache.clear();
+    regexCache.set(pattern, re);
+  }
+  return re.test(value);
 }
