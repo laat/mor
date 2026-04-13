@@ -17,7 +17,6 @@ import {
   grepNotes,
   getEmbeddingModel,
   getEmbeddingCount,
-  clearDb,
   type DB,
 } from './db.js';
 import type { Config } from './operations.js';
@@ -468,14 +467,5 @@ describe('embeddings', () => {
 
   it('returns undefined model when empty', () => {
     expect(getEmbeddingModel(db)).toBeUndefined();
-  });
-});
-
-describe('clearDb', () => {
-  it('removes all notes and FTS', () => {
-    upsertNoteChecked(db, note());
-    clearDb(db, config);
-    expect(getAllNoteIds(db).size).toBe(0);
-    expect(searchFts(db, 'test')).toHaveLength(0);
   });
 });

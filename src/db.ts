@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import fs from 'node:fs';
 import sql, { join, raw, type Sql } from 'sql-template-tag';
 import * as sqliteVec from 'sqlite-vec';
 import type { Config } from './operations.js';
@@ -86,85 +87,12 @@ function ftsDelete(db: DB, id: string): void {
   }
 }
 
-function hasColumn(db: DB, table: string, column: string): boolean {
-  const cols = db.pragma(`table_info(${table})`) as Array<{ name: string }>;
-  return cols.some((c) => c.name === column);
-}
-
-function migrate(db: DB): void {
-  if (!hasColumn(db, 'notes', 'access_count')) {
-    db.exec(
-      `ALTER TABLE notes ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0`,
-    );
-  }
-  if (!hasColumn(db, 'notes', 'last_accessed')) {
-    db.exec(`ALTER TABLE notes ADD COLUMN last_accessed TEXT`);
-  }
-  // Drop FK constraints — links is a derived index and embeddings are managed
-  // in background queues, so FKs just block valid inserts during reindex or
-  // when timing between upsert and async embedding computation diverges.
-  for (const table of ['links', 'embeddings']) {
-    const ddl = get<{ sql: string }>(
-      db,
-      sql`SELECT sql FROM sqlite_master WHERE type='table' AND name=${table}`,
-    );
-    if (ddl?.sql?.includes('REFERENCES')) {
-      if (table === 'links') {
-        db.exec(`
-          CREATE TABLE links_new (
-            source_id TEXT NOT NULL,
-            target_id TEXT NOT NULL,
-            PRIMARY KEY (source_id, target_id)
-          );
-          INSERT INTO links_new SELECT source_id, target_id FROM links;
-          DROP TABLE links;
-          ALTER TABLE links_new RENAME TO links;
-          CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
-        `);
-      } else {
-        db.exec(`
-          CREATE TABLE embeddings_new (
-            id TEXT PRIMARY KEY,
-            embedding BLOB NOT NULL,
-            model TEXT NOT NULL,
-            dimensions INTEGER NOT NULL
-          );
-          INSERT INTO embeddings_new SELECT id, embedding, model, dimensions FROM embeddings;
-          DROP TABLE embeddings;
-          ALTER TABLE embeddings_new RENAME TO embeddings;
-        `);
-      }
-    }
-  }
-
-  if (!hasColumn(db, 'notes', 'description')) {
-    db.exec(
-      `ALTER TABLE notes ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
-    );
-    // Rebuild FTS table to include the new description column
-    db.exec(`DROP TABLE IF EXISTS notes_fts`);
-    db.exec(
-      `CREATE VIRTUAL TABLE notes_fts USING fts5(
-        title, tags, description, content, content='', content_rowid='rowid',
-        tokenize='porter unicode61'
-      )`,
-    );
-    // Repopulate FTS from existing notes
-    const rows = db
-      .prepare(`SELECT rowid, title, tags, description, content FROM notes`)
-      .all() as Array<{
-      rowid: number;
-      title: string;
-      tags: string;
-      description: string;
-      content: string;
-    }>;
-    const insert = db.prepare(
-      `INSERT INTO notes_fts(rowid, title, tags, description, content)
-       VALUES(?, ?, ?, ?, ?)`,
-    );
-    for (const r of rows) {
-      insert.run(r.rowid, r.title, r.tags, r.description, r.content);
+export function deleteDb(config: Config): void {
+  for (const suffix of ['', '-wal', '-shm']) {
+    try {
+      fs.unlinkSync(config.dbPath + suffix);
+    } catch {
+      // file may not exist
     }
   }
 }
@@ -176,7 +104,6 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
-  migrate(db);
   if (config.embedding && config.embedding.provider !== 'none') {
     if (!hasVecTable(db)) {
       db.exec(vecTableDDL(config.embedding.dimensions));
@@ -496,17 +423,6 @@ export function upsertEmbedding(
       embedding,
     );
   }
-}
-
-export function clearDb(db: DB, config: Config): void {
-  run(db, sql`DELETE FROM links`);
-  run(db, sql`DELETE FROM embeddings`);
-  if (hasVecTable(db)) run(db, sql`DROP TABLE ${raw(VEC_TABLE)}`);
-  if (config.embedding && config.embedding.provider !== 'none') {
-    db.exec(vecTableDDL(config.embedding.dimensions));
-  }
-  run(db, sql`DELETE FROM notes`);
-  run(db, sql`INSERT INTO notes_fts(notes_fts) VALUES('delete-all')`);
 }
 
 // ---- Links ----

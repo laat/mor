@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import PQueue from 'p-queue';
 import { spawnSync } from 'node:child_process';
 import {
-  clearDb,
+  deleteDb,
   deleteNoteFromDb,
   getAllContentHashes,
   getAllNoteIds,
@@ -517,7 +517,9 @@ export class LocalOperations implements Operations {
   }
 
   async reindex() {
-    clearDb(this.db, this.config);
+    this.db.close();
+    deleteDb(this.config);
+    this.db = openDb(this.config);
     const files = listNoteFiles(this.config);
 
     let count = 0;
