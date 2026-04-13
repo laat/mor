@@ -8,40 +8,36 @@ import {
   getStateDir,
   loadConfig,
   isRemote,
+  type Env,
 } from './config.js';
 
 let testDir: string;
-let savedMorToken: string | undefined;
+let env: Env;
 
 beforeEach(() => {
   testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mor-config-test-'));
-  process.env.MOR_HOME = testDir;
-  savedMorToken = process.env.MOR_TOKEN;
-  delete process.env.MOR_TOKEN;
+  env = { MOR_HOME: testDir, HOME: process.env.HOME };
 });
 
 afterEach(() => {
   fs.rmSync(testDir, { recursive: true, force: true });
-  delete process.env.MOR_HOME;
-  if (savedMorToken !== undefined) process.env.MOR_TOKEN = savedMorToken;
-  else delete process.env.MOR_TOKEN;
 });
 
 describe('loadConfig', () => {
   it('creates default config on first run', () => {
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.notesDir).toBe(path.join(testDir, 'notes'));
     expect(config.dbPath).toBe(path.join(testDir, 'index.db'));
     expect(fs.existsSync(path.join(testDir, 'config.json'))).toBe(true);
   });
 
   it('creates notes directory', () => {
-    loadConfig();
+    loadConfig(env);
     expect(fs.existsSync(path.join(testDir, 'notes'))).toBe(true);
   });
 
   it('writes valid JSON config file', () => {
-    loadConfig();
+    loadConfig(env);
     const raw = JSON.parse(
       fs.readFileSync(path.join(testDir, 'config.json'), 'utf-8'),
     );
@@ -57,7 +53,7 @@ describe('loadConfig', () => {
         dbPath: path.join(testDir, 'custom.db'),
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.notesDir).toBe(path.join(testDir, 'custom-notes'));
     expect(config.dbPath).toBe(path.join(testDir, 'custom.db'));
   });
@@ -70,7 +66,7 @@ describe('loadConfig', () => {
         dbPath: path.join(testDir, 'custom.db'),
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.notesDir).toBe(path.join(testDir, 'legacy-memories'));
   });
 
@@ -83,7 +79,7 @@ describe('loadConfig', () => {
         dbPath: path.join(testDir, 'custom.db'),
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.notesDir).toBe(path.join(testDir, 'new-notes'));
   });
 
@@ -95,11 +91,10 @@ describe('loadConfig', () => {
         dbPath: '~/test.db',
       }),
     );
-    const config = loadConfig();
-    expect(config.notesDir).toBe(
-      path.join(process.env.HOME ?? '', 'test-notes'),
-    );
-    expect(config.dbPath).toBe(path.join(process.env.HOME ?? '', 'test.db'));
+    const config = loadConfig(env);
+    const home = env.HOME ?? '';
+    expect(config.notesDir).toBe(path.join(home, 'test-notes'));
+    expect(config.dbPath).toBe(path.join(home, 'test.db'));
   });
 
   it('preserves embedding config', () => {
@@ -113,7 +108,7 @@ describe('loadConfig', () => {
         },
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.embedding?.provider).toBe('openai');
     expect(config.embedding?.model).toBe('text-embedding-3-small');
     expect(config.embedding?.dimensions).toBe(1536);
@@ -126,7 +121,7 @@ describe('loadConfig', () => {
         server: { url: 'https://example.com', token: 'secret' },
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.server?.url).toBe('https://example.com');
     expect(config.server?.token).toBe('secret');
   });
@@ -138,7 +133,7 @@ describe('loadConfig', () => {
         serve: { port: 8080, host: '0.0.0.0', token: 'abc', mcp: true },
       }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.serve?.port).toBe(8080);
     expect(config.serve?.host).toBe('0.0.0.0');
     expect(config.serve?.token).toBe('abc');
@@ -150,7 +145,7 @@ describe('loadConfig', () => {
       path.join(testDir, 'config.json'),
       JSON.stringify({ autosync: true }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.autosync).toBe(true);
   });
 
@@ -159,20 +154,33 @@ describe('loadConfig', () => {
       path.join(testDir, 'config.json'),
       JSON.stringify({ threshold: 0.5 }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.threshold).toBe(0.5);
   });
 
   it('uses MOR_HOME env var', () => {
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(config.notesDir).toContain(testDir);
     expect(config.dbPath).toContain(testDir);
+  });
+
+  it('MOR_TOKEN overrides config file token', () => {
+    fs.writeFileSync(
+      path.join(testDir, 'config.json'),
+      JSON.stringify({
+        server: { url: 'https://example.com', token: 'old' },
+        serve: { token: 'old' },
+      }),
+    );
+    const config = loadConfig({ ...env, MOR_TOKEN: 'from-env' });
+    expect(config.server?.token).toBe('from-env');
+    expect(config.serve?.token).toBe('from-env');
   });
 });
 
 describe('isRemote', () => {
   it('returns false without server config', () => {
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(isRemote(config)).toBe(false);
   });
 
@@ -181,7 +189,7 @@ describe('isRemote', () => {
       path.join(testDir, 'config.json'),
       JSON.stringify({ server: { url: 'https://example.com' } }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(isRemote(config)).toBe(true);
   });
 
@@ -190,49 +198,38 @@ describe('isRemote', () => {
       path.join(testDir, 'config.json'),
       JSON.stringify({ server: {} }),
     );
-    const config = loadConfig();
+    const config = loadConfig(env);
     expect(isRemote(config)).toBe(false);
   });
 });
 
 describe('XDG directory helpers', () => {
   it('MOR_HOME makes all dirs the same (flat layout)', () => {
-    expect(getConfigDir()).toBe(testDir);
-    expect(getDataDir()).toBe(testDir);
-    expect(getStateDir()).toBe(testDir);
+    expect(getConfigDir(env)).toBe(testDir);
+    expect(getDataDir(env)).toBe(testDir);
+    expect(getStateDir(env)).toBe(testDir);
   });
 
   it('uses XDG env vars when MOR_HOME is unset', () => {
-    delete process.env.MOR_HOME;
-    const xdgConfig = path.join(testDir, 'xdg-config');
-    const xdgData = path.join(testDir, 'xdg-data');
-    const xdgState = path.join(testDir, 'xdg-state');
-    process.env.XDG_CONFIG_HOME = xdgConfig;
-    process.env.XDG_DATA_HOME = xdgData;
-    process.env.XDG_STATE_HOME = xdgState;
-
-    try {
-      expect(getConfigDir()).toBe(path.join(xdgConfig, 'mor'));
-      expect(getDataDir()).toBe(path.join(xdgData, 'mor'));
-      expect(getStateDir()).toBe(path.join(xdgState, 'mor'));
-    } finally {
-      delete process.env.XDG_CONFIG_HOME;
-      delete process.env.XDG_DATA_HOME;
-      delete process.env.XDG_STATE_HOME;
-    }
+    const xdgEnv: Env = {
+      HOME: env.HOME,
+      XDG_CONFIG_HOME: path.join(testDir, 'xdg-config'),
+      XDG_DATA_HOME: path.join(testDir, 'xdg-data'),
+      XDG_STATE_HOME: path.join(testDir, 'xdg-state'),
+    };
+    expect(getConfigDir(xdgEnv)).toBe(path.join(testDir, 'xdg-config', 'mor'));
+    expect(getDataDir(xdgEnv)).toBe(path.join(testDir, 'xdg-data', 'mor'));
+    expect(getStateDir(xdgEnv)).toBe(path.join(testDir, 'xdg-state', 'mor'));
   });
 
   it('falls back to ~/.config, ~/.local/share, ~/.local/state when no XDG vars', () => {
-    delete process.env.MOR_HOME;
-    const home = process.env.HOME ?? '';
-
-    try {
-      expect(getConfigDir()).toBe(path.join(home, '.config', 'mor'));
-      expect(getDataDir()).toBe(path.join(home, '.local', 'share', 'mor'));
-      expect(getStateDir()).toBe(path.join(home, '.local', 'state', 'mor'));
-    } finally {
-      process.env.MOR_HOME = testDir;
-    }
+    const bareEnv: Env = { HOME: env.HOME };
+    const home = env.HOME ?? '';
+    expect(getConfigDir(bareEnv)).toBe(path.join(home, '.config', 'mor'));
+    expect(getDataDir(bareEnv)).toBe(path.join(home, '.local', 'share', 'mor'));
+    expect(getStateDir(bareEnv)).toBe(
+      path.join(home, '.local', 'state', 'mor'),
+    );
   });
 
   it('existing config without notesDir/dbPath uses XDG paths', () => {
@@ -264,26 +261,21 @@ describe('XDG directory helpers', () => {
   });
 
   it('new install uses XDG data/state dirs for defaults', () => {
-    delete process.env.MOR_HOME;
-    const xdgConfig = path.join(testDir, 'xdg-config');
-    const xdgData = path.join(testDir, 'xdg-data');
-    const xdgState = path.join(testDir, 'xdg-state');
-    process.env.XDG_CONFIG_HOME = xdgConfig;
-    process.env.XDG_DATA_HOME = xdgData;
-    process.env.XDG_STATE_HOME = xdgState;
-
-    try {
-      const config = loadConfig();
-      expect(config.notesDir).toBe(path.join(xdgData, 'mor', 'notes'));
-      expect(config.dbPath).toBe(path.join(xdgState, 'mor', 'index.db'));
-      expect(fs.existsSync(path.join(xdgConfig, 'mor', 'config.json'))).toBe(
-        true,
-      );
-    } finally {
-      delete process.env.XDG_CONFIG_HOME;
-      delete process.env.XDG_DATA_HOME;
-      delete process.env.XDG_STATE_HOME;
-      process.env.MOR_HOME = testDir;
-    }
+    const xdgEnv: Env = {
+      HOME: env.HOME,
+      XDG_CONFIG_HOME: path.join(testDir, 'xdg-config'),
+      XDG_DATA_HOME: path.join(testDir, 'xdg-data'),
+      XDG_STATE_HOME: path.join(testDir, 'xdg-state'),
+    };
+    const config = loadConfig(xdgEnv);
+    expect(config.notesDir).toBe(
+      path.join(testDir, 'xdg-data', 'mor', 'notes'),
+    );
+    expect(config.dbPath).toBe(
+      path.join(testDir, 'xdg-state', 'mor', 'index.db'),
+    );
+    expect(
+      fs.existsSync(path.join(testDir, 'xdg-config', 'mor', 'config.json')),
+    ).toBe(true);
   });
 });
