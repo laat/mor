@@ -37,8 +37,11 @@ function parseType(value: string | undefined): NoteType | undefined {
   process.exit(1);
 }
 
+const userAgent = `mor/${version} cli`;
+
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
-  if (isRemote(config)) return new RemoteOperations(config, getStateDir());
+  if (isRemote(config))
+    return new RemoteOperations(config, getStateDir(), userAgent);
   return new LocalOperations(config);
 }
 
@@ -86,7 +89,9 @@ program
               const token =
                 config.server!.token ??
                 getStoredToken(getStateDir(), config.server!.url);
-              const h: Record<string, string> = {};
+              const h: Record<string, string> = {
+                'User-Agent': userAgent,
+              };
               if (token) h['Authorization'] = `Bearer ${token}`;
               return h;
             })(),

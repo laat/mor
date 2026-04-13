@@ -34,11 +34,12 @@ export class RemoteOperations implements Operations {
   private headers: Record<string, string>;
   private configDir?: string;
 
-  constructor(config: Config, configDir?: string) {
+  constructor(config: Config, configDir?: string, userAgent?: string) {
     if (!config.server?.url) throw new Error('No server URL configured');
     this.baseUrl = config.server.url.replace(/\/+$/, '');
     this.configDir = configDir;
     this.headers = { 'Content-Type': 'application/json' };
+    if (userAgent) this.headers['User-Agent'] = userAgent;
 
     // Priority: explicit token > stored OAuth token
     if (config.server.token) {

@@ -489,7 +489,12 @@ export function createMcpServer(ops: Operations): McpServer {
 }
 
 function getOps(config: ReturnType<typeof loadConfig>): Operations {
-  if (isRemote(config)) return new RemoteOperations(config, getStateDir());
+  if (isRemote(config))
+    return new RemoteOperations(
+      config,
+      getStateDir(),
+      `mor/${version} mcp-stdio`,
+    );
   return new LocalOperations(config);
 }
 
