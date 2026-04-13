@@ -99,6 +99,12 @@ describe('credential storage', () => {
     // 0o600 = owner read/write only
     expect(stat.mode & 0o777).toBe(0o600);
   });
+
+  it('creates parent directory when saving credentials', () => {
+    const nested = path.join(tmpDir, 'nested', 'state');
+    clearStoredCredentials(nested, 'http://example.com');
+    expect(fs.existsSync(path.join(nested, 'credentials.json'))).toBe(true);
+  });
 });
 
 describe('refreshAccessToken', () => {

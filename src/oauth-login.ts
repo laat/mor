@@ -33,6 +33,7 @@ function saveCredentials(
   configDir: string,
   creds: Record<string, OAuthCredentials>,
 ): void {
+  fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(
     credentialsPath(configDir),
     JSON.stringify(creds, null, 2) + '\n',
