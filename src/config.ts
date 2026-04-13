@@ -41,10 +41,7 @@ function defaultDbPath(): string {
   return path.join(getStateDir(), 'index.db');
 }
 
-const DEFAULT_CONFIG: Config = {
-  notesDir: '~/.local/share/mor/notes',
-  dbPath: '~/.local/state/mor/index.db',
-};
+const DEFAULT_CONFIG: Omit<Config, 'notesDir' | 'dbPath'> = {};
 
 export function loadConfig(): Config {
   const configDir = getConfigDir();
@@ -61,19 +58,23 @@ export function loadConfig(): Config {
   if (fs.existsSync(configPath)) {
     const raw = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     // Backwards compat: fall back to legacy `memoryDir` key if `notesDir` is unset
-    const notesDir = raw.notesDir ?? raw.memoryDir ?? DEFAULT_CONFIG.notesDir;
+    const notesDir = raw.notesDir ?? raw.memoryDir ?? defaultNotesDir();
+    const dbPath = raw.dbPath ?? defaultDbPath();
     config = {
       ...DEFAULT_CONFIG,
       ...raw,
       notesDir,
+      dbPath,
       ...(raw.embedding ? { embedding: raw.embedding } : {}),
       ...(raw.server ? { server: raw.server } : {}),
       ...(raw.serve ? { serve: raw.serve } : {}),
     };
   } else {
-    config = { ...DEFAULT_CONFIG };
-    config.notesDir = defaultNotesDir();
-    config.dbPath = defaultDbPath();
+    config = {
+      ...DEFAULT_CONFIG,
+      notesDir: defaultNotesDir(),
+      dbPath: defaultDbPath(),
+    };
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   }
 
