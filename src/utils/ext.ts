@@ -54,6 +54,10 @@ export const EXT_TO_LANG: Record<string, string> = {
   '.fsx': 'fsharp',
 };
 
-export const LANG_TO_EXT: Record<string, string> = Object.fromEntries(
-  Object.entries(EXT_TO_LANG).map(([ext, lang]) => [lang, ext]),
-);
+export const LANG_TO_EXT: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const [ext, lang] of Object.entries(EXT_TO_LANG)) {
+    if (!(lang in map)) map[lang] = ext;
+  }
+  return map;
+})();
