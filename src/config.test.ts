@@ -235,6 +235,34 @@ describe('XDG directory helpers', () => {
     }
   });
 
+  it('existing config without notesDir/dbPath uses XDG paths', () => {
+    delete process.env.MOR_HOME;
+    const xdgConfig = path.join(testDir, 'xdg-config');
+    const xdgData = path.join(testDir, 'xdg-data');
+    const xdgState = path.join(testDir, 'xdg-state');
+    process.env.XDG_CONFIG_HOME = xdgConfig;
+    process.env.XDG_DATA_HOME = xdgData;
+    process.env.XDG_STATE_HOME = xdgState;
+
+    // Create config dir and a config.json that omits notesDir and dbPath
+    fs.mkdirSync(path.join(xdgConfig, 'mor'), { recursive: true });
+    fs.writeFileSync(
+      path.join(xdgConfig, 'mor', 'config.json'),
+      JSON.stringify({ autosync: true }),
+    );
+
+    try {
+      const config = loadConfig();
+      expect(config.notesDir).toBe(path.join(xdgData, 'mor', 'notes'));
+      expect(config.dbPath).toBe(path.join(xdgState, 'mor', 'index.db'));
+    } finally {
+      delete process.env.XDG_CONFIG_HOME;
+      delete process.env.XDG_DATA_HOME;
+      delete process.env.XDG_STATE_HOME;
+      process.env.MOR_HOME = testDir;
+    }
+  });
+
   it('new install uses XDG data/state dirs for defaults', () => {
     delete process.env.MOR_HOME;
     const xdgConfig = path.join(testDir, 'xdg-config');
