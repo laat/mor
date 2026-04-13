@@ -39,7 +39,7 @@ const SCHEMA = `
   );
 
   CREATE TABLE IF NOT EXISTS embeddings (
-    id TEXT PRIMARY KEY REFERENCES notes(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
     embedding BLOB NOT NULL,
     model TEXT NOT NULL,
     dimensions INTEGER NOT NULL
@@ -100,24 +100,41 @@ function migrate(db: DB): void {
   if (!hasColumn(db, 'notes', 'last_accessed')) {
     db.exec(`ALTER TABLE notes ADD COLUMN last_accessed TEXT`);
   }
-  // Drop FK constraint on links table — it's a derived index, FK just blocks
-  // inserts for forward references during reindex.
-  const linksDdl = get<{ sql: string }>(
-    db,
-    sql`SELECT sql FROM sqlite_master WHERE type='table' AND name='links'`,
-  );
-  if (linksDdl?.sql?.includes('REFERENCES')) {
-    db.exec(`
-      CREATE TABLE links_new (
-        source_id TEXT NOT NULL,
-        target_id TEXT NOT NULL,
-        PRIMARY KEY (source_id, target_id)
-      );
-      INSERT INTO links_new SELECT source_id, target_id FROM links;
-      DROP TABLE links;
-      ALTER TABLE links_new RENAME TO links;
-      CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
-    `);
+  // Drop FK constraints — links is a derived index and embeddings are managed
+  // in background queues, so FKs just block valid inserts during reindex or
+  // when timing between upsert and async embedding computation diverges.
+  for (const table of ['links', 'embeddings']) {
+    const ddl = get<{ sql: string }>(
+      db,
+      sql`SELECT sql FROM sqlite_master WHERE type='table' AND name=${table}`,
+    );
+    if (ddl?.sql?.includes('REFERENCES')) {
+      if (table === 'links') {
+        db.exec(`
+          CREATE TABLE links_new (
+            source_id TEXT NOT NULL,
+            target_id TEXT NOT NULL,
+            PRIMARY KEY (source_id, target_id)
+          );
+          INSERT INTO links_new SELECT source_id, target_id FROM links;
+          DROP TABLE links;
+          ALTER TABLE links_new RENAME TO links;
+          CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
+        `);
+      } else {
+        db.exec(`
+          CREATE TABLE embeddings_new (
+            id TEXT PRIMARY KEY,
+            embedding BLOB NOT NULL,
+            model TEXT NOT NULL,
+            dimensions INTEGER NOT NULL
+          );
+          INSERT INTO embeddings_new SELECT id, embedding, model, dimensions FROM embeddings;
+          DROP TABLE embeddings;
+          ALTER TABLE embeddings_new RENAME TO embeddings;
+        `);
+      }
+    }
   }
 
   if (!hasColumn(db, 'notes', 'description')) {
