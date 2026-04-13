@@ -54,13 +54,13 @@ function requestLogger(print: (msg: string) => void): MiddlewareHandler {
   return async (c, next) => {
     const path = getPath(c.req.raw).replace(/[?&]token=[^\s&]*/g, '');
     const method = c.req.method;
-    print(`  <-- ${method} ${path}`);
+    const ua = c.req.header('user-agent');
+    const uaSuffix = ua ? ` (${ua})` : '';
+    print(`  <-- ${method} ${path}${uaSuffix}`);
     const start = Date.now();
     await next();
     const ms = Date.now() - start;
-    const ua = c.req.header('user-agent');
-    const uaSuffix = ua ? ` (${ua})` : '';
-    print(`  --> ${method} ${path} ${c.res.status} ${ms}ms${uaSuffix}`);
+    print(`  --> ${method} ${path} ${c.res.status} ${ms}ms`);
   };
 }
 
