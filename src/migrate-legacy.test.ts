@@ -1,7 +1,7 @@
 /**
  * Tests for migrateFromLegacyLayout. Delete with migrate-legacy.ts in next major.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -144,5 +144,44 @@ describe('migrateFromLegacyLayout', () => {
     migrateFromLegacyLayout(configDir, dataDir, stateDir);
 
     expect(fs.existsSync(path.join(dataDir, 'notes', 'a.md'))).toBe(true);
+  });
+
+  it('falls back to copy+remove when renameSync throws EXDEV', () => {
+    // Simulate EXDEV (cross-device rename) by making renameSync throw
+    // for calls within this test. This exercises the fallback path that
+    // uses copyFileSync/cpSync + unlinkSync/rmSync.
+    setupLegacy();
+
+    const renameSpy = vi
+      .spyOn(fs, 'renameSync')
+      .mockImplementation((_src, _dest) => {
+        const err: NodeJS.ErrnoException = new Error(
+          'EXDEV: cross-device link not permitted',
+        );
+        err.code = 'EXDEV';
+        throw err;
+      });
+
+    try {
+      migrateFromLegacyLayout(configDir, dataDir, stateDir);
+    } finally {
+      renameSpy.mockRestore();
+    }
+
+    // Notes directory moved via cpSync fallback
+    expect(
+      fs.existsSync(path.join(dataDir, 'notes', 'test-note-abcd.md')),
+    ).toBe(true);
+    expect(fs.existsSync(path.join(configDir, 'notes'))).toBe(false);
+
+    // Database files moved via copyFileSync fallback
+    expect(fs.readFileSync(path.join(stateDir, 'index.db'), 'utf-8')).toBe(
+      'db-content',
+    );
+    expect(fs.existsSync(path.join(configDir, 'index.db'))).toBe(false);
+
+    // Credentials moved via copyFileSync fallback
+    expect(fs.existsSync(path.join(stateDir, 'credentials.json'))).toBe(true);
+    expect(fs.existsSync(path.join(configDir, 'credentials.json'))).toBe(false);
   });
 });

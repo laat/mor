@@ -9,14 +9,32 @@ function moveFile(src: string, destDir: string): void {
   const dest = path.join(destDir, path.basename(src));
   if (fs.existsSync(src) && !fs.existsSync(dest)) {
     fs.mkdirSync(destDir, { recursive: true });
-    fs.renameSync(src, dest);
+    try {
+      fs.renameSync(src, dest);
+    } catch (err: any) {
+      if (err?.code === 'EXDEV') {
+        fs.copyFileSync(src, dest);
+        fs.unlinkSync(src);
+      } else {
+        throw err;
+      }
+    }
   }
 }
 
 function moveDir(src: string, dest: string): void {
   if (fs.existsSync(src) && !fs.existsSync(dest)) {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.renameSync(src, dest);
+    try {
+      fs.renameSync(src, dest);
+    } catch (err: any) {
+      if (err?.code === 'EXDEV') {
+        fs.cpSync(src, dest, { recursive: true });
+        fs.rmSync(src, { recursive: true });
+      } else {
+        throw err;
+      }
+    }
   }
 }
 
