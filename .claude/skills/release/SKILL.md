@@ -30,4 +30,4 @@ Create a release for mor. The user provides the version number (e.g. `/release v
 
 8. **Create GitHub release**: Run `gh release create v<semver>` with the changelog as the body. Use `## What's new` as the top-level heading.
 
-9. **Publish to npm**: Ask the user to run `pnpm publish --access public` interactively themselves (it requires OTP authentication). Do NOT run it directly.
+9. **Publish to npm**: Publishing happens automatically via the `publish.yml` GitHub Actions workflow, triggered by the `v*` tag created in step 8. No manual publish step is needed.
