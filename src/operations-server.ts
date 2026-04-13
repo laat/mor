@@ -4,7 +4,8 @@ import { serve } from '@hono/node-server';
 import crypto from 'node:crypto';
 import type http from 'node:http';
 import { Hono } from 'hono';
-import { logger } from 'hono/logger';
+import type { MiddlewareHandler } from 'hono';
+import { getPath } from 'hono/utils/url';
 import { createMcpServer } from './mcp.js';
 import { getStateDir } from './config.js';
 import { createOAuthRoutes } from './oauth.js';
@@ -49,6 +50,20 @@ function errMsg(e: unknown): { msg: string; status: 404 | 500 } {
   return { msg, status: e instanceof NotFoundError ? 404 : 500 };
 }
 
+function requestLogger(print: (msg: string) => void): MiddlewareHandler {
+  return async (c, next) => {
+    const path = getPath(c.req.raw).replace(/[?&]token=[^\s&]*/g, '');
+    const method = c.req.method;
+    print(`  <-- ${method} ${path}`);
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    const ua = c.req.header('user-agent');
+    const uaSuffix = ua ? ` (${ua})` : '';
+    print(`  --> ${method} ${path} ${c.res.status} ${ms}ms${uaSuffix}`);
+  };
+}
+
 const SESSION_NOT_FOUND = {
   jsonrpc: '2.0',
   error: { code: -32000, message: 'Session not found' },
@@ -71,7 +86,7 @@ export function startServer(
     ? createOAuthRoutes(opts.token, getStateDir())
     : null;
 
-  app.use(logger((msg) => log(msg.replace(/[?&]token=[^\s&]*/g, ''))));
+  app.use(requestLogger(log));
 
   if (oauth) {
     app.route('', oauth.routes);
