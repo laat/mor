@@ -1,6 +1,7 @@
 import { OAuthClientMetadataSchema } from '@modelcontextprotocol/sdk/shared/auth.js';
 import Database from 'better-sqlite3';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -146,6 +147,7 @@ export function createOAuthRoutes(
   close: () => void;
 } {
   const dbPath = path.join(morHome, 'oauth.db');
+  fs.mkdirSync(morHome, { recursive: true });
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
