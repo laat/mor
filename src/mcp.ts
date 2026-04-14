@@ -112,7 +112,7 @@ export function createMcpServer(ops: Operations): McpServer {
     name: 'mor',
     version,
     description:
-      "The user's primary note store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved.",
+      "The user's personal note store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved. Only create or modify notes when the user explicitly asks — never use this store for your own internal bookkeeping or memory.",
   });
 
   server.registerTool(
@@ -246,7 +246,7 @@ export function createMcpServer(ops: Operations): McpServer {
     'notes_create',
     {
       description:
-        'Create a new note with title, content, optional tags and type.',
+        "Create a new note in the user's note store. IMPORTANT: Only create notes when the user explicitly asks to save, store, or remember something. Do not create notes for your own internal reference or bookkeeping.",
       inputSchema: {
         title: z.string().describe('Note title'),
         description: z.string().optional().describe('Short description'),
