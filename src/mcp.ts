@@ -49,12 +49,12 @@ function resolveIds(input: { id?: string; ids?: string[] }): string[] {
 }
 
 const idOrIdsSchema = {
-  id: z.string().optional().describe('UUID of the note. Alternative to `ids`.'),
+  id: z.string().optional().describe('ID of the note. Alternative to `ids`.'),
   ids: z
     .array(z.string())
     .optional()
     .describe(
-      'Array of UUIDs to operate on in one call. Alternative to `id`. Pass an array, e.g. ["id1", "id2"].',
+      'Array of IDs to operate on in one call. Alternative to `id`. Pass an array, e.g. ["id1", "id2"].',
     ),
 };
 
@@ -270,7 +270,7 @@ export function createMcpServer(ops: Operations): McpServer {
           tags: tags ?? undefined,
           type: type ?? undefined,
         });
-        return text(`Created: ${note.title} (${note.id})`);
+        return text(`Created: ${note.title} (${shortId(note.id)})`);
       } catch (e) {
         return error(e);
       }
