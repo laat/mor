@@ -30,7 +30,7 @@ jobs:
       # broke the `version` input by switching to a bootstrap+self-update
       # architecture. See pnpm/action-setup#225 — once that lands a fix,
       # move back to a floating tag.
-      - uses: pnpm/action-setup@2e223e0f0d2b8fd9872cbadb8b7428e5f8b5556d
+      - uses: pnpm/action-setup@bdf0af2a9d539c0fd91f655344d2934bfd5a2cdd
         with:
           version: 10.33.0
       - uses: actions/setup-node@v6
@@ -48,7 +48,7 @@ jobs:
           cp website/landing.html _site/index.html
           cp website/public/CNAME _site/CNAME
       - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
