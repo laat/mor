@@ -424,6 +424,22 @@ describe('update', () => {
     expect(out).toContain('content diff');
   });
 
+  it('updates content from stdin', async () => {
+    const note = await ops.add({ title: 'Stdin Update', content: 'old' });
+    const id = note.id.slice(0, 8);
+    const out = morStdin(
+      'new stdin content',
+      'update',
+      '--content-from',
+      '-',
+      id,
+    );
+    expect(out).toContain('Updated:');
+
+    const cat = mor('cat', id);
+    expect(cat).toBe('new stdin content');
+  });
+
   it('reports no changes when values match', async () => {
     const note = await ops.add({
       title: 'Same',
