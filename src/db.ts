@@ -178,6 +178,14 @@ export function upsertNoteChecked(
 export function deleteNoteFromDb(db: DB, id: string): void {
   db.transaction(() => {
     ftsDelete(db, id);
+    run(
+      db,
+      sql`DELETE FROM links WHERE source_id = ${id} OR target_id = ${id}`,
+    );
+    run(db, sql`DELETE FROM embeddings WHERE id = ${id}`);
+    if (hasVecTable(db)) {
+      run(db, sql`DELETE FROM ${raw(VEC_TABLE)} WHERE id = ${id}`);
+    }
     run(db, sql`DELETE FROM notes WHERE id = ${id}`);
   })();
 }

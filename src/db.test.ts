@@ -17,6 +17,10 @@ import {
   grepNotes,
   getEmbeddingModel,
   getEmbeddingCount,
+  getBacklinks,
+  getForwardLinks,
+  upsertEmbedding,
+  upsertLinks,
   type DB,
 } from './db.js';
 import type { Config } from './operations.js';
@@ -137,6 +141,83 @@ describe('deleteNoteFromDb', () => {
     deleteNoteFromDb(db, m.id);
     const results = searchFts(db, 'deleteme');
     expect(results).toHaveLength(0);
+  });
+
+  it('removes links where note is source or target', () => {
+    const source = note({
+      title: 'Source',
+      filePath: path.join(testDir, 'source.md'),
+    });
+    const target = note({
+      title: 'Target',
+      filePath: path.join(testDir, 'target.md'),
+    });
+    const other = note({
+      title: 'Other',
+      filePath: path.join(testDir, 'other.md'),
+    });
+    upsertNoteChecked(db, source);
+    upsertNoteChecked(db, target);
+    upsertNoteChecked(db, other);
+    upsertLinks(db, source.id, [target.id]);
+    upsertLinks(db, target.id, [other.id]);
+
+    deleteNoteFromDb(db, target.id);
+
+    expect(getForwardLinks(db, source.id)).toHaveLength(0);
+    expect(getBacklinks(db, target.id)).toHaveLength(0);
+    expect(getForwardLinks(db, target.id)).toHaveLength(0);
+    expect(getBacklinks(db, other.id)).toHaveLength(0);
+  });
+
+  it('removes embeddings for deleted notes', () => {
+    const m = note();
+    upsertNoteChecked(db, m);
+    upsertEmbedding(
+      db,
+      m.id,
+      Buffer.from(new Float32Array([0.1, 0.2, 0.3]).buffer),
+      'test-model',
+      3,
+    );
+    expect(getEmbeddingCount(db)).toBe(1);
+
+    deleteNoteFromDb(db, m.id);
+
+    expect(getEmbeddingCount(db)).toBe(0);
+  });
+
+  it('removes vector rows for deleted notes', () => {
+    db.close();
+    config = {
+      ...config,
+      embedding: {
+        provider: 'ollama',
+        model: 'test-model',
+        dimensions: 3,
+      },
+    };
+    db = openDb(config);
+    const m = note();
+    upsertNoteChecked(db, m);
+    upsertEmbedding(
+      db,
+      m.id,
+      Buffer.from(new Float32Array([0.1, 0.2, 0.3]).buffer),
+      'test-model',
+      3,
+    );
+    const before = db
+      .prepare('SELECT COUNT(*) AS count FROM embeddings_vec WHERE id = ?')
+      .get(m.id) as { count: number };
+    expect(before.count).toBe(1);
+
+    deleteNoteFromDb(db, m.id);
+
+    const after = db
+      .prepare('SELECT COUNT(*) AS count FROM embeddings_vec WHERE id = ?')
+      .get(m.id) as { count: number };
+    expect(after.count).toBe(0);
   });
 
   it('no-op for non-existent id', () => {
