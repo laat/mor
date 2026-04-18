@@ -484,13 +484,7 @@ export class LocalOperations implements Operations {
     const fetchLimit = hasFilter(filter)
       ? getAllNoteIds(this.db).size
       : offset + limit + FILTER_BUFFER;
-    const rows = grepNotes(
-      this.db,
-      pattern,
-      fetchLimit,
-      ignoreCase,
-      regex,
-    );
+    const rows = grepNotes(this.db, pattern, fetchLimit, ignoreCase, regex);
     const filtered = applyFilter(
       rows
         .map((row) => tryReadNote(row.file_path)?.note)
