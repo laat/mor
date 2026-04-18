@@ -439,7 +439,9 @@ program
         if (opts.type) updates.type = parseType(opts.type);
         if (opts.contentFrom) {
           const src = opts.contentFrom;
-          if (/^https?:\/\//.test(src)) {
+          if (src === '-') {
+            updates.content = fs.readFileSync(0, 'utf-8');
+          } else if (/^https?:\/\//.test(src)) {
             const res = await fetch(src);
             if (!res.ok) {
               console.error(`Error: failed to fetch ${src} (${res.status})`);
@@ -454,8 +456,6 @@ program
               path.basename(src),
             );
           }
-        } else if (opts.contentFrom === '-') {
-          updates.content = fs.readFileSync(0, 'utf-8');
         }
         if (Object.keys(updates).length === 0) {
           console.error(
