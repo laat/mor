@@ -481,10 +481,13 @@ export class LocalOperations implements Operations {
       regex = false,
     } = opts ?? {};
     this.syncIndexIfNeeded();
+    const fetchLimit = hasFilter(filter)
+      ? getAllNoteIds(this.db).size
+      : offset + limit + FILTER_BUFFER;
     const rows = grepNotes(
       this.db,
       pattern,
-      offset + limit + FILTER_BUFFER,
+      fetchLimit,
       ignoreCase,
       regex,
     );

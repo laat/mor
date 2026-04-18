@@ -467,6 +467,28 @@ describe('grep', () => {
     expect(page.data).toHaveLength(1);
     expect(page.data[0].title).toBe('G Snippet');
   });
+
+  it('finds filtered matches beyond the initial grep buffer', async () => {
+    for (let i = 0; i < 60; i++) {
+      await ops.add({
+        title: `Grep Knowledge ${i}`,
+        content: 'shared-grep-filter',
+      });
+    }
+    await ops.add({
+      title: 'Grep Snippet',
+      content: 'shared-grep-filter',
+      type: 'snippet',
+    });
+
+    const page = await ops.grep('shared-grep-filter', {
+      limit: 5,
+      filter: { type: 'snippet' },
+    });
+    expect(page.total).toBe(1);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].title).toBe('Grep Snippet');
+  });
 });
 
 describe('list', () => {
