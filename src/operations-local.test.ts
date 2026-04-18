@@ -315,6 +315,27 @@ describe('search', () => {
     expect(page.data.every((r) => r.note.type === 'snippet')).toBe(true);
   });
 
+  it('finds filtered matches beyond the initial candidate buffer', async () => {
+    for (let i = 0; i < 60; i++) {
+      await ops.add({
+        title: `Common Knowledge ${i}`,
+        content: 'common-filter-term',
+      });
+    }
+    await ops.add({
+      title: 'Common Snippet',
+      content: 'common-filter-term',
+      type: 'snippet',
+    });
+
+    const page = await ops.search('common-filter-term', 5, {
+      type: 'snippet',
+    });
+    expect(page.total).toBe(1);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].note.title).toBe('Common Snippet');
+  });
+
   it('resolves by full UUID', async () => {
     const note = await ops.add({ title: 'By ID', content: 'find me by id' });
     const page = await ops.search(note.id);

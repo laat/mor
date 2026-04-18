@@ -104,6 +104,13 @@ function applyFilter<T>(
   return items.filter((item) => matchNote(getNote(item), filter));
 }
 
+function hasFilter(filter?: NoteFilter): boolean {
+  return !!(
+    filter &&
+    (filter.type || filter.tag?.length || filter.repo || filter.ext)
+  );
+}
+
 export class LocalOperations implements Operations {
   private config: Config;
   private db: DB;
@@ -295,8 +302,11 @@ export class LocalOperations implements Operations {
       return { data: [], total: 0, offset, limit, scoring: 'fts' };
     }
 
-    // Fetch enough to cover offset + limit after filtering
-    const fetchLimit = offset + limit + FILTER_BUFFER;
+    // Filters are applied after reading notes, so filtered searches need the
+    // full matched candidate set to paginate and count correctly.
+    const fetchLimit = hasFilter(filter)
+      ? getAllNoteIds(this.db).size
+      : offset + limit + FILTER_BUFFER;
     const ftsResults = searchFts(this.db, query, fetchLimit);
 
     let filtered: SearchResult[];
