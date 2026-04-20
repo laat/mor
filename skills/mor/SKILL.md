@@ -101,12 +101,3 @@ Anywhere `<query>` appears, mor resolves it in this order:
 4. Full-text search (returns best match)
 
 Short ID prefixes like `mor cat a1b2c3d4` and multi-word titles like `mor cat fastify server primer` both work.
-
-## Rules
-
-- Always use `mor find` or `mor grep` before creating a note, to avoid duplicates.
-- Use `mor patch` (not `mor update --content-from`) for small, targeted edits.
-- Keep notes focused — one topic per note.
-- Use tags to organize notes by topic or language.
-- Use descriptive titles — they are searchable and used as filenames.
-- Prefer `--json` on `mor find` when you need to read content of multiple results at once.
