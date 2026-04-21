@@ -112,14 +112,14 @@ export function createMcpServer(ops: Operations): McpServer {
     name: 'mor',
     version,
     description:
-      "The user's personal note store. Contains saved code snippets, files, preferences, and reference notes. Check here first when the user asks to recall, find, or reuse something they previously saved. Only create or modify notes when the user explicitly asks — never use this store for your own internal bookkeeping or memory.",
+      "The user's personal note store. Contains saved code snippets, files, preferences, and reference notes. Only search here when the user explicitly asks to recall, find, or reuse something they previously saved — do not speculatively search before answering general questions. Only create or modify notes when the user explicitly asks — never use this store for your own internal bookkeeping or memory.",
   });
 
   server.registerTool(
     'notes_search',
     {
       description:
-        'Semantic search over notes using natural language. Best for finding notes about a topic. Returns scored, ranked results with the top result shown in full.',
+        'Semantic search over notes using natural language. Best for finding notes about a topic when the user asks to recall or look up something they saved. Returns scored, ranked results with the top result shown in full.',
       inputSchema: {
         query: z.string().describe('Search query'),
         limit: z.number().optional().describe('Max results (default 20)'),
