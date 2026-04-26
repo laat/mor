@@ -30,7 +30,7 @@ jobs:
       # broke the `version` input by switching to a bootstrap+self-update
       # architecture. See pnpm/action-setup#225 — once that lands a fix,
       # move back to a floating tag.
-      - uses: pnpm/action-setup@bdf0af2a9d539c0fd91f655344d2934bfd5a2cdd
+      - uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e
         with:
           version: 10.33.0
       - uses: actions/setup-node@v6
