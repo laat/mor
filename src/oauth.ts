@@ -570,8 +570,7 @@ export function createOAuthRoutes(
 
       // Atomically consume the refresh token to prevent reuse
       const tokenRow = stmts.consumeRefreshToken.get(refreshToken) as
-        | { client_id: string; refresh_expires_at: number }
-        | undefined;
+        { client_id: string; refresh_expires_at: number } | undefined;
 
       if (!tokenRow || tokenRow.client_id !== clientOrErr.client_id) {
         return c.json(
@@ -644,8 +643,7 @@ export function createOAuthRoutes(
 
   const verifyAccessToken = (token: string): boolean => {
     const row = stmts.getAccessToken.get(token) as
-      | { access_token: string; access_expires_at: number }
-      | undefined;
+      { access_token: string; access_expires_at: number } | undefined;
     if (!row) return false;
     // Don't delete the row here — the refresh_token in the same row must
     // remain available so the client can refresh.  Expired rows are cleaned
