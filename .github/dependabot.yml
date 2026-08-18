@@ -13,19 +13,10 @@ updates:
           - minor
           - patch
 
-  - package-ecosystem: npm
-    directory: /website
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      all:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
+  # /website is covered by the root entry: it's a pnpm workspace member and
+  # the lockfile lives at the repo root. A separate /website entry makes
+  # Dependabot edit website/package.json without updating pnpm-lock.yaml,
+  # which breaks `pnpm install --frozen-lockfile` in CI.
   - package-ecosystem: github-actions
     directory: /
     schedule:
