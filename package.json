@@ -58,7 +58,7 @@
     "hono": "^4.12.27",
     "marked": "^15.0.12",
     "marked-terminal": "7.3.0",
-    "p-queue": "^9.3.1",
+    "p-queue": "^10.0.0",
     "sql-template-tag": "^5.2.1",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.3.6"
