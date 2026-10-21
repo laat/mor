@@ -19,3 +19,5 @@ This is a personal project. I maintain it for my own use and share it because ot
 ## Fork freely
 
 The code is MIT licensed. Fork it, change it, make it yours. That's the point of open source.
+
+<!-- dummy change for testing, do not merge -->
