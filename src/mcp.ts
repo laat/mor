@@ -5,6 +5,7 @@ import { getStateDir, isRemote, loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import {
+  ARCHIVED_MODES,
   NOTE_TYPES,
   type Note,
   type Operations,
@@ -58,10 +59,18 @@ const idOrIdsSchema = {
     ),
 };
 
+const archivedSchema = z
+  .enum(ARCHIVED_MODES)
+  .optional()
+  .describe(
+    'Archived notes: exclude (default), include them, or return only them',
+  );
+
 function formatNote(note: Note): string {
+  const archived = note.archived ? ' (archived)' : '';
   const tags = note.tags.length > 0 ? `  [${note.tags.join(', ')}]` : '';
   const desc = note.description ? `\n  ${note.description}` : '';
-  return `- ${shortId(note.id)}  ${note.title}${tags}${desc}`;
+  return `- ${shortId(note.id)}  ${note.title}${archived}${tags}${desc}`;
 }
 
 function paginatedHeader<T>(page: Paginated<T>): string {
@@ -104,6 +113,7 @@ function formatMetadata(note: Note): string {
   if (note.description) lines.push(`description: ${note.description}`);
   if (note.created) lines.push(`created: ${note.created}`);
   if (note.updated) lines.push(`updated: ${note.updated}`);
+  if (note.archived) lines.push('archived: true');
   return lines.join('\n');
 }
 
@@ -134,13 +144,14 @@ export function createMcpServer(ops: Operations): McpServer {
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
         type: z.string().optional().describe('Filter by note type'),
+        archived: archivedSchema,
       },
     },
-    async ({ query, limit, offset, tag, type }) => {
+    async ({ query, limit, offset, tag, type, archived }) => {
       const page = await ops.search(
         query,
         limit ?? 20,
-        { tag, type },
+        { tag, type, archived },
         offset ?? 0,
       );
       if (page.data.length === 0) return text('No notes found.');
@@ -181,13 +192,23 @@ export function createMcpServer(ops: Operations): McpServer {
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
         type: z.string().optional().describe('Filter by note type'),
+        archived: archivedSchema,
       },
     },
-    async ({ pattern, limit, offset, ignore_case, regex, tag, type }) => {
+    async ({
+      pattern,
+      limit,
+      offset,
+      ignore_case,
+      regex,
+      tag,
+      type,
+      archived,
+    }) => {
       const page = await ops.grep(pattern, {
         limit: limit ?? 20,
         ignoreCase: ignore_case,
-        filter: { tag, type },
+        filter: { tag, type, archived },
         offset: offset ?? 0,
         regex,
       });
@@ -319,6 +340,58 @@ export function createMcpServer(ops: Operations): McpServer {
   );
 
   server.registerTool(
+    'notes_archive',
+    {
+      description:
+        'Archive one or more notes by ID, or restore them with `unarchive: true`. Archived notes are kept but left out of search, grep and list unless asked for. Pass `id` for a single note or `ids` for several.',
+      inputSchema: {
+        ...idOrIdsSchema,
+        unarchive: z
+          .boolean()
+          .optional()
+          .describe('Restore archived notes instead (default false)'),
+      },
+    },
+    async ({ id, ids, unarchive }) => {
+      let resolved: string[];
+      try {
+        resolved = resolveIds({ id, ids });
+      } catch (e) {
+        return { ...error(e), isError: true };
+      }
+      const done: string[] = [];
+      const failures: { id: string; message: string }[] = [];
+      for (const noteId of resolved) {
+        try {
+          const note = unarchive
+            ? await ops.unarchive(noteId)
+            : await ops.archive(noteId);
+          done.push(`${note.title} (${shortId(note.id)})`);
+        } catch (e) {
+          failures.push({
+            id: noteId,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+      const verb = unarchive ? 'unarchive' : 'archive';
+      if (done.length === 0) {
+        const lines = [`Failed to ${verb} any notes:`];
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+        return { ...text(lines.join('\n')), isError: true };
+      }
+      const lines = [
+        `${unarchive ? 'Unarchived' : 'Archived'}: ${done.join(', ')}`,
+      ];
+      if (failures.length > 0) {
+        lines.push('', 'Failures:');
+        for (const f of failures) lines.push(`- ${f.id}: ${f.message}`);
+      }
+      return text(lines.join('\n'));
+    },
+  );
+
+  server.registerTool(
     'notes_list',
     {
       description:
@@ -336,10 +409,15 @@ export function createMcpServer(ops: Operations): McpServer {
             'Filter by tags (AND logic, glob patterns supported) — pass an array, e.g. ["tag1", "tag2"]',
           ),
         type: z.string().optional().describe('Filter by note type'),
+        archived: archivedSchema,
       },
     },
-    async ({ limit, offset, tag, type }) => {
-      const page = await ops.list({ tag, type }, limit ?? 100, offset ?? 0);
+    async ({ limit, offset, tag, type, archived }) => {
+      const page = await ops.list(
+        { tag, type, archived },
+        limit ?? 100,
+        offset ?? 0,
+      );
       if (page.data.length === 0) return text('No notes stored.');
       const lines = page.data.map(formatNote);
       return text(paginatedHeader(page) + lines.join('\n'));

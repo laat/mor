@@ -187,6 +187,17 @@ bidirectional. They are derived from content and optional frontmatter
 .BI "rm " "id..."
 Remove a note by UUID or UUID prefix (8+ characters).
 .TP
+.BI "archive " "id..."
+Move notes into the \fIarchive\fR subfolder of the notes folder. Archived
+notes are kept, and can be read by ID, but are left out of
+.BR find ,
+.BR grep ,
+.BR ls ,
+the MCP tools and the web UI unless asked for.
+.TP
+.BI "unarchive " "id..."
+Move archived notes back to the notes folder.
+.TP
 .B ls
 List all notes, sorted by last updated.
 .RS
@@ -265,6 +276,15 @@ Filter by repository (glob pattern).
 .TP
 .BI \-\-ext " " ext
 Filter by file extension.
+.TP
+.B \-\-archived
+Only archived notes.
+.TP
+.B \-\-include\-archived
+Include archived notes.
+.PP
+Search queries also accept \fBis:archived\fR (or \fBarchived:only\fR) and
+\fBarchived:include\fR.
 .SH TYPES
 .TP
 .B knowledge

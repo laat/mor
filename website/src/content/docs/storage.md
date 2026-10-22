@@ -42,6 +42,8 @@ mor follows the [XDG Base Directory Specification](https://specifications.freede
     retry-with-backoff-4056.md
     python-naming-a1b2.md
     meeting-notes-c3d4.md
+    archive/                # archived notes (mor archive)
+      old-plan-e5f6.md
 
 ~/.local/state/mor/         # XDG_STATE_HOME — runtime state
   index.db                  # SQLite FTS + embeddings index

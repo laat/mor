@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import sql, { join, raw, type Sql } from 'sql-template-tag';
 import * as sqliteVec from 'sqlite-vec';
-import type { Config } from './operations.js';
+import type { ArchivedMode, Config } from './operations.js';
 
 export type DB = Database.Database;
 
@@ -31,7 +31,8 @@ const SCHEMA = `
     file_path TEXT NOT NULL UNIQUE,
     content_hash TEXT NOT NULL,
     access_count INTEGER NOT NULL DEFAULT 0,
-    last_accessed TEXT
+    last_accessed TEXT,
+    archived INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
@@ -65,6 +66,19 @@ function hasVecTable(db: DB): boolean {
 
 function vecTableDDL(dims: number): string {
   return `CREATE VIRTUAL TABLE ${VEC_TABLE} USING vec0(id TEXT PRIMARY KEY, embedding float[${dims}] distance_metric=cosine)`;
+}
+
+// Indexes created before archiving existed lack the archived column.
+function migrate(db: DB): void {
+  const columns = all<{ name: string }>(db, sql`PRAGMA table_info(notes)`);
+  if (!columns.some((c) => c.name === 'archived')) {
+    db.exec('ALTER TABLE notes ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
+  }
+}
+
+function archivedWhere(mode: ArchivedMode, column = 'archived'): Sql {
+  if (mode === 'include') return sql`1 = 1`;
+  return sql`${raw(column)} = ${mode === 'only' ? 1 : 0}`;
 }
 
 function ftsDelete(db: DB, id: string): void {
@@ -104,6 +118,7 @@ export function openDb(config: Config): DB {
   db.pragma('foreign_keys = ON');
   db.pragma('case_sensitive_like = ON');
   db.exec(SCHEMA);
+  migrate(db);
   if (config.embedding && config.embedding.provider !== 'none') {
     if (!hasVecTable(db)) {
       db.exec(vecTableDDL(config.embedding.dimensions));
@@ -144,6 +159,7 @@ export function upsertNoteChecked(
     content: string;
     filePath: string;
     contentHash: string;
+    archived?: boolean;
   },
 ): void {
   db.transaction(() => {
@@ -153,14 +169,14 @@ export function upsertNoteChecked(
     const desc = note.description ?? '';
     run(
       db,
-      sql`INSERT INTO notes (id, title, description, tags, type, repository, created, updated, content, file_path, content_hash)
-          VALUES (${note.id}, ${note.title}, ${desc}, ${tagsStr}, ${note.type}, ${note.repository ?? null}, ${note.created}, ${note.updated}, ${note.content}, ${note.filePath}, ${note.contentHash})
+      sql`INSERT INTO notes (id, title, description, tags, type, repository, created, updated, content, file_path, content_hash, archived)
+          VALUES (${note.id}, ${note.title}, ${desc}, ${tagsStr}, ${note.type}, ${note.repository ?? null}, ${note.created}, ${note.updated}, ${note.content}, ${note.filePath}, ${note.contentHash}, ${note.archived ? 1 : 0})
           ON CONFLICT(id) DO UPDATE SET
             title=excluded.title, description=excluded.description,
             tags=excluded.tags, type=excluded.type,
             repository=excluded.repository, updated=excluded.updated,
             content=excluded.content, file_path=excluded.file_path,
-            content_hash=excluded.content_hash`,
+            content_hash=excluded.content_hash, archived=excluded.archived`,
     );
 
     const row = get<{ rowid: number }>(
@@ -194,6 +210,7 @@ export function searchFts(
   db: DB,
   query: string,
   limit = 20,
+  archived: ArchivedMode = 'exclude',
 ): Array<{ id: string; score: number }> {
   const tokens = ftsTokenize(query);
   // Try AND first for precise results, fall back to OR for broader matching.
@@ -202,13 +219,13 @@ export function searchFts(
   // throws, return empty results.
   let rows: Array<{ id: string; rank: number }> = [];
   try {
-    rows = ftsMatch(db, ftsJoin(tokens, 'AND'), limit);
+    rows = ftsMatch(db, ftsJoin(tokens, 'AND'), limit, archived);
   } catch {
     // AND query failed — fall through to OR below
   }
   if (rows.length === 0 && tokens.length > 1) {
     try {
-      rows = ftsMatch(db, ftsJoin(tokens, 'OR'), limit);
+      rows = ftsMatch(db, ftsJoin(tokens, 'OR'), limit, archived);
     } catch {
       return [];
     }
@@ -226,6 +243,7 @@ function ftsMatch(
   db: DB,
   ftsQuery: string,
   limit: number,
+  archived: ArchivedMode,
 ): Array<{ id: string; rank: number }> {
   if (!ftsQuery) return [];
   return all<{ id: string; rank: number }>(
@@ -233,7 +251,7 @@ function ftsMatch(
     sql`SELECT m.id, bm25(notes_fts, 10.0, 5.0, 3.0, 1.0) AS rank
         FROM notes_fts f
         JOIN notes m ON m.rowid = f.rowid
-        WHERE notes_fts MATCH ${ftsQuery}
+        WHERE notes_fts MATCH ${ftsQuery} AND ${archivedWhere(archived, 'm.archived')}
         ORDER BY rank
         LIMIT ${limit}`,
   );
@@ -324,6 +342,14 @@ export function getAllContentHashes(db: DB): Map<string, string> {
   return new Map(rows.map((r) => [r.id, r.content_hash]));
 }
 
+export function getAllFilePaths(db: DB): Map<string, string> {
+  const rows = all<{ id: string; file_path: string }>(
+    db,
+    sql`SELECT id, file_path FROM notes`,
+  );
+  return new Map(rows.map((r) => [r.id, r.file_path]));
+}
+
 export function grepNotes(
   db: DB,
   pattern: string,
@@ -331,7 +357,9 @@ export function grepNotes(
   ignoreCase = false,
   regex = false,
   offset = 0,
+  archived: ArchivedMode = 'exclude',
 ): Array<{ id: string; file_path: string }> {
+  const scope = archivedWhere(archived);
   if (regex) {
     try {
       new RegExp(pattern);
@@ -345,9 +373,10 @@ export function grepNotes(
     return all(
       db,
       sql`SELECT id, file_path FROM notes
-          WHERE content REGEXP ${re}
+          WHERE (content REGEXP ${re}
              OR title REGEXP ${re}
-             OR description REGEXP ${re}
+             OR description REGEXP ${re})
+            AND ${scope}
           LIMIT ${limit} OFFSET ${offset}`,
     );
   }
@@ -356,9 +385,10 @@ export function grepNotes(
     return all(
       db,
       sql`SELECT id, file_path FROM notes
-          WHERE (LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
+          WHERE ((LOWER(content) LIKE ${lowerLike} ESCAPE '\\')
              OR (LOWER(title) LIKE ${lowerLike} ESCAPE '\\')
-             OR (LOWER(description) LIKE ${lowerLike} ESCAPE '\\')
+             OR (LOWER(description) LIKE ${lowerLike} ESCAPE '\\'))
+            AND ${scope}
           LIMIT ${limit} OFFSET ${offset}`,
     );
   }
@@ -366,9 +396,10 @@ export function grepNotes(
   return all(
     db,
     sql`SELECT id, file_path FROM notes
-        WHERE (content LIKE ${like} ESCAPE '\\')
+        WHERE ((content LIKE ${like} ESCAPE '\\')
            OR (title LIKE ${like} ESCAPE '\\')
-           OR (description LIKE ${like} ESCAPE '\\')
+           OR (description LIKE ${like} ESCAPE '\\'))
+          AND ${scope}
         LIMIT ${limit} OFFSET ${offset}`,
   );
 }

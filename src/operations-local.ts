@@ -5,6 +5,7 @@ import {
   deleteDb,
   deleteNoteFromDb,
   getAllContentHashes,
+  getAllFilePaths,
   getAllNoteIds,
   getBacklinks,
   getEmbeddingCount,
@@ -29,14 +30,18 @@ import {
   type EmbeddingProvider,
 } from './embeddings/provider.js';
 import {
+  archiveDir,
   createNote,
   deleteNote,
+  isArchivedPath,
   listNoteFiles,
-  readNote,
+  moveNote,
+  readAndParse,
   tryReadNote,
   updateNote,
 } from './note.js';
 import { extractLinkIds, parseFrontmatterLinks } from './utils/links.js';
+import { parseArchivedSyntax } from './utils/query.js';
 import matter from 'gray-matter';
 import type {
   Config,
@@ -64,6 +69,8 @@ const UUID_PREFIX_RE = /^[0-9a-f]{8,}$/i;
 const FILTER_BUFFER = 50;
 const ACCESS_BOOST_CAP = 50;
 const ACCESS_BOOST_WEIGHT = 0.001;
+// sqlite-vec refuses KNN queries for more neighbours than this
+const VEC_MAX_K = 4096;
 
 import { matchGlob } from './utils/glob.js';
 
@@ -72,6 +79,9 @@ function hashContent(content: string): string {
 }
 
 function matchNote(note: Note, filter: NoteFilter): boolean {
+  const archived = filter.archived ?? 'exclude';
+  if (archived === 'exclude' && note.archived) return false;
+  if (archived === 'only' && !note.archived) return false;
   if (filter.type) {
     const types = filter.type.split(',').map((t) => t.trim());
     if (!types.some((t) => matchGlob(note.type, t))) return false;
@@ -94,16 +104,13 @@ function matchNote(note: Note, filter: NoteFilter): boolean {
 function applyFilter<T>(
   items: T[],
   getNote: (item: T) => Note,
-  filter?: NoteFilter,
+  filter: NoteFilter = {},
 ): T[] {
-  if (
-    !filter ||
-    (!filter.type && !filter.tag?.length && !filter.repo && !filter.ext)
-  )
-    return items;
   return items.filter((item) => matchNote(getNote(item), filter));
 }
 
+// Archived notes are scoped in SQL, so only these filters need the full
+// candidate set.
 function hasFilter(filter?: NoteFilter): boolean {
   return !!(
     filter &&
@@ -141,11 +148,12 @@ export class LocalOperations implements Operations {
     const files = listNoteFiles(this.config);
     const dbIds = getAllNoteIds(this.db);
     const hashes = getAllContentHashes(this.db);
+    const paths = getAllFilePaths(this.db);
     const seenIds = new Set<string>();
     const changed: Note[] = [];
 
     for (const filePath of files) {
-      const result = tryReadNote(filePath);
+      const result = this.tryLoad(filePath);
       if (!result) continue;
       const { note, raw } = result;
 
@@ -153,6 +161,9 @@ export class LocalOperations implements Operations {
       if (hashes.get(note.id) !== hashContent(raw)) {
         this.upsertFromNote(note, raw);
         changed.push(note);
+      } else if (paths.get(note.id) !== filePath) {
+        // Moved, e.g. into or out of the archive folder by hand
+        this.upsertFromNote(note, raw);
       }
     }
 
@@ -181,6 +192,19 @@ export class LocalOperations implements Operations {
     }
   }
 
+  private withArchived(note: Note): Note {
+    return { ...note, archived: isArchivedPath(this.config, note.filePath) };
+  }
+
+  private load(filePath: string): Note {
+    return this.withArchived(readAndParse(filePath).note);
+  }
+
+  private tryLoad(filePath: string): { note: Note; raw: string } | undefined {
+    const result = tryReadNote(filePath);
+    return result && { note: this.withArchived(result.note), raw: result.raw };
+  }
+
   private upsertFromNote(note: Note, raw: string): void {
     upsertNoteChecked(this.db, {
       id: note.id,
@@ -194,6 +218,7 @@ export class LocalOperations implements Operations {
       content: note.content,
       filePath: note.filePath,
       contentHash: hashContent(raw),
+      archived: isArchivedPath(this.config, note.filePath),
     });
     this.updateLinks(note.id, note.content, raw);
   }
@@ -247,12 +272,12 @@ export class LocalOperations implements Operations {
 
     if (UUID_RE.test(id)) {
       const row = getNoteById(this.db, id);
-      if (row) return readNote(row.file_path);
+      if (row) return this.load(row.file_path);
     }
 
     if (UUID_PREFIX_RE.test(id)) {
       const row = getNoteByPrefix(this.db, id);
-      if (row) return readNote(row.file_path);
+      if (row) return this.load(row.file_path);
     }
 
     return undefined;
@@ -263,11 +288,11 @@ export class LocalOperations implements Operations {
     if (byId) return byId;
 
     const byFilename = getNoteByFilename(this.db, query);
-    if (byFilename) return readNote(byFilename.file_path);
+    if (byFilename) return this.load(byFilename.file_path);
 
     if (!query.endsWith('.md')) {
       const byFilenameMd = getNoteByFilename(this.db, query + '.md');
-      if (byFilenameMd) return readNote(byFilenameMd.file_path);
+      if (byFilenameMd) return this.load(byFilenameMd.file_path);
     }
 
     try {
@@ -304,6 +329,22 @@ export class LocalOperations implements Operations {
   ): Promise<SearchPage> {
     this.syncIndexIfNeeded();
 
+    const parsed = parseArchivedSyntax(query);
+    if (parsed.archived) {
+      query = parsed.query;
+      filter = { ...filter, archived: parsed.archived };
+      // A query of only archive operators, like `is:archived`, lists notes
+      if (!query) {
+        const page = await this.list(filter, limit, offset);
+        return {
+          ...page,
+          data: page.data.map((note) => ({ note, score: 1, matchType: 'fts' })),
+          scoring: 'fts',
+        };
+      }
+    }
+    const archived = filter?.archived ?? 'exclude';
+
     // Resolve by ID or ID prefix before falling back to FTS
     const byId = this.resolveById(query);
     if (byId) {
@@ -323,7 +364,7 @@ export class LocalOperations implements Operations {
     const fetchLimit = hasFilter(filter)
       ? getAllNoteIds(this.db).size
       : offset + limit + FILTER_BUFFER;
-    const ftsResults = searchFts(this.db, query, fetchLimit);
+    const ftsResults = searchFts(this.db, query, fetchLimit, archived);
 
     let filtered: SearchResult[];
     let scoring: ScoringMode;
@@ -334,7 +375,15 @@ export class LocalOperations implements Operations {
 
       // KNN search via sqlite-vec (cosine distance: 0 = identical, 2 = opposite)
       const MAX_COSINE_DISTANCE = 1.7;
-      const vecResults = searchVec(this.db, queryEmbedding, fetchLimit);
+      // The KNN limit applies before archived notes are filtered out, so
+      // unless they are included, take every embedding as a candidate.
+      const vecLimit = Math.min(
+        VEC_MAX_K,
+        archived === 'include'
+          ? fetchLimit
+          : Math.max(fetchLimit, getEmbeddingCount(this.db)),
+      );
+      const vecResults = searchVec(this.db, queryEmbedding, vecLimit);
       const vectorMap = new Map(
         vecResults
           .filter((r) => r.distance <= MAX_COSINE_DISTANCE)
@@ -370,7 +419,7 @@ export class LocalOperations implements Operations {
         const row = noteRows.get(r.id);
         if (!row) continue;
         results.push({
-          note: readNote(row.file_path),
+          note: this.load(row.file_path),
           score: r.score,
           matchType: vectorMap.has(r.id) ? 'vector' : 'fts',
         });
@@ -385,7 +434,7 @@ export class LocalOperations implements Operations {
         const row = noteRows.get(r.id);
         if (!row) continue;
         results.push({
-          note: readNote(row.file_path),
+          note: this.load(row.file_path),
           score:
             r.score *
             (1 +
@@ -431,8 +480,9 @@ export class LocalOperations implements Operations {
     type?: NoteType;
     repository?: string;
   }): Promise<Note> {
-    const { note, raw } = createNote(this.config, opts);
-    this.upsertFromNote(note, raw);
+    const created = createNote(this.config, opts);
+    const note = this.withArchived(created.note);
+    this.upsertFromNote(note, created.raw);
     await this.computeEmbedding(note);
     this.autoSync(`add: ${note.title}`);
     return note;
@@ -453,8 +503,9 @@ export class LocalOperations implements Operations {
       throw new NotFoundError(
         `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
       );
-    const { note, raw } = updateNote(existing.filePath, updates);
-    this.upsertFromNote(note, raw);
+    const updated = updateNote(existing.filePath, updates);
+    const note = this.withArchived(updated.note);
+    this.upsertFromNote(note, updated.raw);
     await this.computeEmbedding(note);
     this.autoSync(`update: ${note.title}`);
     return note;
@@ -488,6 +539,34 @@ export class LocalOperations implements Operations {
     return { title: note.title, id: note.id };
   }
 
+  async archive(query: string): Promise<Note> {
+    return this.setArchived(query, true);
+  }
+
+  async unarchive(query: string): Promise<Note> {
+    return this.setArchived(query, false);
+  }
+
+  // Moves the file between the notes folder and its archive subfolder. The
+  // note itself is unchanged, so its embedding stays valid.
+  private setArchived(query: string, archived: boolean): Note {
+    const existing = this.resolveById(query);
+    if (!existing)
+      throw new NotFoundError(
+        `Note not found for ID: ${query}. Use a full UUID or 8+ char prefix.`,
+      );
+    if (existing.archived === archived) return existing;
+    const filePath = moveNote(
+      existing.filePath,
+      archived ? archiveDir(this.config) : this.config.notesDir,
+    );
+    const result = readAndParse(filePath);
+    const note = this.withArchived(result.note);
+    this.upsertFromNote(note, result.raw);
+    this.autoSync(`${archived ? 'archive' : 'unarchive'}: ${note.title}`);
+    return note;
+  }
+
   async grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Note>> {
     const {
       limit = 20,
@@ -500,10 +579,18 @@ export class LocalOperations implements Operations {
     const fetchLimit = hasFilter(filter)
       ? getAllNoteIds(this.db).size
       : offset + limit + FILTER_BUFFER;
-    const rows = grepNotes(this.db, pattern, fetchLimit, ignoreCase, regex);
+    const rows = grepNotes(
+      this.db,
+      pattern,
+      fetchLimit,
+      ignoreCase,
+      regex,
+      0,
+      filter?.archived,
+    );
     const filtered = applyFilter(
       rows
-        .map((row) => tryReadNote(row.file_path)?.note)
+        .map((row) => this.tryLoad(row.file_path)?.note)
         .filter((m): m is Note => m !== undefined),
       (m) => m,
       filter,
@@ -525,7 +612,7 @@ export class LocalOperations implements Operations {
     const files = listNoteFiles(this.config);
     const filtered = applyFilter(
       files
-        .map((f) => tryReadNote(f)?.note)
+        .map((f) => this.tryLoad(f)?.note)
         .filter((m): m is Note => m !== undefined),
       (m) => m,
       filter,
@@ -547,7 +634,7 @@ export class LocalOperations implements Operations {
 
     let count = 0;
     for (const filePath of files) {
-      const result = tryReadNote(filePath);
+      const result = this.tryLoad(filePath);
       if (!result) continue;
       const { note, raw } = result;
 

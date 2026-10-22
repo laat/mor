@@ -86,7 +86,7 @@ export function createNote(
   };
 }
 
-function readAndParse(filePath: string): { note: Note; raw: string } {
+export function readAndParse(filePath: string): { note: Note; raw: string } {
   const raw = fs.readFileSync(filePath, 'utf-8');
   return { note: parseNote(raw, filePath), raw };
 }
@@ -180,13 +180,38 @@ export function deleteNote(filePath: string): void {
   fs.unlinkSync(filePath);
 }
 
-export function listNoteFiles(config: Config): string[] {
+/** Archived notes live in this subfolder of the notes folder. */
+export function archiveDir(config: Config): string {
+  return path.join(config.notesDir, 'archive');
+}
+
+export function isArchivedPath(config: Config, filePath: string): boolean {
+  return path.dirname(filePath) === archiveDir(config);
+}
+
+/** Moves a note file into `destDir`, keeping its filename. */
+export function moveNote(filePath: string, destDir: string): string {
+  const dest = path.join(destDir, path.basename(filePath));
+  if (fs.existsSync(dest)) throw new Error(`File already exists: ${dest}`);
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.renameSync(filePath, dest);
+  return dest;
+}
+
+function listMarkdown(dir: string): string[] {
   try {
     return fs
-      .readdirSync(config.notesDir)
+      .readdirSync(dir)
       .filter((f) => f.endsWith('.md'))
-      .map((f) => path.join(config.notesDir, f));
+      .map((f) => path.join(dir, f));
   } catch {
     return [];
   }
+}
+
+export function listNoteFiles(config: Config): string[] {
+  return [
+    ...listMarkdown(config.notesDir),
+    ...listMarkdown(archiveDir(config)),
+  ];
 }

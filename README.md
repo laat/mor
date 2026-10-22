@@ -45,29 +45,33 @@ mor ls -l
 
 ## Commands
 
-| Command           | Description                                                                                                     |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- |
-| `find <query>`    | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
-| `grep <pattern>`  | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
-| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
-| `cat <query>`     | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
-| `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
-| `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
-| `update <query>`  | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
-| `patch <query>`   | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
-| `rm <query>`      | Remove a note                                                                                                   |
-| `links [query]`   | Show cross-references for a note (`--broken` to find dangling links)                                            |
-| `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
-| `sync`            | Pull, commit, and push the notes folder via git                                                                 |
-| `reindex`         | Rebuild search index                                                                                            |
-| `import <dir>`    | Import `.md` files from a directory                                                                             |
-| `mcp`             | Start MCP server (stdio)                                                                                        |
-| `serve`           | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
-| `login`           | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
+| Command             | Description                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
+| `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
+| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
+| `cat <query>`       | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
+| `cp <query...>`     | Copy content to file (`-o <dest>`)                                                                              |
+| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
+| `update <query>`    | Update metadata or content (`-t` title, `-d` description, `--tags`, `--type`, `--content-from`)                 |
+| `patch <query>`     | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
+| `rm <query>`        | Remove a note                                                                                                   |
+| `archive <id...>`   | Move notes to the archive folder, out of search and listings                                                    |
+| `unarchive <id...>` | Move archived notes back                                                                                        |
+| `links [query]`     | Show cross-references for a note (`--broken` to find dangling links)                                            |
+| `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
+| `sync`              | Pull, commit, and push the notes folder via git                                                                 |
+| `reindex`           | Rebuild search index                                                                                            |
+| `import <dir>`      | Import `.md` files from a directory                                                                             |
+| `mcp`               | Start MCP server (stdio)                                                                                        |
+| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
+| `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
 Queries resolve in order: full UUID, UUID prefix (8+ chars), filename, FTS search. Multi-word queries don't need quoting — options go before the query: `mor find --limit 5 python naming`.
 
 `find`, `grep`, and `ls` support shared filters: `--type`, `--tag`, `--repo`, `--ext` (all support glob patterns).
+
+`mor archive` moves a note into `notes/archive/` instead of deleting it. Archived notes are left out of `find`, `grep`, `ls`, MCP tools and the web UI, but can still be read by ID. Pass `--archived` for archived notes only or `--include-archived` for both, or put `is:archived` or `archived:include` in a search query.
 
 ## MCP server
 
@@ -84,7 +88,7 @@ Add to your Claude Code or Claude Desktop config:
 }
 ```
 
-Tools: `notes_search`, `notes_read`, `notes_create`, `notes_update`, `notes_patch`, `notes_remove`, `notes_list`, `notes_grep`.
+Tools: `notes_search`, `notes_read`, `notes_create`, `notes_update`, `notes_patch`, `notes_remove`, `notes_archive`, `notes_list`, `notes_grep`.
 
 To make sure Claude Code checks mor first when you ask it to recall something, add this to `~/.claude/CLAUDE.md`:
 
@@ -169,6 +173,8 @@ Unauthenticated requests get a `401` with a `WWW-Authenticate` header pointing t
 | `POST`   | `/notes`                                                  | Create (`{title, content, description?, tags?, type?, repository?}`) |
 | `PUT`    | `/notes/:query`                                           | Update (`{title?, description?, content?, tags?, type?}`)            |
 | `POST`   | `/notes/:query/patch`                                     | Patch content (`{old_str, new_str}`)                                 |
+| `POST`   | `/notes/:query/archive`                                   | Move to the archive folder                                           |
+| `POST`   | `/notes/:query/unarchive`                                 | Move back from the archive folder                                    |
 | `DELETE` | `/notes/:query`                                           | Remove                                                               |
 | `POST`   | `/reindex`                                                | Rebuild the search index                                             |
 | `POST`   | `/sync`                                                   | Git pull, commit, push                                               |
@@ -203,6 +209,8 @@ Notes are markdown files with YAML frontmatter, split across [XDG directories](h
   notes/
     python-naming-a1b2.md
     meeting-notes-c3d4.md
+    archive/                  # archived notes (mor archive)
+      old-plan-e5f6.md
 ~/.local/state/mor/           # state
   index.db                    # search index
   credentials.json            # OAuth tokens (mor login)

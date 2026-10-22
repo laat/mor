@@ -250,6 +250,55 @@ describe('web UI without token', () => {
   });
 });
 
+describe('web UI archive', () => {
+  beforeEach(() => start());
+
+  it('archives a note out of the list and search', async () => {
+    const id = await createNote('Dusty Note', 'cobweb text');
+    const page = await (await get(`/ui/notes/${id}`)).text();
+    expect(page).toContain(`action="/ui/notes/${id}/archive"`);
+
+    const res = await post(`/ui/notes/${id}/archive`, {});
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe(`/ui/notes/${id}`);
+
+    expect(await (await get('/ui')).text()).not.toContain('Dusty Note');
+    expect(await (await get('/ui?q=cobweb')).text()).not.toContain(
+      'Dusty Note',
+    );
+
+    const archived = await (await get('/ui?archived=only')).text();
+    expect(archived).toContain('Archived notes');
+    expect(archived).toContain('Dusty Note');
+    expect(await (await get('/ui?q=cobweb&archived=only')).text()).toContain(
+      'Dusty Note',
+    );
+    expect(
+      await (await get(`/ui?q=${encodeURIComponent('is:archived')}`)).text(),
+    ).toContain('Dusty Note');
+
+    const note = await (await get(`/ui/notes/${id}`)).text();
+    expect(note).toContain('<span class="label">archived</span>');
+    expect(note).toContain(`action="/ui/notes/${id}/unarchive"`);
+  });
+
+  it('unarchives a note', async () => {
+    const id = await createNote('Revived Note', 'back again');
+    await post(`/ui/notes/${id}/archive`, {});
+    const res = await post(`/ui/notes/${id}/unarchive`, {});
+    expect(res.status).toBe(303);
+    expect(await (await get('/ui')).text()).toContain('Revived Note');
+  });
+
+  it('returns 404 when archiving a missing note', async () => {
+    const res = await post(
+      '/ui/notes/00000000-0000-0000-0000-000000000000/archive',
+      {},
+    );
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('web UI with token', () => {
   beforeEach(() => start(PASSPHRASE));
 

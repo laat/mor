@@ -70,3 +70,16 @@ mor ls --repo "github.com/org/*"   # only from specific repos
 ```
 
 Filters use glob patterns — `*` matches anything, `?` matches one character.
+
+## Archived notes
+
+Archived notes (`mor archive`) are left out of every search by default. Use `--archived` for archived notes only or `--include-archived` for both. Search queries also accept operators, which work the same in `find`, the MCP `notes_search` tool, the HTTP API and the web UI search box:
+
+| Operator           | Effect                             |
+| ------------------ | ---------------------------------- |
+| `is:archived`      | Only archived notes                |
+| `archived:only`    | Only archived notes                |
+| `archived:include` | Archived notes along with the rest |
+| `archived:exclude` | No archived notes (the default)    |
+
+A query with only an operator, such as `is:archived`, lists all matching notes.
