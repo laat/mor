@@ -9,7 +9,7 @@ import { NOTE_TYPES } from './operations.js';
 import type { Note, NoteFilter, NoteType, Operations } from './operations.js';
 import { escapeHtml } from './utils/html.js';
 import { wrapCodeFence } from './utils/markdown.js';
-import { isLoopbackHost, timingSafeCompare } from './utils/net.js';
+import { timingSafeCompare } from './utils/net.js';
 
 const COOKIE = 'mor_session';
 const SESSION_TTL = 30 * 24 * 60 * 60;
@@ -67,12 +67,23 @@ export function verifySession(
   return timingSafeCompare(sig, signSession(passphrase, exp));
 }
 
-function hostOf(url: string): string | null {
+function parseUrl(url: string): URL | null {
   try {
-    return new URL(url).host;
+    return new URL(url);
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether the browser used HTTPS. Behind a TLS-terminating proxy the
+ * request URL is http, so prefer the proxy header and the Origin.
+ */
+function isHttps(c: Context): boolean {
+  const forwarded = c.req.header('x-forwarded-proto')?.split(',')[0].trim();
+  if (forwarded) return forwarded === 'https';
+  const url = parseUrl(c.req.header('origin') ?? c.req.url);
+  return url?.protocol === 'https:';
 }
 
 /** Reject cross-site form posts (CSRF). */
@@ -82,7 +93,7 @@ const sameOrigin: MiddlewareHandler = async (c, next) => {
     const origin = c.req.header('origin');
     const crossSite = site
       ? site !== 'same-origin' && site !== 'none'
-      : origin !== undefined && hostOf(origin) !== c.req.header('host');
+      : origin !== undefined && parseUrl(origin)?.host !== c.req.header('host');
     if (crossSite) return c.text('Forbidden: cross-origin request', 403);
   }
   await next();
@@ -327,6 +338,22 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
     status: ContentfulStatusCode = 200,
   ) => c.html(layout(title, body, { q: c.req.query('q'), auth }), status);
 
+  // Note URLs carry full ids; ops.read alone would fall back to search
+  // and show an unrelated note for a stale or mistyped id.
+  const readNote = async (id: string) => {
+    const note = await ops.read(id);
+    return note?.id === id ? note : undefined;
+  };
+
+  // Serializes edits so the version check and the write cannot interleave
+  // with another edit.
+  let editQueue: Promise<unknown> = Promise.resolve();
+  const exclusive = <T>(fn: () => Promise<T>): Promise<T> => {
+    const run = editQueue.then(fn, fn);
+    editQueue = run.catch(() => {});
+    return run;
+  };
+
   const notFound = (c: Context) =>
     render(c, 'Not found', '<h1>Not found</h1><p>No such note.</p>', 404);
 
@@ -357,7 +384,7 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       path: '/ui',
       httpOnly: true,
       sameSite: 'Strict',
-      secure: !isLoopbackHost(c.req.header('host') ?? ''),
+      secure: isHttps(c),
       maxAge: SESSION_TTL,
     });
     return c.redirect(next, 303);
@@ -478,7 +505,7 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
   });
 
   web.get('/notes/:id', async (c) => {
-    const note = await ops.read(c.req.param('id'));
+    const note = await readNote(c.req.param('id'));
     if (!note) return notFound(c);
     const links = await ops.getLinks(note.id);
     return render(
@@ -499,7 +526,7 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
   });
 
   web.get('/notes/:id/edit', async (c) => {
-    const note = await ops.read(c.req.param('id'));
+    const note = await readNote(c.req.param('id'));
     if (!note) return notFound(c);
     return render(
       c,
@@ -521,46 +548,51 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
   });
 
   web.post('/notes/:id', async (c) => {
-    const note = await ops.read(c.req.param('id'));
-    if (!note) return notFound(c);
+    // Read the body first: the version check below must see the note as it
+    // is when the edit is written, not as it was when the request started.
     const body = await c.req.parseBody();
     const values = formValues(body);
 
-    const formError = (error: string) =>
-      render(
-        c,
-        `Edit ${note.title}`,
-        `<h1>Edit</h1>${noteFormHtml({
-          action: noteUrl(note.id),
-          values,
-          updated: note.updated,
-          submit: 'Save',
-          cancel: noteUrl(note.id),
-          error,
-        })}`,
-        409,
-      );
+    return exclusive(async () => {
+      const note = await readNote(c.req.param('id'));
+      if (!note) return notFound(c);
 
-    if (str(body, 'updated') !== note.updated) {
-      return formError(
-        `This note was changed elsewhere (at ${note.updated}) after you opened it. ` +
-          'Saving again will overwrite that change with your text below.',
-      );
-    }
-    if (!values.title) return formError('Title is required.');
+      const formError = (error: string) =>
+        render(
+          c,
+          `Edit ${note.title}`,
+          `<h1>Edit</h1>${noteFormHtml({
+            action: noteUrl(note.id),
+            values,
+            updated: note.updated,
+            submit: 'Save',
+            cancel: noteUrl(note.id),
+            error,
+          })}`,
+          409,
+        );
 
-    await ops.update(note.id, {
-      title: values.title,
-      description: values.description,
-      content: values.content,
-      tags: parseTags(values.tags),
-      type: parseType(values.type),
+      if (str(body, 'updated') !== note.updated) {
+        return formError(
+          `This note was changed elsewhere (at ${note.updated}) after you opened it. ` +
+            'Saving again will overwrite that change with your text below.',
+        );
+      }
+      if (!values.title) return formError('Title is required.');
+
+      await ops.update(note.id, {
+        title: values.title,
+        description: values.description,
+        content: values.content,
+        tags: parseTags(values.tags),
+        type: parseType(values.type),
+      });
+      return c.redirect(noteUrl(note.id), 303);
     });
-    return c.redirect(noteUrl(note.id), 303);
   });
 
   web.get('/notes/:id/delete', async (c) => {
-    const note = await ops.read(c.req.param('id'));
+    const note = await readNote(c.req.param('id'));
     if (!note) return notFound(c);
     return render(
       c,

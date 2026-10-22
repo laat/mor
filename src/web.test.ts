@@ -151,6 +151,63 @@ describe('web UI without token', () => {
     expect(note.content).toBe('old content');
   });
 
+  it('refuses a stale edit whose body arrives after another save', async () => {
+    const id = await createNote('Original', 'old content');
+    const form = await (await get(`/ui/notes/${id}/edit`)).text();
+    const updated = form.match(/name="updated" value="([^"]+)"/)![1];
+
+    // Start a POST and hold back most of its body
+    const slowBody = new URLSearchParams({
+      updated,
+      title: 'Slow',
+      content: 'slow edit',
+    }).toString();
+    const { port } = server.address() as { port: number };
+    const slowReq = http.request({
+      host: '127.0.0.1',
+      port,
+      method: 'POST',
+      path: `/ui/notes/${id}`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(slowBody),
+      },
+    });
+    const slowStatus = new Promise<number>((resolve, reject) => {
+      slowReq.on('response', (res) => {
+        res.resume();
+        resolve(res.statusCode!);
+      });
+      slowReq.on('error', reject);
+    });
+    slowReq.write(slowBody.slice(0, 10));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const fast = await post(`/ui/notes/${id}`, {
+      updated,
+      title: 'Fast',
+      content: 'fast edit',
+    });
+    expect(fast.status).toBe(303);
+
+    slowReq.end(slowBody.slice(10));
+    expect(await slowStatus).toBe(409);
+
+    const note = (await (await get(`/notes/${id}`)).json()).data;
+    expect(note.content).toBe('fast edit');
+  });
+
+  it('returns 404 for an unknown id instead of a search hit', async () => {
+    await createNote('Some note', 'unrelated content');
+    expect((await get('/ui/notes/Some%20note')).status).toBe(404);
+    expect((await get('/ui/notes/unrelated/edit')).status).toBe(404);
+    const res = await post('/ui/notes/unrelated', {
+      title: 'x',
+      content: 'y',
+    });
+    expect(res.status).toBe(404);
+  });
+
   it('deletes a note', async () => {
     const id = await createNote('Doomed', 'bye');
     const res = await post(`/ui/notes/${id}/delete`, {});
@@ -189,6 +246,18 @@ describe('web UI with token', () => {
     expect(res.headers.get('location')).toBe(
       `/ui/login?next=${encodeURIComponent('/ui/notes/abc?x=1')}`,
     );
+  });
+
+  it('sets Secure on the cookie only when the browser used https', async () => {
+    const plain = await post('/ui/login', { passphrase: PASSPHRASE });
+    expect(plain.headers.get('set-cookie')).not.toContain('Secure');
+
+    const viaProxy = await post(
+      '/ui/login',
+      { passphrase: PASSPHRASE },
+      { 'X-Forwarded-Proto': 'https' },
+    );
+    expect(viaProxy.headers.get('set-cookie')).toContain('Secure');
   });
 
   it('rejects a wrong passphrase', async () => {
