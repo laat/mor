@@ -338,11 +338,16 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
     status: ContentfulStatusCode = 200,
   ) => c.html(layout(title, body, { q: c.req.query('q'), auth }), status);
 
-  // Note URLs carry full ids; ops.read alone would fall back to search
-  // and show an unrelated note for a stale or mistyped id.
+  // Note URLs carry ids (full, or a short prefix as in mor: links); ops.read
+  // alone would fall back to search and show an unrelated note for a stale
+  // or mistyped id.
   const readNote = async (id: string) => {
-    const note = await ops.read(id);
-    return note?.id === id ? note : undefined;
+    const want = id.toLowerCase();
+    const note = await ops.read(want);
+    return note &&
+      (note.id === want || (want.length >= 8 && note.id.startsWith(want)))
+      ? note
+      : undefined;
   };
 
   // Serializes edits so the version check and the write cannot interleave

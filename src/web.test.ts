@@ -114,6 +114,18 @@ describe('web UI without token', () => {
     expect(html).toContain(`href="/ui/notes/${target}"`);
   });
 
+  it('opens notes from mor: links with a short id', async () => {
+    const target = await createNote('Target', 'target body');
+    const short = target.slice(0, 8).toUpperCase();
+    const id = await createNote('Source', `See [target](mor:${short})`);
+    const html = await (await get(`/ui/notes/${id}`)).text();
+    expect(html).toContain(`href="/ui/notes/${short}"`);
+
+    const res = await get(`/ui/notes/${short}`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('target body');
+  });
+
   it('edits a note', async () => {
     const id = await createNote('Original', 'old content');
     const form = await (await get(`/ui/notes/${id}/edit`)).text();
