@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -632,5 +632,67 @@ describe('syncIndex', () => {
     // Force sync and verify it's gone
     const page = await ops.list();
     expect(page.data.find((m) => m.id === note.id)).toBeUndefined();
+  });
+});
+
+describe('search with embeddings', () => {
+  let embedOps: LocalOperations;
+
+  beforeEach(() => {
+    ops.close();
+    embedOps = new LocalOperations({
+      ...config,
+      embedding: {
+        provider: 'openai',
+        model: 'test-model',
+        baseUrl: 'http://embeddings.test',
+        dimensions: 3,
+      },
+    });
+    ops = embedOps;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function stubEmbeddings() {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ data: [{ embedding: [1, 0, 0] }] })),
+      ),
+    );
+  }
+
+  it('uses hybrid scoring when the provider responds', async () => {
+    stubEmbeddings();
+    await embedOps.add({ title: 'Embedded', content: 'vector content' });
+
+    const page = await embedOps.search('vector');
+    expect(page.scoring).toBe('hybrid');
+    expect(page.data[0].note.title).toBe('Embedded');
+  });
+
+  it('falls back to FTS when the provider fails at query time', async () => {
+    stubEmbeddings();
+    await embedOps.add({ title: 'Embedded', content: 'vector content' });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('unavailable', { status: 503 })),
+    );
+    const stderr = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+
+    const page = await embedOps.search('vector');
+    expect(page.scoring).toBe('fts');
+    expect(page.data[0].note.title).toBe('Embedded');
+    expect(stderr).toHaveBeenCalledWith(
+      expect.stringContaining('falling back to FTS'),
+    );
   });
 });
