@@ -131,44 +131,112 @@ function renderContent(note: Note): string {
   });
 }
 
+// Colours and look from galley (github.com/laat/galley, public/app.css):
+// Primer's tokens tinted blue, with T3 Code's neutrals in the dark theme.
 const STYLE = `
-  :root { color-scheme: dark; }
-  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0;
-    margin: 0; line-height: 1.5; }
-  a { color: #a8dadc; }
-  header { background: #16213e; padding: 0.75rem 1rem; display: flex; gap: 1rem;
-    align-items: center; flex-wrap: wrap; }
-  header .brand { font-weight: 600; text-decoration: none; }
-  header form.search { flex: 1; min-width: 12rem; display: flex; gap: 0.5rem; }
-  header form.search input { flex: 1; }
-  main { max-width: 52rem; margin: 0 auto; padding: 1rem; }
-  input, select, textarea { padding: 0.5rem; border: 1px solid #333; border-radius: 6px;
-    background: #0f3460; color: #e0e0e0; font: inherit; box-sizing: border-box; }
-  textarea { width: 100%; min-height: 60vh; font-family: ui-monospace, monospace;
-    font-size: 0.875rem; }
-  label { display: block; font-size: 0.875rem; margin: 0.75rem 0 0.25rem; }
+  :root {
+    color-scheme: light;
+    --fg: #1f2328; --fg-muted: #59636e; --fg-on-emphasis: #ffffff;
+    --bg: #f8fbff; --bg-subtle: #f1f7ff; --header-bg: #d4e5fb;
+    --border: #cdd9e8; --border-muted: #cdd9e8b3;
+    --accent: #0969da; --accent-emphasis: #0969da; --accent-subtle: #ddf4ff;
+    --danger: #d1242f; --danger-emphasis: #cf222e; --danger-subtle: #ffebe9;
+    --neutral-muted: #818b981f;
+    --btn-bg: #f1f7ff; --btn-hover: #e9f1fc; --btn-border: #cdd9e8;
+    --btn-primary-bg: #1f883d; --btn-primary-hover: #1c8139;
+    --shadow: 0 1px 0 #1f23280a;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --fg: #e4e4ea; --fg-muted: #a0a5b0;
+      --bg: #17212b; --bg-subtle: #1e2a35; --header-bg: #202f3d;
+      --border: #2e3e4c; --border-muted: #2e3e4cb3;
+      --accent: #7fb4e0; --accent-emphasis: #4f7ea6; --accent-subtle: #253b4d;
+      --danger: #f85149; --danger-emphasis: #da3633; --danger-subtle: #f851491a;
+      --neutral-muted: #656c7633;
+      --btn-bg: #233444; --btn-hover: #2a3d4f; --btn-border: #2e4051;
+      --btn-primary-bg: #238636; --btn-primary-hover: #29903b;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); font-size: 14px; line-height: 1.5;
+    color: var(--fg); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: var(--mono); }
+  header { background: var(--header-bg); border-bottom: 1px solid var(--border);
+    padding: 8px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header .brand { color: var(--fg); font-weight: 600; font-size: 16px; }
+  header form.search { flex: 1; min-width: 12rem; display: flex; gap: 8px; }
+  main { max-width: 1012px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 24px; font-weight: 600; margin: 0 0 8px; }
+  input, select, textarea { padding: 5px 12px; font: inherit; line-height: 20px;
+    color: var(--fg); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; }
+  input:focus, select:focus, textarea:focus { outline: none;
+    border-color: var(--accent-emphasis); box-shadow: inset 0 0 0 1px var(--accent-emphasis); }
+  header input { flex: 1; }
+  textarea { width: 100%; min-height: 60vh; resize: vertical; font-family: var(--mono);
+    font-size: 13px; }
+  label { display: block; font-weight: 600; margin: 16px 0 6px; }
   form.edit input[type="text"] { width: 100%; }
-  button, .button { padding: 0.5rem 1rem; border: none; border-radius: 6px;
-    background: #e94560; color: #fff; font: inherit; cursor: pointer;
-    text-decoration: none; display: inline-block; }
-  button.secondary, .button.secondary { background: #0f3460; }
-  .actions { display: flex; gap: 0.5rem; margin: 1rem 0; align-items: center; }
-  .meta { font-size: 0.8125rem; color: #888; }
-  .tag { background: #0f3460; border-radius: 4px; padding: 0 0.375rem;
-    text-decoration: none; font-size: 0.8125rem; }
-  .error { background: #4a1525; border-radius: 6px; padding: 0.75rem; }
-  ul.notes { list-style: none; padding: 0; }
-  ul.notes li { padding: 0.75rem 0; border-bottom: 1px solid #16213e; }
-  ul.notes .desc { color: #bbb; font-size: 0.875rem; }
-  .content pre { background: #0f3460; padding: 0.75rem; border-radius: 6px; overflow-x: auto; }
-  .content code { font-family: ui-monospace, monospace; font-size: 0.875rem; }
+  button, .button { display: inline-flex; align-items: center; height: 32px;
+    padding: 0 12px; font: inherit; font-weight: 500; white-space: nowrap;
+    color: var(--fg-on-emphasis); background: var(--btn-primary-bg);
+    border: 1px solid #1f232826; border-radius: 6px; box-shadow: var(--shadow);
+    cursor: pointer; text-decoration: none !important; }
+  button:hover, .button:hover { background: var(--btn-primary-hover); }
+  button.secondary, .button.secondary { color: var(--fg); background: var(--btn-bg);
+    border-color: var(--btn-border); }
+  button.secondary:hover, .button.secondary:hover { background: var(--btn-hover); }
+  button.danger { color: var(--danger); background: var(--btn-bg); border-color: var(--btn-border); }
+  button.danger:hover { color: #fff; background: var(--danger-emphasis);
+    border-color: var(--danger-emphasis); }
+  .actions { display: flex; gap: 8px; margin: 16px 0; align-items: center; }
+  .meta { font-size: 12px; color: var(--fg-muted); }
+  .tag { display: inline-block; padding: 0 7px; font-size: 12px; font-weight: 500;
+    line-height: 18px; border-radius: 2em; color: var(--accent);
+    background: var(--accent-subtle); }
+  .error { color: var(--fg); background: var(--danger-subtle);
+    border: 1px solid var(--danger); border-radius: 6px; padding: 8px 16px; }
+  ul.notes { list-style: none; padding: 0; margin: 16px 0;
+    border: 1px solid var(--border); border-radius: 6px; }
+  ul.notes li { padding: 8px 16px; border-top: 1px solid var(--border-muted); }
+  ul.notes li:first-child { border-top: 0; }
+  ul.notes li:hover { background: var(--bg-subtle); }
+  ul.notes li > a { color: var(--fg); font-weight: 600; font-size: 16px; }
+  ul.notes li > a:hover { color: var(--accent); }
+  ul.notes .desc { color: var(--fg-muted); }
+  .content { word-wrap: break-word; }
+  .content > :first-child { margin-top: 0; }
+  .content :is(p, blockquote, ul, ol, table, pre) { margin: 0 0 16px; }
+  .content :is(h1, h2, h3, h4, h5, h6) { margin: 24px 0 16px; font-weight: 600; line-height: 1.25; }
+  .content :is(h1, h2) { padding-bottom: 0.3em; border-bottom: 1px solid var(--border-muted); }
+  .content h1 { font-size: 2em; }
+  .content h2 { font-size: 1.5em; }
+  .content h3 { font-size: 1.25em; }
+  .content :is(ul, ol) { padding-left: 2em; }
+  .content blockquote { padding: 0 1em; color: var(--fg-muted); border-left: 0.25em solid var(--border); }
+  .content code { padding: 0.2em 0.4em; font-size: 85%; background: var(--neutral-muted);
+    border-radius: 6px; }
+  .content pre { padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45;
+    background: var(--bg-subtle); border-radius: 6px; }
+  .content pre code { padding: 0; font-size: 100%; background: transparent; }
+  .content table { display: block; width: max-content; max-width: 100%; overflow: auto;
+    border-collapse: collapse; }
+  .content :is(th, td) { padding: 6px 13px; border: 1px solid var(--border); }
+  .content tr:nth-child(2n) { background: var(--bg-subtle); }
+  .content hr { height: 0.25em; margin: 24px 0; background: var(--border); border: 0; }
   .content img { max-width: 100%; }
-  .content table { border-collapse: collapse; }
-  .content th, .content td { border: 1px solid #333; padding: 0.25rem 0.5rem; }
-  .card { background: #16213e; border-radius: 12px; padding: 2rem; max-width: 360px;
-    margin: 15vh auto 0; }
+  .card { background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px;
+    padding: 24px; max-width: 340px; margin: 15vh auto 0; }
+  .card h1 { text-align: center; }
   .card input { width: 100%; }
-  .card button { margin-top: 1rem; width: 100%; }
+  .card button { margin-top: 16px; width: 100%; justify-content: center; }
 `;
 
 function layout(
@@ -604,7 +672,7 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       `Delete ${note.title}`,
       `<h1>Delete “${escapeHtml(note.title)}”?</h1>
       <form method="POST" action="${noteUrl(note.id)}/delete" class="actions">
-        <button type="submit">Delete</button>
+        <button class="danger" type="submit">Delete</button>
         <a class="button secondary" href="${noteUrl(note.id)}">Cancel</a>
       </form>`,
     );
