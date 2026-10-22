@@ -13,6 +13,7 @@ import { LocalOperations, NotFoundError } from './operations-local.js';
 import type { Config } from './operations.js';
 import { isLoopbackHost } from './utils/net.js';
 import { version } from './version.js';
+import { createWebRoutes } from './web.js';
 
 function log(msg: string): void {
   if (process.env.NODE_ENV === 'test') return;
@@ -100,7 +101,14 @@ export function startServer(
 
     app.use(async (c, next) => {
       const p = c.req.path;
-      if (p.startsWith('/.well-known/') || p.startsWith('/oauth/')) {
+      if (
+        p.startsWith('/.well-known/') ||
+        p.startsWith('/oauth/') ||
+        p === '/' ||
+        p === '/ui' ||
+        p.startsWith('/ui/')
+      ) {
+        // The web UI does its own cookie-based auth
         return next();
       }
       const provided =
@@ -144,6 +152,9 @@ export function startServer(
   }
 
   app.get('/health', (c) => c.json({ ok: true, version }));
+
+  app.get('/', (c) => c.redirect('/ui'));
+  app.route('/ui', createWebRoutes(ops, opts.token));
 
   app.get('/notes/search', async (c) => {
     const q = c.req.query('q');

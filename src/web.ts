@@ -1,0 +1,587 @@
+import crypto from 'node:crypto';
+import { Hono } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { Marked } from 'marked';
+import { NotFoundError } from './operations-local.js';
+import { NOTE_TYPES } from './operations.js';
+import type { Note, NoteFilter, NoteType, Operations } from './operations.js';
+import { escapeHtml } from './utils/html.js';
+import { wrapCodeFence } from './utils/markdown.js';
+import { isLoopbackHost, timingSafeCompare } from './utils/net.js';
+
+const COOKIE = 'mor_session';
+const SESSION_TTL = 30 * 24 * 60 * 60;
+const PAGE_SIZE = 50;
+
+const CSP = [
+  "default-src 'none'",
+  "style-src 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'none'",
+].join('; ');
+
+// Raw HTML in notes is shown as text, and mor: links point at the UI.
+const markdown = new Marked({
+  renderer: {
+    html: ({ text }) => escapeHtml(text),
+  },
+  walkTokens(token) {
+    if (token.type === 'link' && token.href.startsWith('mor:')) {
+      token.href = `/ui/notes/${encodeURIComponent(token.href.slice(4))}`;
+    }
+  },
+});
+
+function nowSec(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+/**
+ * Session cookies are `<expiry>.<hmac>`, keyed by the passphrase, so they
+ * survive restarts and stop working when the passphrase changes.
+ */
+function signSession(passphrase: string, exp: number): string {
+  return crypto
+    .createHmac('sha256', passphrase)
+    .update(`mor-web:${exp}`)
+    .digest('base64url');
+}
+
+function createSession(passphrase: string): string {
+  const exp = nowSec() + SESSION_TTL;
+  return `${exp}.${signSession(passphrase, exp)}`;
+}
+
+export function verifySession(
+  passphrase: string,
+  value: string | undefined,
+): boolean {
+  if (!value) return false;
+  const [expStr, sig] = value.split('.');
+  const exp = Number(expStr);
+  if (!sig || !Number.isInteger(exp) || exp < nowSec()) return false;
+  return timingSafeCompare(sig, signSession(passphrase, exp));
+}
+
+function hostOf(url: string): string | null {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+}
+
+/** Reject cross-site form posts (CSRF). */
+const sameOrigin: MiddlewareHandler = async (c, next) => {
+  if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
+    const site = c.req.header('sec-fetch-site');
+    const origin = c.req.header('origin');
+    const crossSite = site
+      ? site !== 'same-origin' && site !== 'none'
+      : origin !== undefined && hostOf(origin) !== c.req.header('host');
+    if (crossSite) return c.text('Forbidden: cross-origin request', 403);
+  }
+  await next();
+};
+
+function safeNext(next: string | undefined): string {
+  return next && /^\/ui(\/|\?|$)/.test(next) ? next : '/ui';
+}
+
+function str(body: Record<string, unknown>, key: string): string {
+  const v = body[key];
+  return typeof v === 'string' ? v.replace(/\r\n/g, '\n') : '';
+}
+
+function parseTags(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+function parseType(raw: string): NoteType | undefined {
+  return (NOTE_TYPES as readonly string[]).includes(raw)
+    ? (raw as NoteType)
+    : undefined;
+}
+
+function noteUrl(id: string): string {
+  return `/ui/notes/${encodeURIComponent(id)}`;
+}
+
+function renderContent(note: Note): string {
+  return markdown.parse(wrapCodeFence(note.content, note.filePath), {
+    async: false,
+  });
+}
+
+const STYLE = `
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0;
+    margin: 0; line-height: 1.5; }
+  a { color: #a8dadc; }
+  header { background: #16213e; padding: 0.75rem 1rem; display: flex; gap: 1rem;
+    align-items: center; flex-wrap: wrap; }
+  header .brand { font-weight: 600; text-decoration: none; }
+  header form.search { flex: 1; min-width: 12rem; display: flex; gap: 0.5rem; }
+  header form.search input { flex: 1; }
+  main { max-width: 52rem; margin: 0 auto; padding: 1rem; }
+  input, select, textarea { padding: 0.5rem; border: 1px solid #333; border-radius: 6px;
+    background: #0f3460; color: #e0e0e0; font: inherit; box-sizing: border-box; }
+  textarea { width: 100%; min-height: 60vh; font-family: ui-monospace, monospace;
+    font-size: 0.875rem; }
+  label { display: block; font-size: 0.875rem; margin: 0.75rem 0 0.25rem; }
+  form.edit input[type="text"] { width: 100%; }
+  button, .button { padding: 0.5rem 1rem; border: none; border-radius: 6px;
+    background: #e94560; color: #fff; font: inherit; cursor: pointer;
+    text-decoration: none; display: inline-block; }
+  button.secondary, .button.secondary { background: #0f3460; }
+  .actions { display: flex; gap: 0.5rem; margin: 1rem 0; align-items: center; }
+  .meta { font-size: 0.8125rem; color: #888; }
+  .tag { background: #0f3460; border-radius: 4px; padding: 0 0.375rem;
+    text-decoration: none; font-size: 0.8125rem; }
+  .error { background: #4a1525; border-radius: 6px; padding: 0.75rem; }
+  ul.notes { list-style: none; padding: 0; }
+  ul.notes li { padding: 0.75rem 0; border-bottom: 1px solid #16213e; }
+  ul.notes .desc { color: #bbb; font-size: 0.875rem; }
+  .content pre { background: #0f3460; padding: 0.75rem; border-radius: 6px; overflow-x: auto; }
+  .content code { font-family: ui-monospace, monospace; font-size: 0.875rem; }
+  .content img { max-width: 100%; }
+  .content table { border-collapse: collapse; }
+  .content th, .content td { border: 1px solid #333; padding: 0.25rem 0.5rem; }
+  .card { background: #16213e; border-radius: 12px; padding: 2rem; max-width: 360px;
+    margin: 15vh auto 0; }
+  .card input { width: 100%; }
+  .card button { margin-top: 1rem; width: 100%; }
+`;
+
+function layout(
+  title: string,
+  body: string,
+  opts: { q?: string; auth: boolean },
+): string {
+  const logout = opts.auth
+    ? `<form method="POST" action="/ui/logout"><button class="secondary" type="submit">Log out</button></form>`
+    : '';
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)} — mor</title>
+  <style>${STYLE}</style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/ui">mor</a>
+    <form class="search" method="GET" action="/ui">
+      <input type="search" name="q" placeholder="Search notes" value="${escapeHtml(opts.q ?? '')}">
+      <button class="secondary" type="submit">Search</button>
+    </form>
+    <a class="button" href="/ui/new">New note</a>
+    ${logout}
+  </header>
+  <main>
+${body}
+  </main>
+</body>
+</html>`;
+}
+
+function loginHtml(next: string, error?: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mor — Log in</title>
+  <style>${STYLE}</style>
+</head>
+<body>
+  <div class="card">
+    <h1>mor</h1>
+    ${error ? `<p class="error">${escapeHtml(error)}</p>` : ''}
+    <form method="POST" action="/ui/login">
+      <input type="hidden" name="next" value="${escapeHtml(next)}">
+      <label for="passphrase">Passphrase</label>
+      <input type="password" id="passphrase" name="passphrase" autocomplete="current-password" autofocus required>
+      <button type="submit">Log in</button>
+    </form>
+  </div>
+</body>
+</html>`;
+}
+
+function tagsHtml(tags: string[]): string {
+  return tags
+    .map(
+      (t) =>
+        `<a class="tag" href="/ui?tag=${encodeURIComponent(t)}">${escapeHtml(t)}</a>`,
+    )
+    .join(' ');
+}
+
+function metaHtml(note: Note): string {
+  const parts = [
+    escapeHtml(note.type),
+    `updated ${escapeHtml(note.updated.slice(0, 10))}`,
+  ];
+  if (note.repository) parts.push(escapeHtml(note.repository));
+  const tags = note.tags.length ? ` · ${tagsHtml(note.tags)}` : '';
+  return `<div class="meta">${parts.join(' · ')}${tags}</div>`;
+}
+
+function noteListHtml(notes: Note[]): string {
+  if (notes.length === 0) return '<p>No notes found.</p>';
+  const items = notes.map(
+    (n) => `<li>
+      <a href="${noteUrl(n.id)}">${escapeHtml(n.title)}</a>
+      ${n.description ? `<div class="desc">${escapeHtml(n.description)}</div>` : ''}
+      ${metaHtml(n)}
+    </li>`,
+  );
+  return `<ul class="notes">${items.join('\n')}</ul>`;
+}
+
+function linkListHtml(
+  heading: string,
+  links: Array<{ id: string; title: string }>,
+): string {
+  if (links.length === 0) return '';
+  const items = links
+    .map(
+      (l) => `<li><a href="${noteUrl(l.id)}">${escapeHtml(l.title)}</a></li>`,
+    )
+    .join('');
+  return `<h3>${heading}</h3><ul>${items}</ul>`;
+}
+
+interface FormValues {
+  title: string;
+  description: string;
+  tags: string;
+  type: string;
+  content: string;
+}
+
+function noteFormHtml(opts: {
+  action: string;
+  values: FormValues;
+  updated?: string;
+  submit: string;
+  cancel: string;
+  error?: string;
+}): string {
+  const { values } = opts;
+  const options = NOTE_TYPES.map(
+    (t) =>
+      `<option value="${t}"${t === values.type ? ' selected' : ''}>${t}</option>`,
+  ).join('');
+  return `${opts.error ? `<p class="error">${escapeHtml(opts.error)}</p>` : ''}
+    <form class="edit" method="POST" action="${escapeHtml(opts.action)}">
+      ${opts.updated ? `<input type="hidden" name="updated" value="${escapeHtml(opts.updated)}">` : ''}
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" value="${escapeHtml(values.title)}" required>
+      <label for="description">Description</label>
+      <input type="text" id="description" name="description" value="${escapeHtml(values.description)}">
+      <label for="tags">Tags (comma separated)</label>
+      <input type="text" id="tags" name="tags" value="${escapeHtml(values.tags)}">
+      <label for="type">Type</label>
+      <select id="type" name="type">${options}</select>
+      <label for="content">Content</label>
+      <textarea id="content" name="content" required>${escapeHtml(values.content)}</textarea>
+      <div class="actions">
+        <button type="submit">${escapeHtml(opts.submit)}</button>
+        <a class="button secondary" href="${escapeHtml(opts.cancel)}">Cancel</a>
+      </div>
+    </form>`;
+}
+
+function formValues(body: Record<string, unknown>): FormValues {
+  return {
+    title: str(body, 'title').trim(),
+    description: str(body, 'description').trim(),
+    tags: str(body, 'tags'),
+    type: str(body, 'type'),
+    content: str(body, 'content'),
+  };
+}
+
+/**
+ * Browser UI for reading and editing notes, mounted at /ui.
+ * With a passphrase, a login form issues a signed session cookie.
+ */
+export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
+  const web = new Hono();
+  const auth = passphrase !== undefined;
+
+  const render = (
+    c: Context,
+    title: string,
+    body: string,
+    status: ContentfulStatusCode = 200,
+  ) => c.html(layout(title, body, { q: c.req.query('q'), auth }), status);
+
+  const notFound = (c: Context) =>
+    render(c, 'Not found', '<h1>Not found</h1><p>No such note.</p>', 404);
+
+  web.use(async (c, next) => {
+    await next();
+    c.header('Content-Security-Policy', CSP);
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('Referrer-Policy', 'no-referrer');
+    c.header('Cache-Control', 'no-store');
+  });
+
+  web.use(sameOrigin);
+
+  web.get('/login', (c) => {
+    const next = safeNext(c.req.query('next'));
+    if (!auth) return c.redirect(next);
+    return c.html(loginHtml(next));
+  });
+
+  web.post('/login', async (c) => {
+    const body = await c.req.parseBody();
+    const next = safeNext(str(body, 'next'));
+    if (!auth) return c.redirect(next);
+    if (!timingSafeCompare(str(body, 'passphrase'), passphrase)) {
+      return c.html(loginHtml(next, 'Wrong passphrase.'), 401);
+    }
+    setCookie(c, COOKIE, createSession(passphrase), {
+      path: '/ui',
+      httpOnly: true,
+      sameSite: 'Strict',
+      secure: !isLoopbackHost(c.req.header('host') ?? ''),
+      maxAge: SESSION_TTL,
+    });
+    return c.redirect(next, 303);
+  });
+
+  web.use(async (c, next) => {
+    if (!auth || verifySession(passphrase, getCookie(c, COOKIE))) {
+      return next();
+    }
+    if (c.req.method === 'GET') {
+      const url = new URL(c.req.url);
+      const target = encodeURIComponent(url.pathname + url.search);
+      return c.redirect(`/ui/login?next=${target}`);
+    }
+    return c.redirect('/ui/login', 303);
+  });
+
+  web.post('/logout', (c) => {
+    deleteCookie(c, COOKIE, { path: '/ui' });
+    return c.redirect('/ui/login', 303);
+  });
+
+  web.get('/', async (c) => {
+    const q = c.req.query('q')?.trim();
+    const tag = c.req.query('tag');
+    const offset = Math.max(0, parseInt(c.req.query('offset') ?? '0', 10) || 0);
+    const filter: NoteFilter | undefined = tag ? { tag: [tag] } : undefined;
+
+    let notes: Note[];
+    let total: number;
+    if (q) {
+      const page = await ops.search(q, PAGE_SIZE, filter, offset);
+      notes = page.data.map((r) => r.note);
+      total = page.total;
+    } else {
+      const page = await ops.list(filter, PAGE_SIZE, offset);
+      notes = page.data;
+      total = page.total;
+    }
+
+    const pageUrl = (o: number) => {
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (tag) params.set('tag', tag);
+      if (o > 0) params.set('offset', String(o));
+      const s = params.toString();
+      return s ? `/ui?${s}` : '/ui';
+    };
+    const pager = [
+      offset > 0
+        ? `<a href="${escapeHtml(pageUrl(Math.max(0, offset - PAGE_SIZE)))}">← Previous</a>`
+        : '',
+      offset + PAGE_SIZE < total
+        ? `<a href="${escapeHtml(pageUrl(offset + PAGE_SIZE))}">Next →</a>`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const heading = q
+      ? `Search: ${escapeHtml(q)}`
+      : tag
+        ? `Tag: ${escapeHtml(tag)}`
+        : 'Notes';
+    const count = total
+      ? `<p class="meta">${offset + 1}–${offset + notes.length} of ${total}</p>`
+      : '';
+    return render(
+      c,
+      q || tag || 'Notes',
+      `<h1>${heading}</h1>${count}${noteListHtml(notes)}<div class="actions">${pager}</div>`,
+    );
+  });
+
+  web.get('/new', (c) =>
+    render(
+      c,
+      'New note',
+      `<h1>New note</h1>${noteFormHtml({
+        action: '/ui/new',
+        values: {
+          title: '',
+          description: '',
+          tags: '',
+          type: 'knowledge',
+          content: '',
+        },
+        submit: 'Create',
+        cancel: '/ui',
+      })}`,
+    ),
+  );
+
+  web.post('/new', async (c) => {
+    const values = formValues(await c.req.parseBody());
+    if (!values.title || !values.content.trim()) {
+      return render(
+        c,
+        'New note',
+        `<h1>New note</h1>${noteFormHtml({
+          action: '/ui/new',
+          values,
+          submit: 'Create',
+          cancel: '/ui',
+          error: 'Title and content are required.',
+        })}`,
+        400,
+      );
+    }
+    const note = await ops.add({
+      title: values.title,
+      description: values.description || undefined,
+      content: values.content,
+      tags: parseTags(values.tags),
+      type: parseType(values.type),
+    });
+    return c.redirect(noteUrl(note.id), 303);
+  });
+
+  web.get('/notes/:id', async (c) => {
+    const note = await ops.read(c.req.param('id'));
+    if (!note) return notFound(c);
+    const links = await ops.getLinks(note.id);
+    return render(
+      c,
+      note.title,
+      `<h1>${escapeHtml(note.title)}</h1>
+      ${metaHtml(note)}
+      ${note.description ? `<p><em>${escapeHtml(note.description)}</em></p>` : ''}
+      <div class="actions">
+        <a class="button" href="${noteUrl(note.id)}/edit">Edit</a>
+        <a class="button secondary" href="${noteUrl(note.id)}/delete">Delete</a>
+      </div>
+      <div class="content">${renderContent(note)}</div>
+      ${linkListHtml('Links to', links.forward)}
+      ${linkListHtml('Linked from', links.back)}
+      <p class="meta">${escapeHtml(note.id)}</p>`,
+    );
+  });
+
+  web.get('/notes/:id/edit', async (c) => {
+    const note = await ops.read(c.req.param('id'));
+    if (!note) return notFound(c);
+    return render(
+      c,
+      `Edit ${note.title}`,
+      `<h1>Edit</h1>${noteFormHtml({
+        action: noteUrl(note.id),
+        values: {
+          title: note.title,
+          description: note.description ?? '',
+          tags: note.tags.join(', '),
+          type: note.type,
+          content: note.content,
+        },
+        updated: note.updated,
+        submit: 'Save',
+        cancel: noteUrl(note.id),
+      })}`,
+    );
+  });
+
+  web.post('/notes/:id', async (c) => {
+    const note = await ops.read(c.req.param('id'));
+    if (!note) return notFound(c);
+    const body = await c.req.parseBody();
+    const values = formValues(body);
+
+    const formError = (error: string) =>
+      render(
+        c,
+        `Edit ${note.title}`,
+        `<h1>Edit</h1>${noteFormHtml({
+          action: noteUrl(note.id),
+          values,
+          updated: note.updated,
+          submit: 'Save',
+          cancel: noteUrl(note.id),
+          error,
+        })}`,
+        409,
+      );
+
+    if (str(body, 'updated') !== note.updated) {
+      return formError(
+        `This note was changed elsewhere (at ${note.updated}) after you opened it. ` +
+          'Saving again will overwrite that change with your text below.',
+      );
+    }
+    if (!values.title) return formError('Title is required.');
+
+    await ops.update(note.id, {
+      title: values.title,
+      description: values.description,
+      content: values.content,
+      tags: parseTags(values.tags),
+      type: parseType(values.type),
+    });
+    return c.redirect(noteUrl(note.id), 303);
+  });
+
+  web.get('/notes/:id/delete', async (c) => {
+    const note = await ops.read(c.req.param('id'));
+    if (!note) return notFound(c);
+    return render(
+      c,
+      `Delete ${note.title}`,
+      `<h1>Delete “${escapeHtml(note.title)}”?</h1>
+      <form method="POST" action="${noteUrl(note.id)}/delete" class="actions">
+        <button type="submit">Delete</button>
+        <a class="button secondary" href="${noteUrl(note.id)}">Cancel</a>
+      </form>`,
+    );
+  });
+
+  web.post('/notes/:id/delete', async (c) => {
+    try {
+      await ops.remove(c.req.param('id'));
+    } catch (e) {
+      if (e instanceof NotFoundError) return notFound(c);
+      throw e;
+    }
+    return c.redirect('/ui', 303);
+  });
+
+  return web;
+}

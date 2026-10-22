@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { escapeHtml } from './utils/html.js';
 import { isLoopbackHost, timingSafeCompare } from './utils/net.js';
 
 const CODE_TTL = 5 * 60;
@@ -82,15 +83,6 @@ function oauthError(
   status: 400 | 401 | 403 = 400,
 ) {
   return { body: { error, error_description: description }, status } as const;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function authorizeFormHtml(params: Record<string, string>): string {

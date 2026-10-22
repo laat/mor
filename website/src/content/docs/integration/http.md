@@ -58,7 +58,7 @@ List, search, and grep endpoints return paginated responses:
 
 ## Authentication
 
-When `--token` is set, all routes require authentication. Two methods work on every endpoint:
+When `--token` is set, all API routes require authentication. Two methods work on every endpoint:
 
 - **Bearer token** — `Authorization: Bearer <passphrase>` or `?token=<passphrase>`
 - **OAuth access token** — obtained via the OAuth flow (see below)
@@ -88,6 +88,14 @@ OAuth state (clients, tokens, auth codes) is persisted in a separate `oauth.db` 
 | `POST /oauth/token`                             | Token exchange (auth code + PKCE)      |
 | `POST /oauth/revoke`                            | Token revocation                       |
 
+## Web UI
+
+Open the server URL in a browser to read and edit notes. `/` redirects to `/ui`, which lists notes and has search, tag filters, a rendered view of each note, and forms to create, edit and delete notes.
+
+When `--token` is set, `/ui` asks for the passphrase and then sets a session cookie (HttpOnly, `SameSite=Strict`, scoped to `/ui`, valid for 30 days). The cookie is signed with the passphrase, so changing the passphrase logs out every browser. The cookie does not grant access to the REST API or `/mcp`.
+
+Saving an edit fails if the note changed after you opened the form; saving a second time overwrites it. Raw HTML in notes is shown as text, and the pages send a Content-Security-Policy that blocks all scripts.
+
 ## MCP over HTTP
 
 When `--mcp` is enabled, the server exposes a [streamable HTTP MCP transport](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) at `/mcp`. This allows claude.ai and other remote MCP clients to connect.
@@ -102,4 +110,5 @@ The MCP endpoint:
 - **Bearer token** — timing-safe comparison, required on all endpoints when configured
 - **OAuth** — PKCE (S256), atomic token consumption prevents replay, tokens stored in SQLite with TTL-based cleanup
 - **DNS rebinding protection** — when bound to loopback (127.0.0.1/localhost), rejects requests with non-loopback Host headers
+- **Web UI** — passphrase login, signed `SameSite=Strict` cookie, cross-site form posts rejected, no scripts allowed by CSP
 - **MCP opt-in** — the `/mcp` endpoint is disabled unless explicitly enabled with `--mcp`
