@@ -3,7 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { loadConfig } from './config.js';
+import Database from 'better-sqlite3';
 import {
+  deleteDb,
   openDb,
   upsertNoteChecked,
   deleteNoteFromDb,
@@ -91,6 +93,48 @@ describe('openDb', () => {
       .prepare("SELECT 'hello world' REGEXP 'hello' AS result")
       .get() as { result: number };
     expect(row.result).toBe(1);
+  });
+
+  it('adds the archived column to an index from before archiving', () => {
+    db.close();
+    deleteDb(config);
+    const legacy = new Database(config.dbPath);
+    legacy.exec(`CREATE TABLE notes (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL DEFAULT '',
+      type TEXT NOT NULL DEFAULT 'knowledge', repository TEXT,
+      created TEXT NOT NULL, updated TEXT NOT NULL, content TEXT NOT NULL,
+      file_path TEXT NOT NULL UNIQUE, content_hash TEXT NOT NULL,
+      access_count INTEGER NOT NULL DEFAULT 0, last_accessed TEXT
+    )`);
+    legacy.close();
+
+    db = openDb(config);
+    upsertNoteChecked(db, note({ content: 'legacy row' }));
+    expect(grepNotes(db, 'legacy')).toHaveLength(1);
+  });
+});
+
+describe('archived scope', () => {
+  it('keeps archived notes out of FTS and grep unless asked', () => {
+    const live = note({ content: 'shared word' });
+    const old = note({ content: 'shared word', archived: true });
+    upsertNoteChecked(db, live);
+    upsertNoteChecked(db, old);
+
+    const ids = (rows: Array<{ id: string }>) => rows.map((r) => r.id).sort();
+    expect(ids(searchFts(db, 'shared'))).toEqual([live.id]);
+    expect(ids(searchFts(db, 'shared', 20, 'only'))).toEqual([old.id]);
+    expect(ids(searchFts(db, 'shared', 20, 'include'))).toEqual(
+      [live.id, old.id].sort(),
+    );
+    expect(ids(grepNotes(db, 'shared'))).toEqual([live.id]);
+    expect(ids(grepNotes(db, 'SHARED', 20, true, false, 0, 'only'))).toEqual([
+      old.id,
+    ]);
+    expect(ids(grepNotes(db, 'sh.red', 20, false, true, 0, 'include'))).toEqual(
+      [live.id, old.id].sort(),
+    );
   });
 });
 

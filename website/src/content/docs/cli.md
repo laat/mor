@@ -5,25 +5,27 @@ description: All mor commands and their options
 
 ## Commands
 
-| Command           | Description                                                                                                     |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- |
-| `find <query>`    | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
-| `grep <pattern>`  | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
-| `add [file\|url]` | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
-| `cat <query>`     | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
-| `cp <query...>`   | Copy content to file (`-o <dest>`)                                                                              |
-| `edit <query>`    | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
-| `update <query>`  | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
-| `patch <query>`   | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
-| `rm <query>`      | Remove a note                                                                                                   |
-| `links [query]`   | Show cross-references (`--broken` to find dangling links)                                                       |
-| `ls`              | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
-| `sync`            | Pull, commit, and push the notes folder via git                                                                 |
-| `reindex`         | Rebuild search index                                                                                            |
-| `import <dir>`    | Import `.md` files from a directory                                                                             |
-| `mcp`             | Start MCP server (stdio)                                                                                        |
-| `serve`           | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
-| `login`           | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
+| Command             | Description                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `find <query>`      | Full-text search (`--limit`, `-s` threshold, `--json`)                                                          |
+| `grep <pattern>`    | Substring or regex search (`-i`, `-E` regex, `-w` word, `-n` line numbers, `-l` files only, `-A/-B/-C` context) |
+| `add [file\|url]`   | Add from file, URL, stdin, or `$EDITOR` (`-t` title, `-d` description, `--tags`, `--type`)                      |
+| `cat <query>`       | Print content (`--raw` for frontmatter, `--links` for cross-references)                                         |
+| `cp <query...>`     | Copy content to file (`-o <dest>`)                                                                              |
+| `edit <query>`      | Open in `$EDITOR` (`--raw` to edit frontmatter)                                                                 |
+| `update <query>`    | Update metadata or content (`-t`, `-d`, `--tags`, `--type`, `--content-from`)                                   |
+| `patch <query>`     | Apply a `str_replace` patch to a note's content (`--old`, `--new`)                                              |
+| `rm <query>`        | Remove a note                                                                                                   |
+| `archive <id...>`   | Move notes to the archive folder, out of search and listings                                                    |
+| `unarchive <id...>` | Move archived notes back                                                                                        |
+| `links [query]`     | Show cross-references (`--broken` to find dangling links)                                                       |
+| `ls`                | List all (`--limit`, `-l` long, `--tags`, `--types`)                                                            |
+| `sync`              | Pull, commit, and push the notes folder via git                                                                 |
+| `reindex`           | Rebuild search index                                                                                            |
+| `import <dir>`      | Import `.md` files from a directory                                                                             |
+| `mcp`               | Start MCP server (stdio)                                                                                        |
+| `serve`             | Start HTTP server (`-p` port, `-H` host, `--token`, `--mcp`)                                                    |
+| `login`             | Authenticate with a remote server via OAuth (`-s` server URL)                                                   |
 
 ## Multi-word queries
 
@@ -48,12 +50,14 @@ Queries resolve in order:
 
 `find`, `grep`, and `ls` support shared filter options:
 
-| Option             | Description                                 |
-| ------------------ | ------------------------------------------- |
-| `--type <type>`    | Filter by note type (comma-separated, glob) |
-| `--tag <pattern>`  | Filter by tag (glob)                        |
-| `--repo <pattern>` | Filter by repository (glob)                 |
-| `--ext <ext>`      | Filter by file extension in title           |
+| Option               | Description                                 |
+| -------------------- | ------------------------------------------- |
+| `--type <type>`      | Filter by note type (comma-separated, glob) |
+| `--tag <pattern>`    | Filter by tag (glob)                        |
+| `--repo <pattern>`   | Filter by repository (glob)                 |
+| `--ext <ext>`        | Filter by file extension in title           |
+| `--archived`         | Only archived notes                         |
+| `--include-archived` | Include archived notes                      |
 
 ### Examples
 
@@ -72,6 +76,19 @@ mor ls --repo "github.com/myorg/*"
 
 # Filter by extension
 mor ls --ext .ts
+```
+
+## Archiving
+
+`mor archive <id...>` moves notes into the `archive/` subfolder of the notes folder. Nothing is deleted. Archived notes are left out of `find`, `grep`, `ls`, the MCP tools and the web UI, but `cat` and other commands still read them by ID. `mor unarchive <id...>` moves them back.
+
+To see archived notes, pass `--archived` (only archived) or `--include-archived` (both), or use search syntax:
+
+```sh
+mor ls --archived
+mor find --include-archived http retry
+mor find is:archived http retry        # same as archived:only
+mor find archived:include http retry
 ```
 
 ## Adding notes

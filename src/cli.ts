@@ -50,23 +50,41 @@ function joinArgs(parts: string[]): string {
 
 const program = new Command();
 
+interface FilterOpts {
+  type?: string;
+  tag?: string;
+  repo?: string;
+  ext?: string;
+  archived?: boolean;
+  includeArchived?: boolean;
+}
+
 function addFilterOptions(cmd: Command): Command {
   return cmd
     .option('--type <type>', 'Filter by note type (comma-separated, glob)')
     .option('--tag <pattern>', 'Filter by tag (comma-separated, AND, glob)')
     .option('--repo <pattern>', 'Filter by repository (glob)')
-    .option('--ext <ext>', 'Filter by file extension in title');
+    .option('--ext <ext>', 'Filter by file extension in title')
+    .option('--archived', 'Only archived notes')
+    .option('--include-archived', 'Include archived notes');
 }
 
-function parseFilterOpts(opts: Record<string, any>): NoteFilter {
+function parseFilterOpts(opts: FilterOpts): NoteFilter {
   return {
     type: opts.type,
-    tag: opts.tag
-      ? opts.tag.split(',').map((t: string) => t.trim())
-      : undefined,
+    tag: opts.tag ? opts.tag.split(',').map((t) => t.trim()) : undefined,
     repo: opts.repo,
     ext: opts.ext,
+    archived: opts.archived
+      ? 'only'
+      : opts.includeArchived
+        ? 'include'
+        : undefined,
   };
+}
+
+function archivedMark(note: Note): string {
+  return note.archived ? ` ${chalk.dim('(archived)')}` : '';
 }
 
 program
@@ -116,7 +134,7 @@ addFilterOptions(
 ).action(
   async (
     queryParts: string[],
-    opts: { limit: string; threshold?: string; json?: boolean } & NoteFilter,
+    opts: { limit: string; threshold?: string; json?: boolean } & FilterOpts,
   ) => {
     const query = joinArgs(queryParts);
     const config = loadConfig();
@@ -139,6 +157,7 @@ addFilterOptions(
           title: r.note.title,
           description: r.note.description ?? null,
           tags: r.note.tags,
+          archived: r.note.archived ?? false,
           score: r.score,
           content: r.note.content,
         }));
@@ -157,7 +176,7 @@ addFilterOptions(
         const score = chalk.dim(`  (${r.score.toFixed(2)})`);
         console.log(
           truncate(
-            `${chalk.cyan(r.note.id.slice(0, 8))}  ${r.note.title}${tags}${score}`,
+            `${chalk.cyan(r.note.id.slice(0, 8))}  ${r.note.title}${archivedMark(r.note)}${tags}${score}`,
           ),
         );
       }
@@ -199,7 +218,7 @@ addFilterOptions(
       beforeContext?: string;
       context?: string;
       filesWithMatches?: boolean;
-    } & NoteFilter,
+    } & FilterOpts,
   ) => {
     const pattern = joinArgs(patternParts);
     const config = loadConfig();
@@ -236,7 +255,9 @@ addFilterOptions(
           note.tags.length > 0
             ? ` ${chalk.yellow(`[${note.tags.join(', ')}]`)}`
             : '';
-        console.log(`${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${tags}`);
+        console.log(
+          `${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${archivedMark(note)}${tags}`,
+        );
         if (opts.filesWithMatches) continue;
         const before =
           parseInt(opts.beforeContext ?? opts.context ?? '0', 10) || 0;
@@ -401,6 +422,34 @@ program
       await ops.close();
     }
   });
+
+for (const action of ['archive', 'unarchive'] as const) {
+  program
+    .command(`${action} <id...>`)
+    .description(
+      action === 'archive'
+        ? 'Move notes to the archive, out of search and listings'
+        : 'Move archived notes back to the notes folder',
+    )
+    .action(async (ids: string[]) => {
+      const config = loadConfig();
+      const ops = getOps(config);
+      try {
+        for (const id of ids) {
+          const note = await ops[action](id);
+          const label = action === 'archive' ? 'Archived:' : 'Unarchived:';
+          console.log(
+            `${chalk.green(label)} ${chalk.cyan(note.id.slice(0, 8))}  ${note.title}`,
+          );
+        }
+      } catch (e) {
+        console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        process.exit(1);
+      } finally {
+        await ops.close();
+      }
+    });
+}
 
 program
   .command('update <query...>')
@@ -614,7 +663,7 @@ program
     const ops = getOps(config);
     try {
       if (opts.broken) {
-        const page = await ops.list(undefined, 10000);
+        const page = await ops.list({ archived: 'include' }, 10000);
         let found = false;
         for (const note of page.data) {
           const { forward } = await ops.getLinks(note.id);
@@ -860,7 +909,7 @@ addFilterOptions(
       long?: boolean;
       tags?: boolean;
       types?: boolean;
-    } & NoteFilter,
+    } & FilterOpts,
   ) => {
     const config = loadConfig();
     const ops = getOps(config);
@@ -907,7 +956,7 @@ addFilterOptions(
             : note.filePath;
           console.log(
             truncate(
-              `${chalk.cyan(note.id.slice(0, 8))}  ${chalk.magenta(note.type.padEnd(10))}  ${date}  ${note.title}${tags}`,
+              `${chalk.cyan(note.id.slice(0, 8))}  ${chalk.magenta(note.type.padEnd(10))}  ${date}  ${note.title}${archivedMark(note)}${tags}`,
             ),
           );
           if (note.description)
@@ -919,7 +968,7 @@ addFilterOptions(
             : '';
           console.log(
             truncate(
-              `${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${desc}`,
+              `${chalk.cyan(note.id.slice(0, 8))}  ${note.title}${archivedMark(note)}${desc}`,
             ),
           );
         }

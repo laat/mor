@@ -131,4 +131,33 @@ describe('RemoteOperations client', () => {
     expect(links.forward).toHaveLength(0);
     expect(links.back).toHaveLength(0);
   });
+
+  it('archives, filters and unarchives over HTTP', async () => {
+    const kept = await ops.add({ title: 'Kept', content: 'gadget' });
+    const old = await ops.add({ title: 'Old', content: 'gadget' });
+
+    const archived = await ops.archive(old.id);
+    expect(archived.archived).toBe(true);
+
+    expect((await ops.search('gadget')).data.map((r) => r.note.id)).toEqual([
+      kept.id,
+    ]);
+    const only = await ops.list({ archived: 'only' });
+    expect(only.data.map((n) => n.id)).toEqual([old.id]);
+    const grep = await ops.grep('gadget', { filter: { archived: 'include' } });
+    expect(grep.total).toBe(2);
+    expect((await ops.search('is:archived gadget')).data[0].note.id).toBe(
+      old.id,
+    );
+
+    const restored = await ops.unarchive(old.id);
+    expect(restored.archived).toBe(false);
+    expect((await ops.list()).total).toBe(2);
+  });
+
+  it('reports a missing note on archive', async () => {
+    await expect(
+      ops.archive('00000000-0000-0000-0000-000000000000'),
+    ).rejects.toThrow('Note not found');
+  });
 });

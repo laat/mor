@@ -22,16 +22,17 @@ Add to your Claude Code or Claude Desktop MCP config:
 
 ## Tools
 
-| Tool           | Description                                                                   |
-| -------------- | ----------------------------------------------------------------------------- |
-| `notes_search` | Full-text search. Returns top result with full content, summaries for rest.   |
-| `notes_grep`   | Substring or regex search. For exact strings, code identifiers, and patterns. |
-| `notes_read`   | Read note by ID. Returns separate blocks: metadata, content, links.           |
-| `notes_create` | Create a new note with title, content, optional tags and type.                |
-| `notes_update` | Update a note by ID. Returns a diff of changes, or "no changes" if identical. |
-| `notes_patch`  | Apply a str_replace patch to a note's content.                                |
-| `notes_remove` | Delete a note by ID.                                                          |
-| `notes_list`   | List all notes with titles, IDs, and tags. Supports pagination.               |
+| Tool            | Description                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| `notes_search`  | Full-text search. Returns top result with full content, summaries for rest.   |
+| `notes_grep`    | Substring or regex search. For exact strings, code identifiers, and patterns. |
+| `notes_read`    | Read note by ID. Returns separate blocks: metadata, content, links.           |
+| `notes_create`  | Create a new note with title, content, optional tags and type.                |
+| `notes_update`  | Update a note by ID. Returns a diff of changes, or "no changes" if identical. |
+| `notes_patch`   | Apply a str_replace patch to a note's content.                                |
+| `notes_remove`  | Delete a note by ID.                                                          |
+| `notes_archive` | Archive notes by ID, or restore them with `unarchive: true`.                  |
+| `notes_list`    | List all notes with titles, IDs, and tags. Supports pagination.               |
 
 ### Filtering
 
@@ -41,6 +42,7 @@ Add to your Claude Code or Claude Desktop MCP config:
 - `type` — note type filter (e.g. `"file"`, `"snippet"`)
 - `limit` — max results (default 20 for search/grep, 100 for list)
 - `offset` — skip first N results for pagination
+- `archived` — `exclude` (default), `include`, or `only` archived notes
 
 `notes_grep` also accepts:
 

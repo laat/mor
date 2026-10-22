@@ -27,6 +27,7 @@ function appendFilterParams(
   if (filter.tag?.length) for (const t of filter.tag) params.append('tag', t);
   if (filter.repo) params.set('repo', filter.repo);
   if (filter.ext) params.set('ext', filter.ext);
+  if (filter.archived) params.set('archived', filter.archived);
 }
 
 export class RemoteOperations implements Operations {
@@ -182,6 +183,26 @@ export class RemoteOperations implements Operations {
         method: 'DELETE',
         headers: this.headers,
       });
+    }
+    const json = await res.json();
+    if (!res.ok)
+      throw new HttpError(res.status, json.error ?? `HTTP ${res.status}`);
+    return json.data;
+  }
+
+  async archive(query: string): Promise<Note> {
+    return this.postAction(query, 'archive');
+  }
+
+  async unarchive(query: string): Promise<Note> {
+    return this.postAction(query, 'unarchive');
+  }
+
+  private async postAction(query: string, action: string): Promise<Note> {
+    const url = `${this.baseUrl}/notes/${encodeURIComponent(query)}/${action}`;
+    let res = await fetch(url, { method: 'POST', headers: this.headers });
+    if (res.status === 401 && (await this.tryRefresh())) {
+      res = await fetch(url, { method: 'POST', headers: this.headers });
     }
     const json = await res.json();
     if (!res.ok)

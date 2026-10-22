@@ -7,7 +7,13 @@ import hljs from 'highlight.js';
 import { Marked } from 'marked';
 import { NotFoundError } from './operations-local.js';
 import { NOTE_TYPES } from './operations.js';
-import type { Note, NoteFilter, NoteType, Operations } from './operations.js';
+import type {
+  ArchivedMode,
+  Note,
+  NoteFilter,
+  NoteType,
+  Operations,
+} from './operations.js';
 import { escapeHtml } from './utils/html.js';
 import { wrapCodeFence } from './utils/markdown.js';
 import { timingSafeCompare } from './utils/net.js';
@@ -224,6 +230,9 @@ const STYLE = `
     border-color: var(--danger-emphasis); }
   .actions { display: flex; gap: 8px; margin: 16px 0; align-items: center; }
   .meta { font-size: 12px; color: var(--fg-muted); }
+  .label { display: inline-block; padding: 0 7px; font-size: 12px; font-weight: 500;
+    line-height: 18px; border-radius: 2em; color: var(--fg-muted);
+    border: 1px solid var(--border); }
   .tag { display: inline-block; padding: 0 7px; font-size: 12px; font-weight: 500;
     line-height: 18px; border-radius: 2em; color: var(--accent);
     background: var(--accent-subtle); }
@@ -286,7 +295,7 @@ const STYLE = `
 function layout(
   title: string,
   body: string,
-  opts: { q?: string; auth: boolean },
+  opts: { q?: string; archived?: ArchivedMode; auth: boolean },
 ): string {
   const logout = opts.auth
     ? `<form method="POST" action="/ui/logout"><button class="secondary" type="submit">Log out</button></form>`
@@ -304,6 +313,7 @@ function layout(
     <a class="brand" href="/ui">mor</a>
     <form class="search" method="GET" action="/ui">
       <input type="search" name="q" placeholder="Search notes" value="${escapeHtml(opts.q ?? '')}">
+      ${opts.archived ? `<input type="hidden" name="archived" value="${escapeHtml(opts.archived)}">` : ''}
       <button class="secondary" type="submit">Search</button>
     </form>
     <a class="button" href="/ui/new">New note</a>
@@ -349,8 +359,13 @@ function tagsHtml(tags: string[]): string {
     .join(' ');
 }
 
+function parseArchived(raw: string | undefined): ArchivedMode | undefined {
+  return raw === 'only' || raw === 'include' ? raw : undefined;
+}
+
 function metaHtml(note: Note): string {
   const parts = [
+    ...(note.archived ? ['<span class="label">archived</span>'] : []),
     escapeHtml(note.type),
     `updated ${escapeHtml(note.updated.slice(0, 10))}`,
   ];
@@ -448,7 +463,15 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
     title: string,
     body: string,
     status: ContentfulStatusCode = 200,
-  ) => c.html(layout(title, body, { q: c.req.query('q'), auth }), status);
+  ) =>
+    c.html(
+      layout(title, body, {
+        q: c.req.query('q'),
+        archived: parseArchived(c.req.query('archived')),
+        auth,
+      }),
+      status,
+    );
 
   // Note URLs carry ids (full, or a short prefix as in mor: links); ops.read
   // alone would fall back to search and show an unrelated note for a stale
@@ -527,8 +550,9 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
   web.get('/', async (c) => {
     const q = c.req.query('q')?.trim();
     const tag = c.req.query('tag');
+    const archived = parseArchived(c.req.query('archived'));
     const offset = Math.max(0, parseInt(c.req.query('offset') ?? '0', 10) || 0);
-    const filter: NoteFilter | undefined = tag ? { tag: [tag] } : undefined;
+    const filter: NoteFilter = { tag: tag ? [tag] : undefined, archived };
 
     let notes: Note[];
     let total: number;
@@ -546,6 +570,7 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (tag) params.set('tag', tag);
+      if (archived) params.set('archived', archived);
       if (o > 0) params.set('offset', String(o));
       const s = params.toString();
       return s ? `/ui?${s}` : '/ui';
@@ -565,14 +590,21 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       ? `Search: ${escapeHtml(q)}`
       : tag
         ? `Tag: ${escapeHtml(tag)}`
-        : 'Notes';
+        : archived === 'only'
+          ? 'Archived notes'
+          : 'Notes';
     const count = total
-      ? `<p class="meta">${offset + 1}–${offset + notes.length} of ${total}</p>`
+      ? `${offset + 1}–${offset + notes.length} of ${total}`
       : '';
+    const toggle =
+      archived === 'only'
+        ? '<a href="/ui">Back to notes</a>'
+        : '<a href="/ui?archived=only">Archived notes</a>';
+    const meta = [count, toggle].filter(Boolean).join(' · ');
     return render(
       c,
-      q || tag || 'Notes',
-      `<h1>${heading}</h1>${count}${noteListHtml(notes)}<div class="actions">${pager}</div>`,
+      q || tag || (archived === 'only' ? 'Archived notes' : 'Notes'),
+      `<h1>${heading}</h1><p class="meta">${meta}</p>${noteListHtml(notes)}<div class="actions">${pager}</div>`,
     );
   });
 
@@ -633,6 +665,9 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       ${note.description ? `<p><em>${escapeHtml(note.description)}</em></p>` : ''}
       <div class="actions">
         <a class="button" href="${noteUrl(note.id)}/edit">Edit</a>
+        <form method="POST" action="${noteUrl(note.id)}/${note.archived ? 'unarchive' : 'archive'}">
+          <button class="secondary" type="submit">${note.archived ? 'Unarchive' : 'Archive'}</button>
+        </form>
         <a class="button secondary" href="${noteUrl(note.id)}/delete">Delete</a>
       </div>
       <div class="content">${renderContent(note)}</div>
@@ -707,6 +742,15 @@ export function createWebRoutes(ops: Operations, passphrase?: string): Hono {
       return c.redirect(noteUrl(note.id), 303);
     });
   });
+
+  for (const action of ['archive', 'unarchive'] as const) {
+    web.post(`/notes/:id/${action}`, async (c) => {
+      const note = await readNote(c.req.param('id'));
+      if (!note) return notFound(c);
+      await ops[action](note.id);
+      return c.redirect(noteUrl(note.id), 303);
+    });
+  }
 
   web.get('/notes/:id/delete', async (c) => {
     const note = await readNote(c.req.param('id'));

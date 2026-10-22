@@ -10,7 +10,8 @@ import { createMcpServer } from './mcp.js';
 import { getStateDir } from './config.js';
 import { createOAuthRoutes } from './oauth.js';
 import { LocalOperations, NotFoundError } from './operations-local.js';
-import type { Config } from './operations.js';
+import { ARCHIVED_MODES } from './operations.js';
+import type { ArchivedMode, Config, NoteFilter } from './operations.js';
 import { isLoopbackHost } from './utils/net.js';
 import { version } from './version.js';
 import { createWebRoutes } from './web.js';
@@ -36,13 +37,19 @@ function parseFilter(c: {
     query(k: string): string | undefined;
     queries(k: string): string[] | undefined;
   };
-}) {
+}): NoteFilter | undefined {
   const tag = c.req.queries('tag');
   const type = c.req.query('type');
   const repo = c.req.query('repo');
   const ext = c.req.query('ext');
-  return tag?.length || type || repo || ext
-    ? { tag, type, repo, ext }
+  const rawArchived = c.req.query('archived');
+  const archived = (ARCHIVED_MODES as readonly string[]).includes(
+    rawArchived ?? '',
+  )
+    ? (rawArchived as ArchivedMode)
+    : undefined;
+  return tag?.length || type || repo || ext || archived
+    ? { tag, type, repo, ext, archived }
     : undefined;
 }
 
@@ -287,6 +294,17 @@ export function startServer(
       return c.json({ error: msg }, status);
     }
   });
+
+  for (const action of ['archive', 'unarchive'] as const) {
+    app.post(`/notes/:query/${action}`, async (c) => {
+      try {
+        return c.json({ data: await ops[action](c.req.param('query')) });
+      } catch (e) {
+        const { msg, status } = errMsg(e);
+        return c.json({ error: msg }, status);
+      }
+    });
+  }
 
   // Memberberry hook — Claude Code HTTP hook for surfacing relevant notes
   const SESSION_TTL = 60 * 60 * 1000; // 1 hour

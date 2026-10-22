@@ -635,6 +635,133 @@ describe('syncIndex', () => {
   });
 });
 
+describe('archive', () => {
+  it('moves the file to the archive folder and keeps the note', async () => {
+    const note = await ops.add({ title: 'Old Plan', content: 'retired idea' });
+    const archived = await ops.archive(note.id);
+
+    expect(archived.archived).toBe(true);
+    expect(archived.filePath).toBe(
+      path.join(config.notesDir, 'archive', path.basename(note.filePath)),
+    );
+    expect(fs.existsSync(note.filePath)).toBe(false);
+    expect(fs.readFileSync(archived.filePath, 'utf-8')).toContain(
+      'retired idea',
+    );
+
+    const read = await ops.read(note.id.slice(0, 8));
+    expect(read?.archived).toBe(true);
+    expect(read?.content).toBe('retired idea');
+  });
+
+  it('leaves archived notes out of search, grep and list by default', async () => {
+    const kept = await ops.add({ title: 'Kept Widget', content: 'widget' });
+    const old = await ops.add({ title: 'Old Widget', content: 'widget' });
+    await ops.archive(old.id);
+
+    const ids = (notes: Array<{ id: string }>) => notes.map((n) => n.id);
+    const search = await ops.search('widget');
+    expect(ids(search.data.map((r) => r.note))).toEqual([kept.id]);
+    expect(search.total).toBe(1);
+    expect(ids((await ops.grep('widget')).data)).toEqual([kept.id]);
+    expect(ids((await ops.list()).data)).toEqual([kept.id]);
+  });
+
+  it('returns archived notes with the archived filter', async () => {
+    const kept = await ops.add({ title: 'Kept Widget', content: 'widget' });
+    const old = await ops.add({ title: 'Old Widget', content: 'widget' });
+    await ops.archive(old.id);
+
+    const only = await ops.search('widget', 20, { archived: 'only' });
+    expect(only.data.map((r) => r.note.id)).toEqual([old.id]);
+    const all = await ops.search('widget', 20, { archived: 'include' });
+    expect(all.data.map((r) => r.note.id).sort()).toEqual(
+      [kept.id, old.id].sort(),
+    );
+
+    const grep = await ops.grep('widget', { filter: { archived: 'only' } });
+    expect(grep.data.map((n) => n.id)).toEqual([old.id]);
+    const list = await ops.list({ archived: 'include' });
+    expect(list.total).toBe(2);
+  });
+
+  it('reads archive operators from the search query', async () => {
+    const kept = await ops.add({ title: 'Kept Widget', content: 'widget' });
+    const old = await ops.add({ title: 'Old Widget', content: 'widget' });
+    await ops.archive(old.id);
+
+    const only = await ops.search('is:archived widget');
+    expect(only.data.map((r) => r.note.id)).toEqual([old.id]);
+    const all = await ops.search('widget archived:include');
+    expect(all.total).toBe(2);
+    const listed = await ops.search('is:archived');
+    expect(listed.data.map((r) => r.note.id)).toEqual([old.id]);
+    expect(listed.data.map((r) => r.note.id)).not.toContain(kept.id);
+  });
+
+  it('unarchives back into the notes folder', async () => {
+    const note = await ops.add({ title: 'Comeback', content: 'returns' });
+    await ops.archive(note.id);
+    const restored = await ops.unarchive(note.id);
+
+    expect(restored.archived).toBe(false);
+    expect(restored.filePath).toBe(note.filePath);
+    expect((await ops.search('returns')).data[0].note.id).toBe(note.id);
+  });
+
+  it('is a no-op for a note already in that state', async () => {
+    const note = await ops.add({ title: 'Steady', content: 'x' });
+    expect((await ops.unarchive(note.id)).filePath).toBe(note.filePath);
+    const archived = await ops.archive(note.id);
+    expect((await ops.archive(note.id)).filePath).toBe(archived.filePath);
+  });
+
+  it('keeps an archived note archived when it is updated', async () => {
+    const note = await ops.add({ title: 'Archived Edit', content: 'v1' });
+    await ops.archive(note.id);
+    const updated = await ops.update(note.id, {
+      title: 'Archived Edit 2',
+      content: 'v2',
+    });
+    expect(updated.archived).toBe(true);
+    expect(path.dirname(updated.filePath)).toBe(
+      path.join(config.notesDir, 'archive'),
+    );
+    expect((await ops.list()).total).toBe(0);
+  });
+
+  it('throws NotFoundError for an unknown id', async () => {
+    await expect(
+      ops.archive('00000000-0000-0000-0000-000000000000'),
+    ).rejects.toThrow('Note not found');
+  });
+
+  it('picks up notes moved into the archive folder by hand', async () => {
+    const note = await ops.add({ title: 'Hand Moved', content: 'moved' });
+    const archiveDir = path.join(config.notesDir, 'archive');
+    fs.mkdirSync(archiveDir);
+    fs.renameSync(
+      note.filePath,
+      path.join(archiveDir, path.basename(note.filePath)),
+    );
+
+    // A new instance syncs the index on first read, like a new CLI process
+    ops.close();
+    ops = new LocalOperations(config);
+    expect((await ops.search('moved')).total).toBe(0);
+    const found = await ops.search('moved', 20, { archived: 'only' });
+    expect(found.data[0].note.id).toBe(note.id);
+  });
+
+  it('keeps archived notes through a reindex', async () => {
+    const note = await ops.add({ title: 'Reindexed', content: 'stays' });
+    await ops.archive(note.id);
+    await ops.reindex();
+    expect((await ops.list()).total).toBe(0);
+    expect((await ops.list({ archived: 'only' })).data[0].id).toBe(note.id);
+  });
+});
+
 describe('search with embeddings', () => {
   let embedOps: LocalOperations;
 
@@ -694,5 +821,44 @@ describe('search with embeddings', () => {
     expect(stderr).toHaveBeenCalledWith(
       expect.stringContaining('falling back to FTS'),
     );
+  });
+
+  it('leaves archived notes out of hybrid results', async () => {
+    stubEmbeddings();
+    const kept = await embedOps.add({ title: 'Kept', content: 'vector one' });
+    const old = await embedOps.add({ title: 'Old', content: 'vector two' });
+    await embedOps.archive(old.id);
+
+    const page = await embedOps.search('vector');
+    expect(page.scoring).toBe('hybrid');
+    expect(page.data.map((r) => r.note.id)).toEqual([kept.id]);
+  });
+
+  it('finds vector matches behind many closer archived notes', async () => {
+    // Archived notes embed right on the query; the live note only nearby
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: { body: string }) => {
+        const { input } = JSON.parse(init.body);
+        const embedding = input.includes('nearby') ? [0.8, 0.6, 0] : [1, 0, 0];
+        return new Response(JSON.stringify({ data: [{ embedding }] }));
+      }),
+    );
+    const live = await embedOps.add({ title: 'Live', content: 'nearby' });
+    const archived: string[] = [];
+    for (let i = 0; i < 80; i++) {
+      const note = await embedOps.add({ title: `Old ${i}`, content: 'exact' });
+      await embedOps.archive(note.id);
+      archived.push(note.id);
+    }
+
+    const page = await embedOps.search('query');
+    expect(page.scoring).toBe('hybrid');
+    expect(page.data.map((r) => r.note.id)).toEqual([live.id]);
+
+    for (const id of archived) await embedOps.unarchive(id);
+    await embedOps.archive(live.id);
+    const only = await embedOps.search('query', 20, { archived: 'only' });
+    expect(only.data.map((r) => r.note.id)).toEqual([live.id]);
   });
 });

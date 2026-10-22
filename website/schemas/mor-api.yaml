@@ -4,7 +4,8 @@ info:
   version: 0.15.5
   description: |
     REST API for the mor note store. All listing endpoints return paginated
-    results and share a common filter surface (tag, type, repo, ext).
+    results and share a common filter surface (tag, type, repo, ext,
+    archived).
 
     When `--token` is configured on the server, every route outside the
     OAuth discovery endpoints requires authentication via either a bearer
@@ -61,6 +62,7 @@ paths:
         - $ref: '#/components/parameters/Type'
         - $ref: '#/components/parameters/Repo'
         - $ref: '#/components/parameters/Ext'
+        - $ref: '#/components/parameters/Archived'
       responses:
         '200':
           description: Paginated list of notes
@@ -121,6 +123,7 @@ paths:
         - $ref: '#/components/parameters/Type'
         - $ref: '#/components/parameters/Repo'
         - $ref: '#/components/parameters/Ext'
+        - $ref: '#/components/parameters/Archived'
       responses:
         '200':
           description: Scored, ranked search results
@@ -155,6 +158,7 @@ paths:
         - $ref: '#/components/parameters/Type'
         - $ref: '#/components/parameters/Repo'
         - $ref: '#/components/parameters/Ext'
+        - $ref: '#/components/parameters/Archived'
       responses:
         '200':
           description: Paginated notes that match the pattern
@@ -292,6 +296,47 @@ paths:
                   data: { $ref: '#/components/schemas/Note' }
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notes/{query}/archive:
+    parameters:
+      - $ref: '#/components/parameters/Query'
+    post:
+      tags: [Notes]
+      summary: Archive a note
+      description: |
+        Moves the note into the `archive/` subfolder. The note is kept, but
+        left out of list, search and grep unless `archived` is set. The
+        query must be a full UUID or an 8+ char prefix.
+      responses:
+        '200':
+          description: Archived note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notes/{query}/unarchive:
+    parameters:
+      - $ref: '#/components/parameters/Query'
+    post:
+      tags: [Notes]
+      summary: Unarchive a note
+      description: Moves the note back from the `archive/` subfolder.
+      responses:
+        '200':
+          description: Unarchived note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Note' }
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -455,6 +500,17 @@ components:
       name: ext
       description: Filter by file extension in title
       schema: { type: string }
+    Archived:
+      in: query
+      name: archived
+      description: |
+        Archived notes are left out by default. `include` returns them with
+        the rest, `only` returns nothing else. Search queries also accept
+        `is:archived` and `archived:include`.
+      schema:
+        type: string
+        enum: [exclude, include, only]
+        default: exclude
 
   responses:
     BadRequest:
@@ -512,6 +568,9 @@ components:
         filePath:
           type: string
           description: Absolute path on the server's filesystem
+        archived:
+          type: boolean
+          description: Whether the note is in the archive folder
 
     LinkRef:
       type: object

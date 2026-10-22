@@ -63,6 +63,7 @@ export interface Note {
   updated: string;
   content: string;
   filePath: string;
+  archived?: boolean;
 }
 
 export interface SearchResult {
@@ -71,11 +72,19 @@ export interface SearchResult {
   matchType: 'uuid' | 'filename' | 'fts' | 'vector';
 }
 
+/**
+ * Archived notes are left out unless asked for: `include` returns them
+ * alongside the rest, `only` returns nothing else.
+ */
+export const ARCHIVED_MODES = ['exclude', 'include', 'only'] as const;
+export type ArchivedMode = (typeof ARCHIVED_MODES)[number];
+
 export interface NoteFilter {
   type?: string;
   tag?: string[];
   repo?: string;
   ext?: string;
+  archived?: ArchivedMode;
 }
 
 export interface GrepOptions {
@@ -126,6 +135,8 @@ export interface Operations {
     },
   ): Promise<Note>;
   remove(query: string): Promise<{ title: string; id: string }>;
+  archive(query: string): Promise<Note>;
+  unarchive(query: string): Promise<Note>;
   grep(pattern: string, opts?: GrepOptions): Promise<Paginated<Note>>;
   list(
     filter?: NoteFilter,

@@ -708,3 +708,47 @@ describe('cross-references', () => {
     expect(text).toContain('→ deadbeef  (not found)');
   });
 });
+
+describe('notes_archive', () => {
+  it('archives and unarchives notes', async () => {
+    const a = await ops.add({ title: 'Archive A', content: 'sprocket' });
+    const b = await ops.add({ title: 'Archive B', content: 'sprocket' });
+
+    const { text } = await callTool('notes_archive', { ids: [a.id, b.id] });
+    expect(text).toContain('Archived: Archive A');
+    expect(text).toContain('Archive B');
+
+    expect((await callTool('notes_search', { query: 'sprocket' })).text).toBe(
+      'No notes found.',
+    );
+    const found = await callTool('notes_search', {
+      query: 'sprocket',
+      archived: 'only',
+    });
+    expect(found.text).toContain('Archive A (archived)');
+    const listed = await callTool('notes_list', { archived: 'include' });
+    expect(listed.text).toContain('of 2 results');
+    const grep = await callTool('notes_grep', {
+      pattern: 'sprocket',
+      archived: 'only',
+    });
+    expect(grep.text).toContain('of 2 results');
+    const read = await callTool('notes_read', { id: a.id });
+    expect(read.text).toContain('archived: true');
+
+    const undo = await callTool('notes_archive', {
+      id: a.id,
+      unarchive: true,
+    });
+    expect(undo.text).toContain('Unarchived: Archive A');
+    expect((await callTool('notes_list')).text).toContain('Archive A');
+  });
+
+  it('reports failures', async () => {
+    const { text, isError } = await callTool('notes_archive', {
+      id: '00000000-0000-0000-0000-000000000000',
+    });
+    expect(isError).toBe(true);
+    expect(text).toContain('Failed to archive any notes');
+  });
+});

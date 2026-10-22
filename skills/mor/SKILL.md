@@ -91,6 +91,16 @@ mor rm <id>                          # remove by ID or ID prefix (8+ chars)
 mor rm <id1> <id2>                   # remove multiple
 ```
 
+### Archive notes
+
+```bash
+mor archive <id>                     # move to the archive folder, hidden from find/grep/ls
+mor unarchive <id>                   # move back
+mor ls --archived                    # only archived notes
+mor find --include-archived <query>  # search archived notes too
+mor find is:archived <query>         # search only archived notes
+```
+
 ## Query resolution
 
 Anywhere `<query>` appears, mor resolves it in this order:

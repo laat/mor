@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { loadConfig } from './config.js';
 import { LocalOperations } from './operations-local.js';
-import type { Config } from './operations.js';
+import type { Config, Note } from './operations.js';
 
 let testDir: string;
 let config: Config;
@@ -473,6 +473,58 @@ describe('rm', () => {
 
   it('errors on missing id', () => {
     const err = morFail('rm', '00000000-0000-0000-0000-000000000000');
+    expect(err).toContain('not found');
+  });
+});
+
+describe('archive', () => {
+  let old: Note;
+
+  beforeEach(async () => {
+    await ops.add({ title: 'Kept Gizmo', content: 'gizmo' });
+    old = await ops.add({ title: 'Old Gizmo', content: 'gizmo' });
+  });
+
+  it('moves a note into the archive folder', () => {
+    const out = mor('archive', old.id.slice(0, 8));
+    expect(out).toContain('Archived:');
+    expect(out).toContain('Old Gizmo');
+    expect(
+      fs.existsSync(
+        path.join(config.notesDir, 'archive', path.basename(old.filePath)),
+      ),
+    ).toBe(true);
+    expect(mor('cat', old.id.slice(0, 8))).toContain('gizmo');
+  });
+
+  it('hides archived notes from ls unless asked', async () => {
+    await ops.archive(old.id);
+    const ls = mor('ls');
+    expect(ls).toContain('Kept Gizmo');
+    expect(ls).not.toContain('Old Gizmo');
+    expect(mor('ls', '--archived')).toBe(
+      `${old.id.slice(0, 8)}  Old Gizmo (archived)`,
+    );
+    expect(mor('ls', '--include-archived')).toContain('Old Gizmo (archived)');
+  });
+
+  it('hides archived notes from find and grep unless asked', async () => {
+    await ops.archive(old.id);
+    expect(mor('find', 'gizmo')).not.toContain('Old Gizmo');
+    expect(mor('find', '--include-archived', 'gizmo')).toContain('Old Gizmo');
+    expect(mor('find', 'is:archived', 'gizmo')).not.toContain('Kept Gizmo');
+    expect(mor('grep', '-l', 'gizmo')).not.toContain('Old Gizmo');
+    expect(mor('grep', '-l', '--archived', 'gizmo')).toContain('Old Gizmo');
+  });
+
+  it('unarchives a note', async () => {
+    await ops.archive(old.id);
+    expect(mor('unarchive', old.id.slice(0, 8))).toContain('Unarchived:');
+    expect(mor('ls')).toContain('Old Gizmo');
+  });
+
+  it('errors on missing id', () => {
+    const err = morFail('archive', '00000000-0000-0000-0000-000000000000');
     expect(err).toContain('not found');
   });
 });
