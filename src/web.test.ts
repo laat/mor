@@ -107,6 +107,19 @@ describe('web UI without token', () => {
     expect(html).toContain('&lt;b&gt;Title&lt;/b&gt;');
   });
 
+  it('highlights code blocks', async () => {
+    const id = await createNote(
+      'Code',
+      '```ts\nconst a = "<b>";\n```\n\n```nosuchlang\n<i>plain</i>\n```',
+    );
+    const html = await (await get(`/ui/notes/${id}`)).text();
+    expect(html).toContain('<code class="hljs language-ts">');
+    expect(html).toContain('<span class="hljs-keyword">const</span>');
+    expect(html).toContain('&quot;&lt;b&gt;&quot;');
+    expect(html).toContain('&lt;i&gt;plain&lt;/i&gt;');
+    expect(html).not.toContain('<i>plain</i>');
+  });
+
   it('rewrites mor: links to UI links', async () => {
     const target = await createNote('Target', 'target body');
     const id = await createNote('Source', `See [target](mor:${target})`);

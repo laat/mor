@@ -13,7 +13,6 @@ import { login, getStoredToken } from './oauth-login.js';
 import { LocalOperations } from './operations-local.js';
 import { RemoteOperations } from './operations-client.js';
 import type { NoteFilter, Operations } from './operations.js';
-import { startServer } from './operations-server.js';
 import { NOTE_TYPES, type Note, type NoteType } from './operations.js';
 import { EXT_TO_LANG, LANG_TO_EXT } from './utils/ext.js';
 import { parseRawGitHubUrl } from './utils/github.js';
@@ -959,7 +958,14 @@ program
   .option('--token <token>', 'Bearer token for authentication')
   .option('--mcp', 'Enable MCP protocol endpoint at /mcp')
   .action(
-    (opts: { port?: string; host?: string; token?: string; mcp?: boolean }) => {
+    async (opts: {
+      port?: string;
+      host?: string;
+      token?: string;
+      mcp?: boolean;
+    }) => {
+      // Loaded here so other commands skip the server and highlight.js.
+      const { startServer } = await import('./operations-server.js');
       const config = loadConfig();
       const port =
         (opts.port ? parseInt(opts.port) : undefined) ??

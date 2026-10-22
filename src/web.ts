@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import hljs from 'highlight.js';
 import { Marked } from 'marked';
 import { NotFoundError } from './operations-local.js';
 import { NOTE_TYPES } from './operations.js';
@@ -24,10 +25,27 @@ const CSP = [
   "base-uri 'none'",
 ].join('; ');
 
-// Raw HTML in notes is shown as text, and mor: links point at the UI.
+function highlight(code: string, lang: string): string {
+  if (!hljs.getLanguage(lang)) return escapeHtml(code);
+  try {
+    return hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+  } catch {
+    return escapeHtml(code);
+  }
+}
+
+// Raw HTML in notes is shown as text, code blocks are highlighted on the
+// server (the CSP blocks scripts), and mor: links point at the UI.
 const markdown = new Marked({
   renderer: {
     html: ({ text }) => escapeHtml(text),
+    code: ({ text, lang }) => {
+      const language = lang?.match(/^\S*/)?.[0] ?? '';
+      const cls = language
+        ? ` class="hljs language-${escapeHtml(language)}"`
+        : ' class="hljs"';
+      return `<pre><code${cls}>${highlight(text, language)}</code></pre>\n`;
+    },
   },
   walkTokens(token) {
     if (token.type === 'link' && token.href.startsWith('mor:')) {
@@ -145,6 +163,10 @@ const STYLE = `
     --btn-bg: #f1f7ff; --btn-hover: #e9f1fc; --btn-border: #cdd9e8;
     --btn-primary-bg: #1f883d; --btn-primary-hover: #1c8139;
     --shadow: 0 1px 0 #1f23280a;
+    --hl-keyword: #cf222e; --hl-title: #6639ba; --hl-constant: #0550ae;
+    --hl-string: #0a3069; --hl-builtin: #953800; --hl-comment: #59636e;
+    --hl-tag: #116329; --hl-bullet: #3b2300;
+    --diff-add-bg: #dafbe1; --diff-del-bg: #ffebe9;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   }
@@ -160,6 +182,10 @@ const STYLE = `
       --btn-bg: #233444; --btn-hover: #2a3d4f; --btn-border: #2e4051;
       --btn-primary-bg: #238636; --btn-primary-hover: #29903b;
       --shadow: none;
+      --hl-keyword: #ff7b72; --hl-title: #d2a8ff; --hl-constant: #79c0ff;
+      --hl-string: #a5d6ff; --hl-builtin: #ffa657; --hl-comment: #9198a1;
+      --hl-tag: #7ee787; --hl-bullet: #f2cc60;
+      --diff-add-bg: #2ea04326; --diff-del-bg: #f851491a;
     }
   }
   * { box-sizing: border-box; }
@@ -226,6 +252,24 @@ const STYLE = `
   .content pre { padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45;
     background: var(--bg-subtle); border-radius: 6px; }
   .content pre code { padding: 0; font-size: 100%; background: transparent; }
+  .hljs-keyword, .hljs-doctag, .hljs-meta .hljs-keyword, .hljs-template-tag,
+  .hljs-template-variable, .hljs-type, .hljs-variable.language_ { color: var(--hl-keyword); }
+  .hljs-title, .hljs-title.class_, .hljs-title.class_.inherited__,
+  .hljs-title.function_ { color: var(--hl-title); }
+  .hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator,
+  .hljs-variable, .hljs-selector-attr, .hljs-selector-class,
+  .hljs-selector-id { color: var(--hl-constant); }
+  .hljs-regexp, .hljs-string, .hljs-meta .hljs-string { color: var(--hl-string); }
+  .hljs-built_in, .hljs-symbol { color: var(--hl-builtin); }
+  .hljs-comment, .hljs-code, .hljs-formula { color: var(--hl-comment); }
+  .hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo { color: var(--hl-tag); }
+  .hljs-subst { color: var(--fg); }
+  .hljs-section { color: var(--hl-constant); font-weight: bold; }
+  .hljs-bullet { color: var(--hl-bullet); }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: bold; }
+  .hljs-addition { color: var(--hl-tag); background-color: var(--diff-add-bg); }
+  .hljs-deletion { color: var(--hl-keyword); background-color: var(--diff-del-bg); }
   .content table { display: block; width: max-content; max-width: 100%; overflow: auto;
     border-collapse: collapse; }
   .content :is(th, td) { padding: 6px 13px; border: 1px solid var(--border); }
