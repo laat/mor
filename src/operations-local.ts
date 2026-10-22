@@ -280,6 +280,22 @@ export class LocalOperations implements Operations {
     return undefined;
   }
 
+  // Returns undefined when hybrid search is unavailable, so search falls back
+  // to FTS instead of failing when the embedding provider is down.
+  private async embedQuery(query: string): Promise<number[] | undefined> {
+    if (this.provider.name === 'none' || getEmbeddingCount(this.db) === 0) {
+      return undefined;
+    }
+    try {
+      return await this.provider.embed(query);
+    } catch (e) {
+      process.stderr.write(
+        `Warning: query embedding failed, falling back to FTS: ${e instanceof Error ? e.message : e}\n`,
+      );
+      return undefined;
+    }
+  }
+
   async search(
     query: string,
     limit = 20,
@@ -312,9 +328,9 @@ export class LocalOperations implements Operations {
     let filtered: SearchResult[];
     let scoring: ScoringMode;
 
-    if (this.provider.name !== 'none' && getEmbeddingCount(this.db) > 0) {
+    const queryEmbedding = await this.embedQuery(query);
+    if (queryEmbedding) {
       scoring = 'hybrid';
-      const queryEmbedding = await this.provider.embed(query);
 
       // KNN search via sqlite-vec (cosine distance: 0 = identical, 2 = opposite)
       const MAX_COSINE_DISTANCE = 1.7;
